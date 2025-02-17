@@ -29,7 +29,7 @@ const Home = () => {
   return (
     <div className="p-8">
       <h1 className="text-4xl font-bold text-center mb-8 text-blue-600">
-        Welcome to ElderFit
+        Welcome to ElderFit- Your Personal Fitness Guide
       </h1>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {categories.map((category) => (
