@@ -1,30 +1,17 @@
 import React from 'react';
-import ReactDOM from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ExerciseProvider } from './contexts/ExerciseContext';
-import App from './App';
-import './styles/index.css';
+import './styles/index.css';  // Make sure this path matches your project structure
+import App from './App';  // Note the capital 'A'
+import AppProviders from './providers/AppProviders';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1,
-      staleTime: 300000
-    }
-  }
-});
-
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const root = createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     <BrowserRouter>
-      <QueryClientProvider client={queryClient}>
-        <ExerciseProvider>
-          <App />
-        </ExerciseProvider>
-      </QueryClientProvider>
+      <AppProviders>
+        <App />
+      </AppProviders>
     </BrowserRouter>
   </React.StrictMode>
 );

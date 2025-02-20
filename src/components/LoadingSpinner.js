@@ -1,20 +1,31 @@
 import React from 'react';
+import { Loader2 } from 'lucide-react';
 
-export const LoadingSpinner = ({ size = 'medium', message }) => {
-  const sizeClasses = {
-    small: 'h-6 w-6',
-    medium: 'h-12 w-12',
-    large: 'h-16 w-16'
-  };
+const sizeMap = {
+  small: 'w-4 h-4',
+  medium: 'w-6 h-6',
+  large: 'w-8 h-8',
+  xlarge: 'w-12 h-12'
+};
 
+const LoadingSpinner = ({ 
+  size = 'medium', 
+  color = 'text-blue-500',
+  className = '',
+  label = 'Loading...'
+}) => {
   return (
-    <div className="flex flex-col items-center justify-center p-4">
-      <div
-        className={`animate-spin rounded-full border-t-2 border-b-2 border-blue-500 ${sizeClasses[size]}`}
+    <div 
+      role="status"
+      className={`flex items-center justify-center ${className}`}
+      aria-label={label}
+    >
+      <Loader2 
+        className={`animate-spin ${sizeMap[size]} ${color}`}
       />
-      {message && (
-        <p className="mt-4 text-gray-600">{message}</p>
-      )}
+      <span className="sr-only">{label}</span>
     </div>
   );
 };
+
+export default LoadingSpinner;

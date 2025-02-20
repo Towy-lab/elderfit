@@ -1,4 +1,5 @@
 import React from 'react';
+import ErrorDisplay from './ErrorDisplay';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -11,19 +12,17 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
+    // You can log the error to an error reporting service here
     console.error('Error caught by boundary:', error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="error-container">
-          <h1>Oops! Something went wrong.</h1>
-          <p>Please try refreshing the page or going back to the home page.</p>
-          <button onClick={() => window.location.href = '/'}>
-            Return to Home
-          </button>
-        </div>
+        <ErrorDisplay 
+          error={this.state.error}
+          onRetry={() => this.setState({ hasError: false })}
+        />
       );
     }
 
