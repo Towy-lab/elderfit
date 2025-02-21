@@ -1,11 +1,12 @@
 import React from 'react';
-import { createRoot } from 'react-dom/client';
+import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import './styles/index.css';  // Make sure this path matches your project structure
-import App from './App';  // Note the capital 'A'
-import AppProviders from './providers/AppProviders';
+import { AppProviders } from './providers/AppProviders';
+import App from './App';
+import './index.css';
 
-const root = createRoot(document.getElementById('root'));
+const root = ReactDOM.createRoot(document.getElementById('root'));
+
 root.render(
   <React.StrictMode>
     <BrowserRouter>

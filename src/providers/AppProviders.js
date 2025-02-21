@@ -1,16 +1,16 @@
-// src/providers/AppProviders.js
 import React from 'react';
-import { SafetyProvider } from '../contexts/SafetyContext';
-import { SchedulingProvider } from '../contexts/SchedulingContext';
+import { AuthProvider } from './AuthProvider';
+import { SafetyProvider } from './SafetyProvider';
+import { SchedulingProvider } from './SchedulingProvider';
 
-const AppProviders = ({ children }) => {
+export const AppProviders = ({ children }) => {
   return (
-    <SafetyProvider>
-      <SchedulingProvider>
-        {children}
-      </SchedulingProvider>
-    </SafetyProvider>
+    <AuthProvider>
+      <SafetyProvider>
+        <SchedulingProvider>
+          {children}
+        </SchedulingProvider>
+      </SafetyProvider>
+    </AuthProvider>
   );
 };
-
-export default AppProviders;
