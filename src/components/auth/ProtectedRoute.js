@@ -1,22 +1,18 @@
-// src/components/auth/ProtectedRoute.js
+// src/components/ProtectedRoute.js
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../../providers/AuthProvider';
+import { Navigate } from 'react-router-dom';
+import { useSubscription } from '../contexts/SubscriptionContext';
 
-export const ProtectedRoute = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+export const ProtectedRoute = ({ children, requiredPlan }) => {
+  const { subscription, loading } = useSubscription();
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
-      </div>
-    );
+  if (loading) {
+    return <div>Loading...</div>;
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  if (!subscription || subscription.plan !== requiredPlan) {
+    return <Navigate to="/pricing" replace />;
   }
 
-  return <Outlet />;
+  return children;
 };

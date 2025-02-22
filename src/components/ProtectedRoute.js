@@ -1,17 +1,19 @@
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../providers/AuthProvider';
+import React from 'react';
+import { Navigate } from 'react-router-dom';
+import { useSubscription } from '../contexts/SubscriptionContext';
 
-export const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
-  const location = useLocation();
+const ProtectedRoute = ({ children, requiredPlan }) => {
+  const { subscription, loading } = useSubscription();
 
-  if (isLoading) {
+  if (loading) {
     return <div>Loading...</div>;
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+  if (!subscription || subscription.plan !== requiredPlan) {
+    return <Navigate to="/pricing" replace />;
   }
 
   return children;
 };
+
+export default ProtectedRoute;
