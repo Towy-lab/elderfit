@@ -1,61 +1,107 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../providers/AuthProvider';
+import { 
+  Dumbbell, 
+  Calendar, 
+  Activity,
+  Heart, 
+  AlertCircle,
+  Clock
+} from 'lucide-react';
 
-export const Home = () => {
-  const { isAuthenticated } = useAuth();
+const Home = () => {
+  const features = [
+    {
+      icon: Dumbbell,
+      title: "Workouts",
+      description: "Access tailored exercise routines",
+      link: "/workouts"
+    },
+    {
+      icon: Calendar,
+      title: "Calendar",
+      description: "Schedule and track your activities",
+      link: "/calendar"
+    },
+    {
+      icon: Activity,
+      title: "Routines",
+      description: "Follow daily exercise patterns",
+      link: "/routines"
+    },
+    {
+      icon: Clock,
+      title: "Rest Planner",
+      description: "Plan your rest and recovery",
+      link: "/rest-planner"
+    },
+    {
+      icon: Heart,
+      title: "Pain Tracker",
+      description: "Monitor and manage discomfort",
+      link: "/pain-tracker"
+    },
+    {
+      icon: AlertCircle,
+      title: "Emergency Contacts",
+      description: "Quick access to important contacts",
+      link: "/emergency-contacts"
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="py-12">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-900 sm:text-5xl md:text-6xl">
-              Welcome to ElderFit
-            </h1>
-            <p className="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
-              Your personal companion for maintaining an active and healthy lifestyle.
-            </p>
-            <div className="mt-5 max-w-md mx-auto sm:flex sm:justify-center md:mt-8">
-              {!isAuthenticated ? (
-                <>
-                  <div className="rounded-md shadow">
-                    <Link
-                      to="/login"
-                      className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10"
-                    >
-                      Sign In
-                    </Link>
-                  </div>
-                  <div className="mt-3 rounded-md shadow sm:mt-0 sm:ml-3">
-                    <Link
-                      to="/register"
-                      className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 md:py-4 md:text-lg md:px-10"
-                    >
-                      Register
-                    </Link>
-                  </div>
-                </>
-              ) : (
-                <div className="space-y-3 sm:space-y-0 sm:flex sm:space-x-3">
-                  <Link
-                    to="/exercises"
-                    className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10"
-                  >
-                    View Exercises
-                  </Link>
-                  <Link
-                    to="/schedule/calendar"
-                    className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 md:py-4 md:text-lg md:px-10"
-                  >
-                    My Schedule
-                  </Link>
-                </div>
-              )}
-            </div>
-          </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Hero Section */}
+        <div className="text-center mb-16">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Welcome to ElderFit
+          </h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Your personalized platform for maintaining health and fitness with safe, 
+            guided exercises designed specifically for seniors.
+          </p>
+        </div>
+
+        {/* Features Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {features.map((feature, index) => (
+            <Link 
+              key={index} 
+              to={feature.link}
+              className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200"
+            >
+              <div className="flex items-center mb-4">
+                <feature.icon className="h-8 w-8 text-blue-600" />
+                <h3 className="ml-3 text-xl font-semibold text-gray-900">
+                  {feature.title}
+                </h3>
+              </div>
+              <p className="text-gray-600">
+                {feature.description}
+              </p>
+            </Link>
+          ))}
+        </div>
+
+        {/* Getting Started Section */}
+        <div className="mt-16 text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Ready to Start Your Fitness Journey?
+          </h2>
+          <p className="text-gray-600 mb-8">
+            Choose any feature above to begin, or follow our guided introduction.
+          </p>
+          <Link 
+            to="/workouts" 
+            className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+          >
+            Start Now
+          </Link>
         </div>
       </div>
     </div>
   );
 };
+
+export default Home;

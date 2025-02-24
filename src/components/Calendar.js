@@ -3,7 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../providers/AuthProvider';
 
-export const Calendar = () => {
+const Calendar = () => {
   const { user } = useAuth();
 
   // Example schedule data - replace with your actual data later
@@ -53,3 +53,5 @@ export const Calendar = () => {
     </div>
   );
 };
+
+export default Calendar;  // Changed to default export

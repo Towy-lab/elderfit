@@ -1,7 +1,15 @@
 // src/providers/SchedulingProvider.js
-import React, { createContext, useState, useCallback } from 'react';
+import React, { createContext, useState, useCallback, useContext } from 'react';
 
-export const SchedulingContext = createContext(null);
+const SchedulingContext = createContext(null);
+
+export const useScheduling = () => {
+  const context = useContext(SchedulingContext);
+  if (!context) {
+    throw new Error('useScheduling must be used within a SchedulingProvider');
+  }
+  return context;
+};
 
 export const SchedulingProvider = ({ children }) => {
   const [workouts, setWorkouts] = useState([]);
