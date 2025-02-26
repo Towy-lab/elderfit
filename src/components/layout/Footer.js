@@ -41,7 +41,7 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold mb-4">Contact Us</h3>
             <ul className="space-y-2 text-gray-300">
-              <li>Email: support@elderfit.com</li>
+              <li>Email: support@elderfitsecrets.com</li>
               <li>Phone: (555) 123-4567</li>
             </ul>
             <div className="mt-4 flex space-x-4">
@@ -69,7 +69,7 @@ const Footer = () => {
         </div>
 
         <div className="mt-8 pt-8 border-t border-gray-700 text-center text-gray-400">
-          <p>© 2023 ElderFit. All rights reserved.</p>
+          <p>© 2023 ElderFit Secrets. All rights reserved.</p>
         </div>
       </div>
     </footer>

@@ -12,7 +12,7 @@ const Navbar = () => {
         <div className="flex justify-between items-center py-4">
           {/* Logo */}
           <Link to="/" className="text-2xl font-bold text-blue-600">
-            ElderFit
+            ElderFit Secrets
           </Link>
 
           {/* Desktop Navigation */}

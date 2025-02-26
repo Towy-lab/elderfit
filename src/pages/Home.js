@@ -11,7 +11,7 @@ const Home = () => {
         <div className="container mx-auto px-6 py-16 md:flex md:items-center">
           <div className="md:w-1/2 mb-8 md:mb-0">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Fitness Designed for Seniors
+              Supporting Fitness For Healthy Aging
             </h1>
             <p className="text-lg md:text-xl mb-8">
               Gentle exercises, personalized routines, and senior-focused workouts that help you stay active and independent.
@@ -37,7 +37,7 @@ const Home = () => {
 
       {/* Features Section */}
       <section className="mb-12">
-        <h2 className="text-3xl font-bold text-center mb-12">Why Choose ElderFit?</h2>
+        <h2 className="text-3xl font-bold text-center mb-12">Why Choose ElderFit Secrets?</h2>
         <div className="grid md:grid-cols-3 gap-8">
           {/* Feature 1 */}
           <div className="bg-white p-6 rounded-lg shadow-md text-center">
@@ -46,7 +46,7 @@ const Home = () => {
             </div>
             <h3 className="text-xl font-semibold mb-3">Safe & Low-Impact</h3>
             <p className="text-gray-600">
-              All exercises are designed with senior safety in mind, focusing on gentle movements and proper form.
+              All exercises are designed with safety in mind, focusing on gentle movements and proper form.
             </p>
           </div>
 
@@ -106,10 +106,10 @@ const Home = () => {
           {[
             {
               name: "Margaret, 72",
-              text: "ElderFit has helped me regain my confidence in staying active. The exercises are perfect for my needs."
+              text: "ElderFit Secrets has helped me regain my confidence in staying active. The exercises are perfect for my needs."
             },
             {
-              name: "Robert, 68",
+              name: "Robert, 59",
               text: "After my knee surgery, I wasn't sure how to stay fit. The personalized programs have been a game changer."
             },
             {
@@ -133,7 +133,7 @@ const Home = () => {
       {/* CTA Section */}
       <section className="bg-blue-600 text-white rounded-lg p-8 text-center">
         <h2 className="text-3xl font-bold mb-4">Ready to Start Your Fitness Journey?</h2>
-        <p className="text-xl mb-6">Join thousands of seniors improving their health and mobility with ElderFit.</p>
+        <p className="text-xl mb-6">Join thousands of seniors improving their health and mobility with ElderFit Secrets.</p>
         <Link to="/register" className="btn bg-white text-blue-600 hover:bg-gray-100 px-8 py-3 text-lg">
           Sign Up Now
         </Link>
