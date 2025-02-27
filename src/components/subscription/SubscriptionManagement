@@ -1,0 +1,206 @@
+import React, { useContext, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { SubscriptionContext } from '../context/SubscriptionContext';
+
+const SubscriptionManagement = () => {
+  const { 
+    subscriptionStatus, 
+    subscriptionDetails, 
+    isLoading, 
+    error, 
+    cancelSubscription 
+  } = useContext(SubscriptionContext);
+  
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelError, setCancelError] = useState(null);
+  const [showCancelSuccess, setShowCancelSuccess] = useState(false);
+  
+  const navigate = useNavigate();
+  
+  // Map subscription levels to readable names
+  const subscriptionLevelNames = {
+    'none': 'No Subscription',
+    'basic': 'Basic',
+    'premium': 'Premium',
+    'elite': 'Elite'
+  };
+  
+  // Format date to readable string
+  const formatDate = (date) => {
+    if (!date) return 'N/A';
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+  
+  const handleCancelSubscription = async () => {
+    try {
+      setIsCancelling(true);
+      setCancelError(null);
+      
+      const result = await cancelSubscription();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to cancel subscription');
+      }
+      
+      setShowCancelConfirm(false);
+      setShowCancelSuccess(true);
+    } catch (err) {
+      console.error('Error cancelling subscription:', err);
+      setCancelError(err.message);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+  
+  if (isLoading) {
+    return (
+      <div className="p-4 flex justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="p-4 bg-red-50 text-red-700 rounded-md">
+        <p>Error loading subscription information: {error}</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="mt-2 text-sm font-medium text-red-700 underline"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+  
+  if (subscriptionStatus === 'none') {
+    return (
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="text-center">
+          <h3 className="text-lg font-medium text-gray-900">No Active Subscription</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            You currently don't have an active subscription.
+          </p>
+          <div className="mt-6">
+            <button
+              onClick={() => navigate('/subscription')}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              View Subscription Plans
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="bg-white shadow rounded-lg p-6">
+      <h3 className="text-lg font-medium text-gray-900">Your Subscription</h3>
+      
+      {showCancelSuccess ? (
+        <div className="mt-4 p-4 bg-green-50 text-green-700 rounded-md">
+          <p className="font-medium">Subscription Successfully Cancelled</p>
+          <p className="mt-1 text-sm">
+            Your subscription will remain active until {formatDate(subscriptionDetails?.activeUntil)}, 
+            after which you'll no longer be charged.
+          </p>
+        </div>
+      ) : subscriptionDetails?.cancelAtPeriodEnd ? (
+        <div className="mt-4 p-4 bg-amber-50 text-amber-700 rounded-md">
+          <p className="font-medium">Subscription Scheduled to Cancel</p>
+          <p className="mt-1 text-sm">
+            Your subscription will end on {formatDate(subscriptionDetails?.currentPeriodEnd)}.
+            You'll still have access until then.
+          </p>
+          <button 
+            onClick={() => navigate('/subscription/reactivate')}
+            className="mt-2 text-sm font-medium text-amber-700 underline"
+          >
+            Reactivate Subscription
+          </button>
+        </div>
+      ) : null}
+      
+      {cancelError && (
+        <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-md">
+          <p>Error cancelling subscription: {cancelError}</p>
+        </div>
+      )}
+      
+
+        <dl>
+            <div className="py-3 flex justify-between">
+              <dt className="text-sm font-medium text-gray-500">Next Billing Date</dt>
+              <dd className="text-sm text-gray-900">
+                {formatDate(subscriptionDetails?.currentPeriodEnd)}
+              </dd>
+            </div>
+          
+          {subscriptionDetails?.cancelAtPeriodEnd && (
+            <div className="py-3 flex justify-between">
+              <dt className="text-sm font-medium text-gray-500">Cancel Date</dt>
+              <dd className="text-sm text-gray-900">
+                {formatDate(subscriptionDetails?.currentPeriodEnd)}
+              </dd>
+            </div>
+          )}
+        </dl>
+      
+      <div className="mt-6 flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
+        {!subscriptionDetails?.cancelAtPeriodEnd && !showCancelSuccess && (
+          <button
+            onClick={() => setShowCancelConfirm(true)}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            Cancel Subscription
+          </button>
+        )}
+        
+        <button
+          onClick={() => navigate('/subscription')}
+          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        >
+          {subscriptionStatus === 'elite' ? 'Manage Plan' : 'Upgrade Plan'}
+        </button>
+      </div>
+      
+      {/* Cancellation confirmation modal */}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-medium text-gray-900">Cancel Subscription</h3>
+            <p className="mt-2 text-sm text-gray-500">
+              Are you sure you want to cancel your subscription? You will still have access to 
+              your current plan until {formatDate(subscriptionDetails?.currentPeriodEnd)}.
+            </p>
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowCancelConfirm(false)}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                disabled={isCancelling}
+              >
+                Keep Subscription
+              </button>
+              <button
+                onClick={handleCancelSubscription}
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                disabled={isCancelling}
+              >
+                {isCancelling ? 'Cancelling...' : 'Yes, Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default SubscriptionManagement;

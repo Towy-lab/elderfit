@@ -1,163 +1,224 @@
-import React, { useState } from 'react';
-import { useStripe } from '@stripe/react-stripe-js';
-import { useSubscription } from '../../contexts/SubscriptionContext';
-import { CheckIcon } from 'lucide-react';
-import { Alert } from '@/components/ui/alert';
+import React, { useContext, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { SubscriptionContext } from '../../context/SubscriptionContext.js';
 
 const PricingPlans = () => {
-  const stripe = useStripe();
-  const { subscription } = useSubscription();
+  const { setSubscriptionStatus } = useContext(SubscriptionContext);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const plans = [
     {
-      name: 'Free',
-      price: 0,
+      id: 'basic_free',
+      name: 'Basic',
+      price: 'Free',
+      period: 'forever',
       features: [
-        'Basic exercises library',
-        'Simple activity tracking',
-        'Exercise progress logging',
-        'Basic exercise reminders'
+        'Beginner workout routines',
+        'Basic nutrition guides',
+        'Progress tracking',
+        'Community forum access'
       ],
-      buttonText: 'Current Plan',
-      priceId: null
+      isFree: true
     },
     {
+      id: 'premium_monthly',
       name: 'Premium',
-      price: 9.99,
+      price: '$19.99',
+      period: 'month',
       features: [
-        'Advanced exercise plans',
-        'Safety features & monitoring',
-        'Fall detection alerts',
-        'Health metrics tracking',
-        'Virtual trainer sessions',
-        'Group classes access',
-        'Physical therapist consultations',
-        'Wearable device integration'
+        'All Basic features',
+        'Advanced workout routines',
+        'Personalized meal plans',
+        'Video tutorials',
+        'One monthly consultation'
       ],
-      buttonText: 'Upgrade to Premium',
-      priceId: 'price_premium_monthly'
+      stripePriceId: 'price_1234premium', // Replace with your actual Stripe price ID
+      highlighted: true
     },
     {
-      name: 'Family',
-      price: 19.99,
+      id: 'elite_yearly',
+      name: 'Elite',
+      price: '$149.99',
+      period: 'year',
       features: [
         'All Premium features',
-        'Multiple family profiles',
-        'Caregiver access & alerts',
-        'Family activity tracking',
-        'Shared emergency contacts',
-        'Cross-profile monitoring',
-        'Family progress reports',
-        'Coordinated care features'
+        'Priority support',
+        'Exclusive elite content',
+        'Workout equipment recommendations',
+        'Quarterly fitness assessments',
+        'Save $90 compared to monthly'
       ],
-      buttonText: 'Upgrade to Family',
-      priceId: 'price_family_monthly'
+      stripePriceId: 'price_1234elite' // Replace with your actual Stripe price ID
     }
   ];
 
-  const handleSubscribe = async (priceId) => {
-    if (!stripe) {
-      setError('Stripe has not been initialized');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
+  const handleSelectPlan = async (plan) => {
     try {
+      setIsLoading(true);
+      setError(null);
+      
+      // If the plan is free, handle it differently
+      if (plan.isFree) {
+        // Call your backend to register the user for the free tier
+        const user = localStorage.getItem('user') 
+          ? JSON.parse(localStorage.getItem('user')) 
+          : null;
+          
+        if (!user) {
+          // Redirect to registration if not logged in
+          navigate('/register', { state: { redirectAfter: '/subscription/free-signup-success' } });
+          return;
+        }
+        
+        // Register for free plan
+        const response = await fetch('/api/register-free-plan', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${user.token}`
+          },
+          body: JSON.stringify({ 
+            planName: plan.name,
+            planId: plan.id
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to register for free plan');
+        }
+
+        // Get updated subscription status
+        const data = await response.json();
+        
+        // Update subscription in context
+        setSubscriptionStatus('basic');
+        
+        // Store subscription info for fallback
+        localStorage.setItem('subscription', JSON.stringify({
+          status: 'basic',
+          details: {
+            planName: 'Basic',
+            planLevel: 'basic',
+            isFree: true
+          }
+        }));
+        
+        // Redirect to success page
+        navigate('/subscription/free-signup-success');
+        return;
+      }
+      
+      // For paid plans, continue with Stripe checkout
+      // Call your backend to create a Stripe checkout session
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          priceId,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          priceId: plan.stripePriceId,
+          planName: plan.name,
+          planId: plan.id
+        })
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to create checkout session');
+      }
 
       const { sessionId } = await response.json();
-
-      const { error } = await stripe.redirectToCheckout({
-        sessionId,
-      });
-
+      
+      // Store selected plan in localStorage for reference after payment
+      localStorage.setItem('selectedPlan', JSON.stringify(plan));
+      
+      // Redirect to Stripe checkout
+      const stripe = window.Stripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
+      const { error } = await stripe.redirectToCheckout({ sessionId });
+      
       if (error) {
         throw new Error(error.message);
       }
     } catch (err) {
       setError(err.message);
+      console.error('Subscription error:', err);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
+    <div className="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
+      <div className="text-center">
+        <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
           Choose Your ElderFit Plan
-        </h1>
-        <p className="text-xl text-gray-600">
-          Select the plan that best fits your needs and start your journey to better health
+        </h2>
+        <p className="mt-4 text-xl text-gray-600">
+          Invest in your health with a plan that fits your needs
         </p>
       </div>
 
       {error && (
-        <Alert variant="destructive" className="mb-6">
-          <p>{error}</p>
-        </Alert>
+        <div className="my-4 p-4 bg-red-100 text-red-700 rounded-md">
+          {error}. Please try again or contact support.
+        </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="mt-12 space-y-12 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-x-8">
         {plans.map((plan) => (
-          <div
-            key={plan.name}
-            className={`relative bg-white rounded-lg shadow-lg overflow-hidden
-                      ${subscription?.plan === plan.name ? 'ring-2 ring-blue-500' : ''}`}
+          <div 
+            key={plan.id}
+            className={`relative p-8 bg-white border rounded-2xl shadow-sm flex flex-col ${
+              plan.highlighted ? 'border-indigo-500 ring-2 ring-indigo-500' : 'border-gray-300'
+            }`}
           >
-            {subscription?.plan === plan.name && (
-              <div className="absolute top-0 right-0 bg-blue-500 text-white px-3 py-1 rounded-bl-lg">
-                Current Plan
+            {plan.highlighted && (
+              <div className="absolute top-0 inset-x-0 transform -translate-y-1/2">
+                <div className="inline-flex px-4 py-1 rounded-full text-sm font-semibold tracking-wide bg-indigo-100 text-indigo-600">
+                  Most Popular
+                </div>
               </div>
             )}
-
-            <div className="p-6">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                {plan.name}
-              </h3>
-              <div className="mb-6">
-                <span className="text-4xl font-bold">${plan.price}</span>
-                <span className="text-gray-500">/month</span>
+            
+            <div className="mb-4">
+              <h3 className="text-2xl font-semibold text-gray-900">{plan.name}</h3>
+              <div className="mt-4 flex items-baseline">
+                <span className="text-4xl font-extrabold text-gray-900">{plan.price}</span>
+                <span className="ml-1 text-xl font-semibold text-gray-500">/{plan.period}</span>
               </div>
-
-              <ul className="space-y-4 mb-8">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start">
-                    <CheckIcon className="h-5 w-5 text-green-500 mr-2 mt-1 flex-shrink-0" />
-                    <span className="text-gray-700">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
+            </div>
+            
+            <ul className="mt-6 space-y-4 flex-grow">
+              {plan.features.map((feature, index) => (
+                <li key={index} className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <p className="ml-3 text-base text-gray-700">{feature}</p>
+                </li>
+              ))}
+            </ul>
+            
+            <div className="mt-8">
               <button
-                onClick={() => handleSubscribe(plan.priceId)}
-                disabled={loading || !plan.priceId || (subscription?.plan === plan.name)}
-                className={`w-full py-3 px-4 rounded-md text-center font-medium
-                          ${
-                            subscription?.plan === plan.name
-                              ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                              : 'bg-blue-600 text-white hover:bg-blue-700'
-                          }
-                          ${loading ? 'opacity-50 cursor-not-allowed' : ''}
-                          transition-colors duration-200`}
+                onClick={() => handleSelectPlan(plan)}
+                disabled={isLoading}
+                className={`w-full bg-indigo-600 border border-transparent rounded-md py-3 px-5 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+                  isLoading ? 'opacity-75 cursor-not-allowed' : ''
+                }`}
               >
-                {loading ? 'Processing...' : plan.buttonText}
+                {isLoading ? 'Processing...' : `Subscribe to ${plan.name}`}
               </button>
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="mt-10 text-center">
+        <p className="text-base text-gray-500">
+          All plans include a 7-day free trial. Cancel anytime.
+        </p>
       </div>
     </div>
   );
