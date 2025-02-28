@@ -1,194 +1,94 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { User, Mail, Lock, Settings, Heart } from 'lucide-react';
-import FavoriteExercises from '../components/FavoriteExercises';
+import { useSubscription } from '../contexts/SubscriptionContext';
 import WorkoutHistory from '../components/WorkoutHistory';
+import ExerciseHistory from '../components/ExerciseHistory';
+import FavouriteExercises from '../components/FavouriteExercises'; // Corrected spelling
 
 const Profile = () => {
-  const { user, updateProfile } = useAuth();
-  const [activeTab, setActiveTab] = useState('profile');
-  const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await updateProfile(formData);
-      setIsEditing(false);
-    } catch (error) {
-      console.error('Failed to update profile:', error);
-    }
-  };
-
-  const renderProfileForm = () => (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Name</label>
-        <div className="mt-1 relative rounded-md shadow-sm">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <User className="h-5 w-5 text-gray-400" />
-          </div>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-            className="focus:ring-primary focus:border-primary block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
-            disabled={!isEditing}
-          />
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Email</label>
-        <div className="mt-1 relative rounded-md shadow-sm">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Mail className="h-5 w-5 text-gray-400" />
-          </div>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-            className="focus:ring-primary focus:border-primary block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
-            disabled={!isEditing}
-          />
-        </div>
-      </div>
-
-      {isEditing && (
-        <>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Current Password</label>
-            <div className="mt-1 relative rounded-md shadow-sm">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="password"
-                name="currentPassword"
-                value={formData.currentPassword}
-                onChange={(e) => setFormData(prev => ({ ...prev, currentPassword: e.target.value }))}
-                className="focus:ring-primary focus:border-primary block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">New Password</label>
-            <div className="mt-1 relative rounded-md shadow-sm">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="password"
-                name="newPassword"
-                value={formData.newPassword}
-                onChange={(e) => setFormData(prev => ({ ...prev, newPassword: e.target.value }))}
-                className="focus:ring-primary focus:border-primary block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Confirm New Password</label>
-            <div className="mt-1 relative rounded-md shadow-sm">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                className="focus:ring-primary focus:border-primary block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
-              />
-            </div>
-          </div>
-        </>
-      )}
-
-      <div className="flex justify-end gap-4">
-        {isEditing ? (
-          <>
-            <button
-              type="button"
-              onClick={() => setIsEditing(false)}
-              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark"
-            >
-              Save Changes
-            </button>
-          </>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setIsEditing(true)}
-            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark"
-          >
-            Edit Profile
-          </button>
-        )}
-      </div>
-    </form>
-  );
-
+  const { currentUser, updateProfile } = useAuth();
+  const { userSubscription } = useSubscription();
+  const [activeTab, setActiveTab] = useState('workouts');
+  
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="bg-white rounded-lg shadow-md">
-        <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-6" aria-label="Tabs">
-            <button
-              onClick={() => setActiveTab('profile')}
-              className={`py-4 px-1 inline-flex items-center gap-2 border-b-2 font-medium text-sm
-                ${activeTab === 'profile'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+    <div className="container mx-auto px-4 py-10">
+      <div className="max-w-5xl mx-auto">
+        {/* Profile Header */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+            <div className="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-xl font-bold">
+              {currentUser?.displayName?.charAt(0) || 'U'}
+            </div>
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold">{currentUser?.displayName || 'User'}</h1>
+              <p className="text-gray-600">{currentUser?.email}</p>
+              
+              <div className="mt-2 flex items-center">
+                <span className="text-sm bg-indigo-100 text-indigo-800 px-2 py-1 rounded">
+                  {userSubscription.charAt(0).toUpperCase() + userSubscription.slice(1)} Tier
+                </span>
+                {userSubscription !== 'elite' && (
+                  <Link 
+                    to={`/subscription/${userSubscription === 'basic' ? 'premium' : 'elite'}`} 
+                    className="ml-2 text-sm text-indigo-600 hover:text-indigo-800"
+                  >
+                    Upgrade
+                  </Link>
+                )}
+              </div>
+            </div>
+            
+            <Link 
+              to="/settings" 
+              className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
             >
-              <User size={16} />
-              Profile
+              Edit Profile
+            </Link>
+          </div>
+        </div>
+        
+        {/* Tabs */}
+        <div className="border-b border-gray-200 mb-6">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('workouts')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'workouts'
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Workout History
+            </button>
+            <button
+              onClick={() => setActiveTab('exercises')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'exercises'
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Exercise History
             </button>
             <button
               onClick={() => setActiveTab('favorites')}
-              className={`py-4 px-1 inline-flex items-center gap-2 border-b-2 font-medium text-sm
-                ${activeTab === 'favorites'
-                  ? 'border-primary text-primary'
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'favorites'
+                  ? 'border-indigo-500 text-indigo-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+              }`}
             >
-              <Heart size={16} />
               Favorites
-            </button>
-            <button
-              onClick={() => setActiveTab('history')}
-              className={`py-4 px-1 inline-flex items-center gap-2 border-b-2 font-medium text-sm
-                ${activeTab === 'history'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-            >
-              <Settings size={16} />
-              History
             </button>
           </nav>
         </div>
-
-        <div className="p-6">
-          {activeTab === 'profile' && renderProfileForm()}
-          {activeTab === 'favorites' && <FavoriteExercises />}
-          {activeTab === 'history' && <WorkoutHistory />}
+        
+        {/* Tab Content */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          {activeTab === 'workouts' && <WorkoutHistory />}
+          {activeTab === 'exercises' && <ExerciseHistory />}
+          {activeTab === 'favorites' && <FavouriteExercises />}
         </div>
       </div>
     </div>

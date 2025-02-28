@@ -1,207 +1,139 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import { useAuth } from './AuthContext'; // Use the hook instead of importing the context
 
-// Create the context
-export const SubscriptionContext = createContext(null);
+export const SubscriptionContext = createContext();
 
-// Create a provider component
 export const SubscriptionProvider = ({ children }) => {
-  // Subscription states: 'none', 'basic', 'premium', 'elite'
-  const [subscriptionStatus, setSubscriptionStatus] = useState('none');
+  const { currentUser } = useAuth(); // Use the hook
+  const [userSubscription, setUserSubscription] = useState('basic'); // Default to basic
   const [subscriptionDetails, setSubscriptionDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Check subscription status on mount and when auth state changes
+  // Fetch subscription data when user is logged in
   useEffect(() => {
-    const checkSubscriptionStatus = async () => {
+    if (!currentUser) {
+      setUserSubscription('basic');
+      setSubscriptionDetails(null);
+      setIsLoading(false);
+      return;
+    }
+
+    const fetchSubscription = async () => {
+      setIsLoading(true);
+      setError(null);
+      
       try {
-        setIsLoading(true);
+        // In a real app, you would call your API endpoint
+        // const response = await api.get('/subscription');
         
-        // Get the current user from your auth system
-        const user = localStorage.getItem('user') 
-          ? JSON.parse(localStorage.getItem('user')) 
-          : null;
+        // For now, we'll simulate this with a timeout
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        if (!user) {
-          // No user logged in
-          setSubscriptionStatus('none');
-          setSubscriptionDetails(null);
-          setIsLoading(false);
-          return;
-        }
-
-        // Call your backend API to get subscription status
-        const response = await fetch('/api/subscription-status', {
-          headers: {
-            'Authorization': `Bearer ${user.token}`
+        // Mock data - in real app, this would come from response.data
+        const mockSubscriptionData = {
+          tier: localStorage.getItem('userSubscription') || 'basic',
+          status: 'active',
+          renewalDate: '2023-12-31',
+          paymentMethod: localStorage.getItem('userSubscription') !== 'basic' ? 'Credit Card' : null,
+          features: {
+            workouts: localStorage.getItem('userSubscription') === 'basic' ? 5 : 
+                     localStorage.getItem('userSubscription') === 'premium' ? 30 : 50,
+            professionalSupport: localStorage.getItem('userSubscription') === 'elite',
+            familyProfiles: localStorage.getItem('userSubscription') === 'elite' ? 3 : 0,
+            advancedTracking: localStorage.getItem('userSubscription') !== 'basic',
           }
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch subscription status');
-        }
-
-        const data = await response.json();
+        };
         
-        setSubscriptionStatus(data.status);
-        setSubscriptionDetails(data.details);
+        setUserSubscription(mockSubscriptionData.tier);
+        setSubscriptionDetails(mockSubscriptionData);
       } catch (err) {
-        console.error('Error checking subscription status:', err);
-        setError(err.message);
-        // Fallback to stored subscription if available
-        const storedSubscription = localStorage.getItem('subscription');
-        if (storedSubscription) {
-          const parsedSubscription = JSON.parse(storedSubscription);
-          setSubscriptionStatus(parsedSubscription.status);
-          setSubscriptionDetails(parsedSubscription.details);
-        } else {
-          setSubscriptionStatus('none');
-        }
+        console.error('Error fetching subscription data:', err);
+        setError('Failed to load subscription details. Please try again later.');
+        // Default to basic on error to be safe
+        setUserSubscription('basic');
       } finally {
         setIsLoading(false);
       }
     };
 
-    checkSubscriptionStatus();
-    
-    // Set up a subscription status check every 30 minutes
-    const interval = setInterval(checkSubscriptionStatus, 30 * 60 * 1000);
-    
-    return () => clearInterval(interval);
-  }, []);
+    fetchSubscription();
+  }, [currentUser]);
 
-  // Function to update subscription after successful payment
-  const updateSubscriptionAfterPayment = async (sessionId) => {
+  // Update subscription tier
+  const updateSubscription = async (newTier) => {
+    if (!currentUser) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
     try {
-      setIsLoading(true);
+      // In a real app, you would call your API endpoint
+      // const response = await api.post('/subscription/update', { tier: newTier });
       
-      const user = localStorage.getItem('user') 
-        ? JSON.parse(localStorage.getItem('user')) 
-        : null;
+      // For now, we'll simulate this with a timeout
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
-      // Verify the payment with your backend
-      const response = await fetch('/api/verify-subscription', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token}`
-        },
-        body: JSON.stringify({ sessionId })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to verify subscription payment');
-      }
-
-      const data = await response.json();
+      // Store in localStorage for demo purposes (in real app, this comes from backend)
+      localStorage.setItem('userSubscription', newTier);
       
-      // Update subscription state
-      setSubscriptionStatus(data.status);
-      setSubscriptionDetails(data.details);
+      // Update state with new subscription tier
+      setUserSubscription(newTier);
       
-      // Store subscription info in localStorage as a fallback
-      localStorage.setItem('subscription', JSON.stringify({
-        status: data.status,
-        details: data.details
+      // Update subscription details
+      setSubscriptionDetails(prev => ({
+        ...prev,
+        tier: newTier,
+        features: {
+          workouts: newTier === 'basic' ? 5 : newTier === 'premium' ? 30 : 50,
+          professionalSupport: newTier === 'elite',
+          familyProfiles: newTier === 'elite' ? 3 : 0,
+          advancedTracking: newTier !== 'basic',
+        }
       }));
       
-      return { success: true, data };
+      return true;
     } catch (err) {
       console.error('Error updating subscription:', err);
-      setError(err.message);
-      return { success: false, error: err.message };
+      setError('Failed to update subscription. Please try again later.');
+      return false;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Function to check if user has access to a specific feature
-  const hasAccess = (requiredLevel) => {
-    // Define access levels in order of increasing privileges
-    const levels = ['none', 'basic', 'premium', 'elite'];
+  // Check if user has access to a specific tier feature
+  const hasAccess = (requiredTier) => {
+    const tierOrder = ['basic', 'premium', 'elite'];
+    const userTierIndex = tierOrder.indexOf(userSubscription);
+    const requiredTierIndex = tierOrder.indexOf(requiredTier);
     
-    const currentLevelIndex = levels.indexOf(subscriptionStatus);
-    const requiredLevelIndex = levels.indexOf(requiredLevel);
-    
-    return currentLevelIndex >= requiredLevelIndex;
-  };
-
-  // Function to handle subscription cancellation
-  const cancelSubscription = async () => {
-    try {
-      setIsLoading(true);
-      
-      const user = localStorage.getItem('user') 
-        ? JSON.parse(localStorage.getItem('user')) 
-        : null;
-      
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
-      const response = await fetch('/api/cancel-subscription', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${user.token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to cancel subscription');
-      }
-
-      const data = await response.json();
-      
-      // Update subscription state based on cancellation result
-      // Note: Often subscriptions remain active until the end of the billing period
-      setSubscriptionDetails({
-        ...subscriptionDetails,
-        canceledAt: data.canceledAt,
-        activeUntil: data.activeUntil,
-        status: 'canceled_pending'
-      });
-      
-      // Update localStorage
-      localStorage.setItem('subscription', JSON.stringify({
-        status: subscriptionStatus,
-        details: {
-          ...subscriptionDetails,
-          canceledAt: data.canceledAt,
-          activeUntil: data.activeUntil,
-          status: 'canceled_pending'
-        }
-      }));
-      
-      return { success: true, data };
-    } catch (err) {
-      console.error('Error cancelling subscription:', err);
-      setError(err.message);
-      return { success: false, error: err.message };
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Provider value
-  const value = {
-    subscriptionStatus,
-    subscriptionDetails,
-    isLoading,
-    error,
-    setSubscriptionStatus,
-    setSubscriptionDetails,
-    updateSubscriptionAfterPayment,
-    hasAccess,
-    cancelSubscription
+    return userTierIndex >= requiredTierIndex;
   };
 
   return (
-    <SubscriptionContext.Provider value={value}>
+    <SubscriptionContext.Provider
+      value={{
+        userSubscription,
+        subscriptionDetails,
+        updateSubscription,
+        hasAccess,
+        isLoading,
+        error
+      }}
+    >
       {children}
     </SubscriptionContext.Provider>
   );
 };
+
+// Add the custom hook
+export const useSubscription = () => {
+  const context = useContext(SubscriptionContext);
+  if (context === undefined) {
+    throw new Error("useSubscription must be used within a SubscriptionProvider");
+  }
+  return context;
+};
+
+export default SubscriptionContext;

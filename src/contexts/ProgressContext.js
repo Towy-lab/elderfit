@@ -1,171 +1,150 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import { useAuth } from './AuthContext';
 
-const ProgressContext = createContext();
-
-const LOCAL_STORAGE_KEYS = {
-  EXERCISE_HISTORY: 'elderfit_exercise_history',
-  DIFFICULTY_LEVELS: 'elderfit_difficulty_levels',
-  USER_GOALS: 'elderfit_user_goals'
-};
+// Create the progress context
+export const ProgressContext = createContext();
 
 export const ProgressProvider = ({ children }) => {
-  // Exercise history with timestamps, modifications, and difficulty
-  const [exerciseHistory, setExerciseHistory] = useState(() => {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEYS.EXERCISE_HISTORY);
-    return saved ? JSON.parse(saved) : [];
-  });
+  const { currentUser } = useAuth();
+  const [userProgress, setUserProgress] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // User-specific difficulty levels for each exercise
-  const [difficultyLevels, setDifficultyLevels] = useState(() => {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEYS.DIFFICULTY_LEVELS);
-    return saved ? JSON.parse(saved) : {};
-  });
-
-  // User goals and progress
-  const [userGoals, setUserGoals] = useState(() => {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEYS.USER_GOALS);
-    return saved ? JSON.parse(saved) : {
-      weeklyWorkouts: 3,
-      exerciseMinutes: 90,
-      focusAreas: []
-    };
-  });
-
-  // Persist state changes
+  // Fetch user progress data
   useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEYS.EXERCISE_HISTORY, JSON.stringify(exerciseHistory));
-  }, [exerciseHistory]);
+    if (!currentUser) {
+      setUserProgress(null);
+      setIsLoading(false);
+      return;
+    }
 
-  useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEYS.DIFFICULTY_LEVELS, JSON.stringify(difficultyLevels));
-  }, [difficultyLevels]);
-
-  useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEYS.USER_GOALS, JSON.stringify(userGoals));
-  }, [userGoals]);
-
-  // Add exercise session to history
-  const logExercise = (exerciseId, data) => {
-    const entry = {
-      id: Date.now(),
-      exerciseId,
-      timestamp: new Date().toISOString(),
-      duration: data.duration,
-      difficulty: data.difficulty,
-      modifications: data.modifications || [],
-      notes: data.notes,
-      completed: data.completed,
-      painLevel: data.painLevel,
-      energyLevel: data.energyLevel
-    };
-
-    setExerciseHistory(prev => [entry, ...prev]);
-    updateDifficultyLevel(exerciseId, data.difficulty);
-  };
-
-  // Update exercise difficulty based on user performance
-  const updateDifficultyLevel = (exerciseId, sessionDifficulty) => {
-    setDifficultyLevels(prev => {
-      const currentLevel = prev[exerciseId] || { level: 'beginner', confidence: 0 };
-      const newConfidence = calculateNewConfidence(currentLevel, sessionDifficulty);
+    const fetchProgress = async () => {
+      setIsLoading(true);
+      setError(null);
       
-      return {
-        ...prev,
-        [exerciseId]: {
-          level: determineLevel(newConfidence),
-          confidence: newConfidence
-        }
-      };
-    });
-  };
-
-  // Calculate confidence score for difficulty adjustment
-  const calculateNewConfidence = (currentLevel, sessionDifficulty) => {
-    const difficultyScores = {
-      'too easy': 1,
-      'just right': 0,
-      'too hard': -1
+      try {
+        // In a real app, you would call your API endpoint
+        // const response = await api.get('/progress');
+        
+        // For now, we'll simulate this with a timeout
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        // Mock progress data
+        const mockProgressData = {
+          workoutsCompleted: 12,
+          totalMinutes: 245,
+          streak: 3,
+          lastWorkout: '2023-08-28',
+          achievements: [
+            { id: 1, title: 'First Workout', date: '2023-08-15' },
+            { id: 2, title: '5 Workouts Completed', date: '2023-08-20' },
+            { id: 3, title: '10 Workouts Completed', date: '2023-08-27' }
+          ],
+          weeklyProgress: [
+            { date: '2023-08-21', minutes: 25 },
+            { date: '2023-08-22', minutes: 0 },
+            { date: '2023-08-23', minutes: 30 },
+            { date: '2023-08-24', minutes: 15 },
+            { date: '2023-08-25', minutes: 0 },
+            { date: '2023-08-26', minutes: 20 },
+            { date: '2023-08-27', minutes: 25 }
+          ]
+        };
+        
+        setUserProgress(mockProgressData);
+      } catch (err) {
+        console.error('Error fetching progress data:', err);
+        setError('Failed to load progress data. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
     };
+
+    fetchProgress();
+  }, [currentUser]);
+
+  // Record a completed workout
+  const recordWorkout = async (workoutData) => {
+    if (!currentUser) return;
     
-    return Math.min(Math.max(
-      currentLevel.confidence + difficultyScores[sessionDifficulty],
-      -3
-    ), 3);
-  };
-
-  // Determine difficulty level based on confidence score
-  const determineLevel = (confidence) => {
-    if (confidence <= -2) return 'beginner';
-    if (confidence >= 2) return 'advanced';
-    return 'intermediate';
-  };
-
-  // Get exercise history for specific exercise
-  const getExerciseHistory = (exerciseId) => {
-    return exerciseHistory.filter(entry => entry.exerciseId === exerciseId);
-  };
-
-  // Get recommended modifications based on history
-  const getRecommendedModifications = (exerciseId) => {
-    const history = getExerciseHistory(exerciseId);
-    const recentEntries = history.slice(0, 5);
+    setIsLoading(true);
+    setError(null);
     
-    return recentEntries.reduce((mods, entry) => {
-      entry.modifications.forEach(mod => {
-        mods[mod] = (mods[mod] || 0) + 1;
+    try {
+      // In a real app, you would call your API endpoint
+      // const response = await api.post('/progress/workout', workoutData);
+      
+      // For now, we'll simulate this with a timeout
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Update local progress data
+      setUserProgress(prev => {
+        if (!prev) return {
+          workoutsCompleted: 1,
+          totalMinutes: workoutData.minutes || 0,
+          streak: 1,
+          lastWorkout: new Date().toISOString().split('T')[0],
+          achievements: [],
+          weeklyProgress: [
+            { date: new Date().toISOString().split('T')[0], minutes: workoutData.minutes || 0 }
+          ]
+        };
+        
+        return {
+          ...prev,
+          workoutsCompleted: prev.workoutsCompleted + 1,
+          totalMinutes: prev.totalMinutes + (workoutData.minutes || 0),
+          streak: calculateStreak(prev.lastWorkout, prev.streak),
+          lastWorkout: new Date().toISOString().split('T')[0],
+          weeklyProgress: [
+            ...prev.weeklyProgress,
+            { date: new Date().toISOString().split('T')[0], minutes: workoutData.minutes || 0 }
+          ].slice(-7) // Keep only the last 7 days
+        };
       });
-      return mods;
-    }, {});
+      
+      return true;
+    } catch (err) {
+      console.error('Error recording workout:', err);
+      setError('Failed to record workout. Please try again later.');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Check if user has met their goals
-  const checkGoalProgress = () => {
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  // Helper function to calculate streak
+  const calculateStreak = (lastWorkout, currentStreak) => {
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
     
-    const recentHistory = exerciseHistory.filter(
-      entry => new Date(entry.timestamp) > oneWeekAgo
-    );
-
-    const totalMinutes = recentHistory.reduce(
-      (sum, entry) => sum + entry.duration, 
-      0
-    );
-
-    const uniqueWorkouts = new Set(
-      recentHistory.map(entry => entry.timestamp.split('T')[0])
-    ).size;
-
-    return {
-      weeklyWorkoutsComplete: uniqueWorkouts >= userGoals.weeklyWorkouts,
-      minutesComplete: totalMinutes >= userGoals.exerciseMinutes,
-      weeklyWorkouts: uniqueWorkouts,
-      totalMinutes
-    };
-  };
-
-  const value = {
-    exerciseHistory,
-    difficultyLevels,
-    userGoals,
-    logExercise,
-    getExerciseHistory,
-    getRecommendedModifications,
-    checkGoalProgress,
-    setUserGoals,
-    getDifficultyLevel: (exerciseId) => difficultyLevels[exerciseId] || { level: 'beginner', confidence: 0 }
+    if (lastWorkout === yesterday) {
+      return currentStreak + 1;
+    } else if (lastWorkout === today) {
+      return currentStreak;
+    } else {
+      return 1; // Reset streak
+    }
   };
 
   return (
-    <ProgressContext.Provider value={value}>
+    <ProgressContext.Provider
+      value={{
+        userProgress,
+        recordWorkout,
+        isLoading,
+        error
+      }}
+    >
       {children}
     </ProgressContext.Provider>
   );
 };
 
+// Custom hook for using progress context
 export const useProgress = () => {
   const context = useContext(ProgressContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useProgress must be used within a ProgressProvider');
   }
   return context;

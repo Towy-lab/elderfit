@@ -1,13 +1,22 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
-import { useSubscription } from '../../contexts/SubscriptionContext';
+import React, { useContext } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext'; // Import as a hook
 
-export const ProtectedRoute = ({ children }) => {
-  const { subscription } = useSubscription();
+const ProtectedRoute = ({ children }) => {
+  const { currentUser, loading } = useAuth(); // Use the hook
+  const location = useLocation();
 
-  if (!subscription) {
-    return <Navigate to="/login" />;
+  if (loading) {
+    // You can replace this with a loading spinner component
+    return <div>Loading...</div>;
+  }
+
+  if (!currentUser) {
+    // Redirect to login if user is not authenticated
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   return children;
 };
+
+export default ProtectedRoute;

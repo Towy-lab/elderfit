@@ -1,63 +1,157 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 
-const AuthContext = createContext(null);
+// Create the auth context
+export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const [error, setError] = useState(null);
 
-  React.useEffect(() => {
-    const user = localStorage.getItem('user');
-    if (user) {
-      setUser(JSON.parse(user));
+  // Mock login functionality (replace with actual authentication)
+  const login = async (email, password) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // For demo purposes, mock a successful login
+      if (email && password) {
+        const mockUser = {
+          uid: '123456',
+          email: email,
+          displayName: email.split('@')[0],
+          photoURL: null,
+        };
+
+        // Save user to localStorage for persistence
+        localStorage.setItem('currentUser', JSON.stringify(mockUser));
+        setCurrentUser(mockUser);
+        return mockUser;
+      } else {
+        throw new Error('Email and password are required');
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to log in');
+      throw err;
+    } finally {
+      setLoading(false);
     }
+  };
+
+  // Mock registration functionality
+  const register = async (email, password, displayName) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // For demo purposes, mock a successful registration
+      if (email && password) {
+        const mockUser = {
+          uid: '123456',
+          email: email,
+          displayName: displayName || email.split('@')[0],
+          photoURL: null,
+        };
+
+        // Save user to localStorage for persistence
+        localStorage.setItem('currentUser', JSON.stringify(mockUser));
+        setCurrentUser(mockUser);
+        return mockUser;
+      } else {
+        throw new Error('Email and password are required');
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to register');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Logout functionality
+  const logout = async () => {
+    setLoading(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Clear user from localStorage
+      localStorage.removeItem('currentUser');
+      setCurrentUser(null);
+    } catch (err) {
+      setError('Failed to log out');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update user profile
+  const updateProfile = async (updates) => {
+    setLoading(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      if (!currentUser) {
+        throw new Error('No user logged in');
+      }
+      
+      // Update user in localStorage
+      const updatedUser = {
+        ...currentUser,
+        ...updates
+      };
+      
+      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      setCurrentUser(updatedUser);
+      return updatedUser;
+    } catch (err) {
+      setError('Failed to update profile');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Check for stored user on mount
+  useEffect(() => {
+    const storedUser = localStorage.getItem('currentUser');
+    
+    if (storedUser) {
+      setCurrentUser(JSON.parse(storedUser));
+    }
+    
     setLoading(false);
   }, []);
 
-  const login = useCallback(async (email, password) => {
-    try {
-      // Mock login - replace with real API call later
-      const mockUser = {
-        id: '1',
-        email,
-        name: 'Test User'
-      };
-      
-      setUser(mockUser);
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      navigate('/');
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  }, [navigate]);
-
-  const logout = useCallback(() => {
-    setUser(null);
-    localStorage.removeItem('user');
-    navigate('/login');
-  }, [navigate]);
-
   const value = {
-    user,
+    currentUser,
     loading,
+    error,
     login,
+    register,
     logout,
-    isAuthenticated: !!user
+    updateProfile
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
 
+// Custom hook for accessing auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;

@@ -1,224 +1,271 @@
-import React, { useContext, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { SubscriptionContext } from '../../context/SubscriptionContext.js';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { useSubscription } from '../../contexts/SubscriptionContext';
 
 const PricingPlans = () => {
-  const { setSubscriptionStatus } = useContext(SubscriptionContext);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const { currentUser } = useAuth();
+  const { userSubscription } = useSubscription();
   const navigate = useNavigate();
-
-  const plans = [
-    {
-      id: 'basic_free',
-      name: 'Basic',
-      price: 'Free',
-      period: 'forever',
-      features: [
-        'Beginner workout routines',
-        'Basic nutrition guides',
-        'Progress tracking',
-        'Community forum access'
-      ],
-      isFree: true
-    },
-    {
-      id: 'premium_monthly',
-      name: 'Premium',
-      price: '$19.99',
-      period: 'month',
-      features: [
-        'All Basic features',
-        'Advanced workout routines',
-        'Personalized meal plans',
-        'Video tutorials',
-        'One monthly consultation'
-      ],
-      stripePriceId: 'price_1234premium', // Replace with your actual Stripe price ID
-      highlighted: true
-    },
-    {
-      id: 'elite_yearly',
-      name: 'Elite',
-      price: '$149.99',
-      period: 'year',
-      features: [
-        'All Premium features',
-        'Priority support',
-        'Exclusive elite content',
-        'Workout equipment recommendations',
-        'Quarterly fitness assessments',
-        'Save $90 compared to monthly'
-      ],
-      stripePriceId: 'price_1234elite' // Replace with your actual Stripe price ID
+  const [billingCycle, setBillingCycle] = useState('monthly');
+  
+  // Handle subscription actions
+  const handleSubscriptionAction = (tier) => {
+    if (!currentUser) {
+      navigate('/login', { state: { redirectTo: `/subscription/${tier}` } });
+      return;
     }
-  ];
-
-  const handleSelectPlan = async (plan) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      // If the plan is free, handle it differently
-      if (plan.isFree) {
-        // Call your backend to register the user for the free tier
-        const user = localStorage.getItem('user') 
-          ? JSON.parse(localStorage.getItem('user')) 
-          : null;
-          
-        if (!user) {
-          // Redirect to registration if not logged in
-          navigate('/register', { state: { redirectAfter: '/subscription/free-signup-success' } });
-          return;
-        }
-        
-        // Register for free plan
-        const response = await fetch('/api/register-free-plan', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${user.token}`
-          },
-          body: JSON.stringify({ 
-            planName: plan.name,
-            planId: plan.id
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to register for free plan');
-        }
-
-        // Get updated subscription status
-        const data = await response.json();
-        
-        // Update subscription in context
-        setSubscriptionStatus('basic');
-        
-        // Store subscription info for fallback
-        localStorage.setItem('subscription', JSON.stringify({
-          status: 'basic',
-          details: {
-            planName: 'Basic',
-            planLevel: 'basic',
-            isFree: true
-          }
-        }));
-        
-        // Redirect to success page
-        navigate('/subscription/free-signup-success');
-        return;
-      }
-      
-      // For paid plans, continue with Stripe checkout
-      // Call your backend to create a Stripe checkout session
-      const response = await fetch('/api/create-checkout-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          priceId: plan.stripePriceId,
-          planName: plan.name,
-          planId: plan.id
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create checkout session');
-      }
-
-      const { sessionId } = await response.json();
-      
-      // Store selected plan in localStorage for reference after payment
-      localStorage.setItem('selectedPlan', JSON.stringify(plan));
-      
-      // Redirect to Stripe checkout
-      const stripe = window.Stripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
-      const { error } = await stripe.redirectToCheckout({ sessionId });
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-    } catch (err) {
-      setError(err.message);
-      console.error('Subscription error:', err);
-    } finally {
-      setIsLoading(false);
+    
+    if (tier === 'basic') {
+      navigate('/subscription/free-signup-success');
+    } else {
+      navigate(`/subscription/${tier}`);
     }
   };
-
+  
+  // Feature lists for each tier
+  const basicFeatures = [
+    '5 beginner-friendly workout routines',
+    'Basic exercise demonstrations',
+    'Simple progress tracking',
+    'Safety guidelines',
+    'Weekly goals (limited customization)',
+  ];
+  
+  const premiumFeatures = [
+    '30+ specialized workout routines',
+    'Personalized recommendations',
+    'Advanced progress tracking & analytics',
+    'Workout calendar & scheduling',
+    'Rest day planning & recovery guidance',
+    'Pain tracking & safety recommendations',
+    'Basic community features'
+  ];
+  
+  const eliteFeatures = [
+    'All Premium features',
+    '50+ specialized workout routines',
+    'One-on-one professional support',
+    'Family profiles management',
+    'Advanced safety features',
+    'Priority professional consultations',
+    'Full community access with exclusive content',
+    'Custom routine builder with professional guidance'
+  ];
+  
+  // Annual pricing with discount
+  const premiumMonthly = 9.99;
+  const premiumAnnual = 99.99; // ~17% savings
+  const eliteMonthly = 19.99;
+  const eliteAnnual = 199.99; // ~17% savings
+  
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
-      <div className="text-center">
-        <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
-          Choose Your ElderFit Plan
-        </h2>
-        <p className="mt-4 text-xl text-gray-600">
-          Invest in your health with a plan that fits your needs
-        </p>
-      </div>
-
-      {error && (
-        <div className="my-4 p-4 bg-red-100 text-red-700 rounded-md">
-          {error}. Please try again or contact support.
+    <div className="bg-gray-50 py-12">
+      <div className="container mx-auto px-4">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-gray-900">Choose Your ElderFit Subscription</h2>
+          <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">
+            Select the plan that fits your fitness journey. Upgrade or downgrade anytime.
+          </p>
+          
+          {/* Billing cycle toggle */}
+          <div className="mt-6 inline-flex items-center border border-gray-200 rounded-lg p-1 bg-white">
+            <button
+              className={`px-4 py-2 rounded-md ${
+                billingCycle === 'monthly' 
+                  ? 'bg-indigo-100 text-indigo-700' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+              onClick={() => setBillingCycle('monthly')}
+            >
+              Monthly
+            </button>
+            <button
+              className={`px-4 py-2 rounded-md ${
+                billingCycle === 'annual' 
+                  ? 'bg-indigo-100 text-indigo-700' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+              onClick={() => setBillingCycle('annual')}
+            >
+              Annual
+              <span className="ml-1 text-xs bg-green-100 text-green-800 py-0.5 px-1.5 rounded">
+                Save ~17%
+              </span>
+            </button>
+          </div>
         </div>
-      )}
-
-      <div className="mt-12 space-y-12 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-x-8">
-        {plans.map((plan) => (
-          <div 
-            key={plan.id}
-            className={`relative p-8 bg-white border rounded-2xl shadow-sm flex flex-col ${
-              plan.highlighted ? 'border-indigo-500 ring-2 ring-indigo-500' : 'border-gray-300'
-            }`}
-          >
-            {plan.highlighted && (
-              <div className="absolute top-0 inset-x-0 transform -translate-y-1/2">
-                <div className="inline-flex px-4 py-1 rounded-full text-sm font-semibold tracking-wide bg-indigo-100 text-indigo-600">
-                  Most Popular
-                </div>
-              </div>
-            )}
-            
-            <div className="mb-4">
-              <h3 className="text-2xl font-semibold text-gray-900">{plan.name}</h3>
+        
+        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          {/* Basic Plan */}
+          <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900">Basic</h3>
               <div className="mt-4 flex items-baseline">
-                <span className="text-4xl font-extrabold text-gray-900">{plan.price}</span>
-                <span className="ml-1 text-xl font-semibold text-gray-500">/{plan.period}</span>
+                <span className="text-3xl font-bold text-gray-900">Free</span>
+                <span className="ml-1 text-gray-500">/forever</span>
               </div>
+              <p className="mt-2 text-gray-600">
+                Get started with beginner-friendly workouts
+              </p>
             </div>
-            
-            <ul className="mt-6 space-y-4 flex-grow">
-              {plan.features.map((feature, index) => (
-                <li key={index} className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <svg className="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            <div className="px-6 pb-6">
+              <ul className="space-y-3">
+                {basicFeatures.map((feature, index) => (
+                  <li key={index} className="flex items-start">
+                    <svg className="h-5 w-5 text-green-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                  </div>
-                  <p className="ml-3 text-base text-gray-700">{feature}</p>
-                </li>
-              ))}
-            </ul>
-            
-            <div className="mt-8">
+                    <span className="ml-2 text-gray-600">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              
               <button
-                onClick={() => handleSelectPlan(plan)}
-                disabled={isLoading}
-                className={`w-full bg-indigo-600 border border-transparent rounded-md py-3 px-5 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
-                  isLoading ? 'opacity-75 cursor-not-allowed' : ''
-                }`}
+                onClick={() => handleSubscriptionAction('basic')}
+                className={`mt-6 w-full py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 
+                  ${userSubscription === 'basic' ? 'cursor-default opacity-70' : ''}`}
+                disabled={userSubscription === 'basic'}
               >
-                {isLoading ? 'Processing...' : `Subscribe to ${plan.name}`}
+                {userSubscription === 'basic' ? 'Current Plan' : 'Start Free'}
               </button>
             </div>
           </div>
-        ))}
-      </div>
-
-      <div className="mt-10 text-center">
-        <p className="text-base text-gray-500">
-          All plans include a 7-day free trial. Cancel anytime.
-        </p>
+          
+          {/* Premium Plan */}
+          <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-indigo-200 transform scale-105 z-10">
+            <div className="bg-indigo-500 py-1.5 text-center">
+              <span className="text-xs font-semibold uppercase tracking-wide text-white">
+                Most Popular
+              </span>
+            </div>
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900">Premium</h3>
+              <div className="mt-4 flex items-baseline">
+                <span className="text-3xl font-bold text-gray-900">
+                  ${billingCycle === 'monthly' ? premiumMonthly : (premiumAnnual / 12).toFixed(2)}
+                </span>
+                <span className="ml-1 text-gray-500">/month</span>
+              </div>
+              <p className="mt-2 text-gray-600">
+                {billingCycle === 'annual' && (
+                  <span className="block text-green-600 font-medium">
+                    ${premiumAnnual} billed annually
+                  </span>
+                )}
+                Personalized workouts and advanced tracking
+              </p>
+            </div>
+            <div className="px-6 pb-6">
+              <ul className="space-y-3">
+                {premiumFeatures.map((feature, index) => (
+                  <li key={index} className="flex items-start">
+                    <svg className="h-5 w-5 text-green-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="ml-2 text-gray-600">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              
+              <button
+                onClick={() => handleSubscriptionAction('premium')}
+                className={`mt-6 w-full py-2 px-4 rounded-md text-sm font-medium text-white
+                  ${userSubscription === 'premium' 
+                    ? 'bg-indigo-400 cursor-default' 
+                    : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                disabled={userSubscription === 'premium'}
+              >
+                {userSubscription === 'premium' 
+                  ? 'Current Plan' 
+                  : userSubscription === 'elite'
+                    ? 'Downgrade to Premium'
+                    : 'Upgrade to Premium'}
+              </button>
+            </div>
+          </div>
+          
+          {/* Elite Plan */}
+          <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900">Elite</h3>
+              <div className="mt-4 flex items-baseline">
+                <span className="text-3xl font-bold text-gray-900">
+                  ${billingCycle === 'monthly' ? eliteMonthly : (eliteAnnual / 12).toFixed(2)}
+                </span>
+                <span className="ml-1 text-gray-500">/month</span>
+              </div>
+              <p className="mt-2 text-gray-600">
+                {billingCycle === 'annual' && (
+                  <span className="block text-green-600 font-medium">
+                    ${eliteAnnual} billed annually
+                  </span>
+                )}
+                Professional support and premium content
+              </p>
+            </div>
+            <div className="px-6 pb-6">
+              <ul className="space-y-3">
+                {eliteFeatures.map((feature, index) => (
+                  <li key={index} className="flex items-start">
+                    <svg className="h-5 w-5 text-green-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="ml-2 text-gray-600">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              
+              <button
+                onClick={() => handleSubscriptionAction('elite')}
+                className={`mt-6 w-full py-2 px-4 rounded-md text-sm font-medium text-white
+                  ${userSubscription === 'elite' 
+                    ? 'bg-purple-400 cursor-default' 
+                    : 'bg-purple-600 hover:bg-purple-700'}`}
+                disabled={userSubscription === 'elite'}
+              >
+                {userSubscription === 'elite' ? 'Current Plan' : 'Upgrade to Elite'}
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        {/* FAQ Section */}
+        <div className="mt-16 max-w-3xl mx-auto">
+          <h3 className="text-2xl font-bold text-center mb-6">Frequently Asked Questions</h3>
+          
+          <div className="space-y-6">
+            <div>
+              <h4 className="text-lg font-medium text-gray-900">Can I switch plans later?</h4>
+              <p className="mt-2 text-gray-600">
+                Yes, you can upgrade or downgrade your plan at any time. Changes will be applied immediately.
+              </p>
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-medium text-gray-900">Is there a free trial for Premium or Elite?</h4>
+              <p className="mt-2 text-gray-600">
+                We offer a 7-day free trial for both our Premium and Elite plans. You can cancel anytime during the trial period.
+              </p>
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-medium text-gray-900">What happens if I downgrade my plan?</h4>
+              <p className="mt-2 text-gray-600">
+                You'll continue to have access to your current plan until the end of your billing cycle. 
+                After that, you'll be switched to your new plan.
+              </p>
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-medium text-gray-900">How do the professional consultations work?</h4>
+              <p className="mt-2 text-gray-600">
+                With the Elite plan, you can book one-on-one video consultations with our certified fitness 
+                professionals who specialize in senior fitness.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

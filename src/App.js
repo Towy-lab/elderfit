@@ -1,93 +1,202 @@
-
-// App.js
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { SubscriptionProvider } from './context/SubscriptionContext';
-// Import the new Marketing Home Component
-import MarketingHome from './pages/MarketingHome';
+import { AppProviders } from './providers/AppProviders';
 
 // Layout components
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
+import Navbar from './components/layout/Navbar';
+import Footer from './components/layout/Footer';
 
-// Auth pages
-import Login from './pages/auth/Login.js';
-import Register from './pages/auth/Register.js';
+// Auth components and route protection
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import SubscriptionRoute from './components/subscription/SubscriptionRoute';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+
+// Main pages
+import MarketingHome from './pages/MarketingHome';
+import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
+import Settings from './pages/Settings';
+
+// Exercise related pages
+import ExerciseSelection from './pages/ExerciseSelection';
+import ExerciseDetail from './pages/ExerciseDetail';
+import WorkoutList from './pages/WorkoutList';
+import WorkoutDetail from './pages/WorkoutDetail';
 
 // Subscription pages
-import PricingPlans from './components/subscription/PricingPlans.js';
-import PaymentSuccessPage from './components/subscription/PaymentSuccessPage.js';
-import PaymentCancelPage from './components/subscription/PaymentCancelPage.js';
-import SubscriptionUpgradePage from './components/subscription/SubscriptionUpgradePage.js';
-import FreeSignupSuccessPage from './components/subscription/FreeSignupSuccessPage.js';
+import PricingPage from './components/pricing/PricingPage';
+import BasicContent from './pages/subscription/BasicContent';
+import PremiumContent from './pages/subscription/PremiumContent';
+import EliteContent from './pages/subscription/EliteContent';
+import FreeSignupSuccessPage from './components/subscription/FreeSignupSuccessPage';
+import PaymentSuccessPage from './components/subscription/PaymentSuccessPage';
+import PaymentCancelPage from './components/subscription/PaymentCancelPage';
+import SubscriptionManagement from './components/subscription/SubscriptionManagement';
+import SubscriptionUpgradePage from './components/subscription/SubscriptionUpgradePage';
 
-// User account pages
-import ProfilePage from './pages/account/ProfilePage.js';
-import SubscriptionManagement from './components/subscription/SubscriptionManagement.js';
+// Premium features
+import WorkoutCalendar from './components/scheduling/WorkoutCalendar';
+import RestDayPlanner from './components/scheduling/RestDayPlanner';
+import PainTracker from './components/safety/PainTracker';
+import CommunityFeatures from './components/premium/CommunityFeatures';
 
-// Protected content pages
-import Dashboard from './pages/Dashboard.js';
-import BasicContent from './pages/subscription/BasicContent.js';
-import PremiumContent from './pages/subscription/PremiumContent.js';
-import EliteContent from './pages/subscription/EliteContent.js';
+// Elite features
+import BookingSystem from './components/professional/BookingSystem';
+import FamilyDashboard from './components/family/FamilyDashboard';
+import RoutineBuilder from './components/scheduling/RoutineBuilder';
+import SafetyFeatures from './components/premium/SafetyFeatures';
 
-// Protected route wrapper
-import ProtectedRoute from './components/ProtectedRoute.js';
+// Error handling components
+import ErrorBoundary from './components/ErrorBoundary';
+import APIErrorBoundary from './components/APIErrorBoundary';
 
 function App() {
-  const isLoggedIn = localStorage.getItem('user') !== null;
-  
   return (
-    <SubscriptionProvider>
-      <div className="flex flex-col min-h-screen">
-        {/* Only show Navbar on non-home routes or when logged in */}
-        {(isLoggedIn || window.location.pathname !== '/') && <Navbar />}
-        
-        <main className="flex-grow">
-          <Routes>
-            {/* Home route - show marketing page for non-logged in users */}
-            <Route path="/" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <MarketingHome />} />
-            
-            {/* Auth routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            
-            {/* Subscription routes */}
-            <Route path="/subscription" element={<PricingPlans />} />
-            <Route path="/subscription/success" element={<PaymentSuccessPage />} />
-            <Route path="/subscription/cancel" element={<PaymentCancelPage />} />
-            <Route path="/subscription/upgrade" element={<SubscriptionUpgradePage />} />
-            <Route path="/subscription/free-signup-success" element={<FreeSignupSuccessPage />} />
-            
-            {/* Account routes - require authentication */}
-            <Route element={<ProtectedRoute requiredSubscription="none" />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/profile/subscription" element={<SubscriptionManagement />} />
-            </Route>
-            
-            {/* Subscription content - require specific subscription levels */}
-            <Route element={<ProtectedRoute requiredSubscription="basic" />}>
-              <Route path="/dashboard/basic" element={<BasicContent />} />
-            </Route>
-            
-            <Route element={<ProtectedRoute requiredSubscription="premium" />}>
-              <Route path="/dashboard/premium" element={<PremiumContent />} />
-            </Route>
-            
-            <Route element={<ProtectedRoute requiredSubscription="elite" />}>
-              <Route path="/dashboard/elite" element={<EliteContent />} />
-            </Route>
-            
-            {/* Fallback for unknown routes */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </main>
-        
-        {/* Only show Footer on non-home routes or when logged in */}
-        {(isLoggedIn || window.location.pathname !== '/') && <Footer />}
-      </div>
-    </SubscriptionProvider>
+    <AppProviders>
+      <ErrorBoundary>
+        <APIErrorBoundary>
+          <div className="flex flex-col min-h-screen">
+            <Navbar />
+            <main className="flex-grow">
+              <Routes>
+                {/* Public routes */}
+                <Route path="/" element={<MarketingHome />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/pricing" element={<PricingPage />} />
+                
+                {/* Subscription success/cancel routes */}
+                <Route path="/subscription/free-signup-success" element={<FreeSignupSuccessPage />} />
+                <Route path="/subscription/payment-success" element={<PaymentSuccessPage />} />
+                <Route path="/subscription/payment-cancel" element={<PaymentCancelPage />} />
+                
+                {/* Basic tier routes (requires login) */}
+                <Route path="/dashboard" element={
+                <ProtectedRoute>
+                <Dashboard />
+                </ProtectedRoute>
+                } />
+                
+                <Route path="/profile" element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/settings" element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/subscription/manage" element={
+                  <ProtectedRoute>
+                    <SubscriptionManagement />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/subscription/upgrade/:tier" element={
+                  <ProtectedRoute>
+                    <SubscriptionUpgradePage />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Content pages by tier */}
+                <Route path="/subscription/basic" element={<BasicContent />} />
+                <Route path="/subscription/premium" element={<PremiumContent />} />
+                <Route path="/subscription/elite" element={<EliteContent />} />
+                
+                {/* Workout and Exercise Routes (Basic Tier) */}
+                <Route path="/workouts" element={
+                  <ProtectedRoute>
+                    <WorkoutList />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/workouts/:id" element={
+                  <ProtectedRoute>
+                    <WorkoutDetail />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/exercises" element={
+                  <ProtectedRoute>
+                    <ExerciseSelection />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/exercises/:id" element={
+                  <ProtectedRoute>
+                    <ExerciseDetail />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Premium tier routes */}
+                <Route path="/calendar" element={
+                  <SubscriptionRoute requiredTier="premium">
+                    <WorkoutCalendar />
+                  </SubscriptionRoute>
+                } />
+                
+                <Route path="/rest-planning" element={
+                  <SubscriptionRoute requiredTier="premium">
+                    <RestDayPlanner />
+                  </SubscriptionRoute>
+                } />
+                
+                <Route path="/pain-tracker" element={
+                  <SubscriptionRoute requiredTier="premium">
+                    <PainTracker />
+                  </SubscriptionRoute>
+                } />
+                
+                <Route path="/community" element={
+                  <SubscriptionRoute requiredTier="premium">
+                    <CommunityFeatures />
+                  </SubscriptionRoute>
+                } />
+                
+                {/* Elite tier routes */}
+                <Route path="/professional" element={
+                  <SubscriptionRoute requiredTier="elite">
+                    <BookingSystem />
+                  </SubscriptionRoute>
+                } />
+                
+                <Route path="/professional/booking" element={
+                  <SubscriptionRoute requiredTier="elite">
+                    <BookingSystem />
+                  </SubscriptionRoute>
+                } />
+                
+                <Route path="/family" element={
+                  <SubscriptionRoute requiredTier="elite">
+                    <FamilyDashboard />
+                  </SubscriptionRoute>
+                } />
+                
+                <Route path="/routine-builder" element={
+                  <SubscriptionRoute requiredTier="elite">
+                    <RoutineBuilder />
+                  </SubscriptionRoute>
+                } />
+                
+                <Route path="/safety" element={
+                  <SubscriptionRoute requiredTier="elite">
+                    <SafetyFeatures />
+                  </SubscriptionRoute>
+                } />
+                
+                {/* Catch-all redirect */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </main>
+            <Footer />
+          </div>
+        </APIErrorBoundary>
+      </ErrorBoundary>
+    </AppProviders>
   );
 }
 

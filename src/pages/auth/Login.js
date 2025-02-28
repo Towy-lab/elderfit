@@ -1,12 +1,17 @@
+// src/pages/auth/Login.js
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Login = () => {
+  const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
-  const navigate = useNavigate();
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -15,73 +20,82 @@ const Login = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Login submitted with:', formData);
+    setError('');
+    setIsLoading(true);
     
-    // Placeholder login logic
-    localStorage.setItem('user', JSON.stringify({
-      id: '123',
-      name: 'Test User',
-      email: formData.email,
-      token: 'fake-jwt-token'
-    }));
-    
-    navigate('/dashboard');
+    try {
+      // Attempt to log in with the provided credentials
+      await login(formData.email, formData.password);
+      
+      // If login is successful, redirect to dashboard
+      console.log('Login successful, redirecting to dashboard');
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('Failed to log in. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-xl">
-      <h2 className="text-2xl font-bold mb-6 text-center">Sign In</h2>
+    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
       
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
+          {error}
+        </div>
+      )}
+      
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
             Email
           </label>
           <input
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="email"
             type="email"
+            id="email"
             name="email"
-            placeholder="Email"
             value={formData.email}
             onChange={handleChange}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
             required
           />
         </div>
-        
-        <div className="mb-6">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
+
+        <div>
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
             Password
           </label>
           <input
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="password"
             type="password"
+            id="password"
             name="password"
-            placeholder="Password"
             value={formData.password}
             onChange={handleChange}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
             required
           />
         </div>
-        
-        <div className="flex items-center justify-between">
-          <button
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-            type="submit"
-          >
-            Sign In
-          </button>
-          <Link
-            className="inline-block align-baseline font-bold text-sm text-indigo-600 hover:text-indigo-800"
-            to="/register"
-          >
-            Need an account?
-          </Link>
-        </div>
+
+        <button
+          type="submit"
+          className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+          disabled={isLoading}
+        >
+          {isLoading ? 'Logging in...' : 'Login'}
+        </button>
       </form>
+
+      <p className="mt-4 text-center text-sm text-gray-600">
+        Don't have an account?{' '}
+        <Link to="/register" className="text-blue-600 hover:text-blue-500">
+          Register
+        </Link>
+      </p>
     </div>
   );
 };

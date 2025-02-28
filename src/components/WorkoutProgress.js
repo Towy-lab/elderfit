@@ -1,83 +1,80 @@
-import React, { useState } from 'react';
-import { CheckCircle, AlertCircle } from 'lucide-react';
-import ExerciseTimer from './ExerciseTimer';
+// src/components/WorkoutProgress.js
+import React from 'react';
+import { useProgress } from '../contexts/ProgressContext'; // Ensure you're using the hook
 
-const WorkoutProgress = ({ workout, onComplete }) => {
-  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
-  const [completedExercises, setCompletedExercises] = useState(new Set());
-  const [currentSet, setCurrentSet] = useState(1);
-
-  const currentExercise = workout.exercises[currentExerciseIndex];
-
-  const handleExerciseComplete = () => {
-    if (currentSet < currentExercise.sets) {
-      setCurrentSet(prev => prev + 1);
-    } else {
-      setCompletedExercises(prev => new Set([...prev, currentExerciseIndex]));
-      if (currentExerciseIndex < workout.exercises.length - 1) {
-        setCurrentExerciseIndex(prev => prev + 1);
-        setCurrentSet(1);
-      } else {
-        onComplete();
-      }
-    }
-  };
-
-  const progress = (completedExercises.size / workout.exercises.length) * 100;
-
-  return (
-    <div className="space-y-6">
-      <div className="w-full h-2 bg-gray-200 rounded-full">
-        <div 
-          className="h-full bg-green-500 rounded-full transition-all"
-          style={{ width: `${progress}%` }}
-        />
+const WorkoutProgress = ({ simple = false, detailed = false }) => {
+  const { userProgress } = useProgress();
+  
+  // Check if userProgress or userProgress.exercises is undefined
+  if (!userProgress) {
+    return (
+      <div className="p-4 bg-gray-100 rounded-lg">
+        <p className="text-gray-600">No workout data available yet.</p>
       </div>
-
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold">{currentExercise.name}</h3>
-          <span className="text-gray-600">
-            Set {currentSet} of {currentExercise.sets}
-          </span>
-        </div>
-
-        <div className="mb-6">
-          <h4 className="font-medium mb-2">Instructions:</h4>
-          <ol className="list-decimal list-inside space-y-2">
-            {currentExercise.instructions.map((instruction, i) => (
-              <li key={i} className="text-gray-700">{instruction}</li>
-            ))}
-          </ol>
-        </div>
-
-        <ExerciseTimer 
-          duration={currentExercise.duration}
-          onComplete={handleExerciseComplete}
-        />
-      </div>
-
-      <div className="space-y-2">
-        {workout.exercises.map((exercise, index) => (
-          <div 
-            key={exercise.id}
-            className={`flex items-center gap-3 p-3 rounded-lg ${
-              completedExercises.has(index) ? 'bg-green-50' :
-              index === currentExerciseIndex ? 'bg-blue-50' :
-              'bg-gray-50'
-            }`}
-          >
-            {completedExercises.has(index) ? (
-              <CheckCircle className="text-green-500" size={20} />
-            ) : index === currentExerciseIndex ? (
-              <AlertCircle className="text-blue-500" size={20} />
-            ) : (
-              <div className="w-5 h-5 rounded-full border-2 border-gray-300" />
-            )}
-            <span>{exercise.name}</span>
+    );
+  }
+  
+  // Safely access exercises with default empty array
+  const exercises = userProgress.exercises || [];
+  const workouts = userProgress.workoutsCompleted || 0;
+  const totalMinutes = userProgress.totalMinutes || 0;
+  
+  // Simple view for basic subscription
+  if (simple) {
+    return (
+      <div className="p-4 bg-gray-50 rounded-lg">
+        <h3 className="text-lg font-medium mb-3">Your Progress Summary</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-white p-3 rounded-lg shadow-sm">
+            <p className="text-gray-500 text-sm">Workouts</p>
+            <p className="text-2xl font-bold text-blue-600">{workouts}</p>
           </div>
-        ))}
+          <div className="bg-white p-3 rounded-lg shadow-sm">
+            <p className="text-gray-500 text-sm">Minutes</p>
+            <p className="text-2xl font-bold text-blue-600">{totalMinutes}</p>
+          </div>
+        </div>
       </div>
+    );
+  }
+  
+  // Detailed view for premium/elite subscriptions
+  return (
+    <div className="p-4 bg-white rounded-lg shadow-sm">
+      <h3 className="text-lg font-medium mb-3">Detailed Progress</h3>
+      
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="bg-blue-50 p-3 rounded-lg">
+          <p className="text-gray-500 text-sm">Total Workouts</p>
+          <p className="text-2xl font-bold text-blue-600">{workouts}</p>
+        </div>
+        <div className="bg-blue-50 p-3 rounded-lg">
+          <p className="text-gray-500 text-sm">Exercise Minutes</p>
+          <p className="text-2xl font-bold text-blue-600">{totalMinutes}</p>
+        </div>
+        <div className="bg-blue-50 p-3 rounded-lg">
+          <p className="text-gray-500 text-sm">Avg Session</p>
+          <p className="text-2xl font-bold text-blue-600">
+            {workouts > 0 ? Math.round(totalMinutes / workouts) : 0} min
+          </p>
+        </div>
+      </div>
+      
+      {detailed && exercises.length > 0 && (
+        <div>
+          <h4 className="font-medium mb-2">Recent Exercises</h4>
+          <div className="bg-gray-50 rounded-lg p-3">
+            <ul className="space-y-2">
+              {exercises.slice(0, 3).map((exercise, idx) => (
+                <li key={idx} className="flex justify-between">
+                  <span>{exercise.name}</span>
+                  <span className="text-gray-500">{exercise.completed} times</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
