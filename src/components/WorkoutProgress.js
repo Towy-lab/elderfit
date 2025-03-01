@@ -1,80 +1,79 @@
-// src/components/WorkoutProgress.js
 import React from 'react';
-import { useProgress } from '../contexts/ProgressContext'; // Ensure you're using the hook
+import { useProgress } from '../contexts/ProgressContext';
 
-const WorkoutProgress = ({ simple = false, detailed = false }) => {
-  const { userProgress } = useProgress();
+const WorkoutProgress = () => {
+  const { streak, workouts, lastWorkout, isLoading } = useProgress();
   
-  // Check if userProgress or userProgress.exercises is undefined
-  if (!userProgress) {
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Never';
+    
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+  
+  // Calculate stats
+  const totalWorkouts = workouts.length;
+  const lastWorkoutDate = formatDate(lastWorkout);
+  
+  if (isLoading) {
     return (
-      <div className="p-4 bg-gray-100 rounded-lg">
-        <p className="text-gray-600">No workout data available yet.</p>
+      <div className="h-32 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
   
-  // Safely access exercises with default empty array
-  const exercises = userProgress.exercises || [];
-  const workouts = userProgress.workoutsCompleted || 0;
-  const totalMinutes = userProgress.totalMinutes || 0;
-  
-  // Simple view for basic subscription
-  if (simple) {
+  if (totalWorkouts === 0) {
     return (
-      <div className="p-4 bg-gray-50 rounded-lg">
-        <h3 className="text-lg font-medium mb-3">Your Progress Summary</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white p-3 rounded-lg shadow-sm">
-            <p className="text-gray-500 text-sm">Workouts</p>
-            <p className="text-2xl font-bold text-blue-600">{workouts}</p>
-          </div>
-          <div className="bg-white p-3 rounded-lg shadow-sm">
-            <p className="text-gray-500 text-sm">Minutes</p>
-            <p className="text-2xl font-bold text-blue-600">{totalMinutes}</p>
-          </div>
-        </div>
+      <div className="bg-white p-6 rounded-lg shadow-md text-center">
+        <h3 className="text-lg font-medium text-gray-800 mb-2">No Workouts Yet</h3>
+        <p className="text-gray-600 mb-4">Complete your first workout to start tracking your progress!</p>
+        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors">
+          Start a Workout
+        </button>
       </div>
     );
   }
   
-  // Detailed view for premium/elite subscriptions
   return (
-    <div className="p-4 bg-white rounded-lg shadow-sm">
-      <h3 className="text-lg font-medium mb-3">Detailed Progress</h3>
-      
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-blue-50 p-3 rounded-lg">
-          <p className="text-gray-500 text-sm">Total Workouts</p>
-          <p className="text-2xl font-bold text-blue-600">{workouts}</p>
+    <div className="bg-white p-6 rounded-lg shadow-md">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="text-center">
+          <div className="text-3xl font-bold text-blue-700 mb-1">{totalWorkouts}</div>
+          <div className="text-sm text-gray-600">Workouts Completed</div>
         </div>
-        <div className="bg-blue-50 p-3 rounded-lg">
-          <p className="text-gray-500 text-sm">Exercise Minutes</p>
-          <p className="text-2xl font-bold text-blue-600">{totalMinutes}</p>
+        
+        <div className="text-center">
+          <div className="text-3xl font-bold text-blue-700 mb-1">{streak}</div>
+          <div className="text-sm text-gray-600">Current Streak</div>
         </div>
-        <div className="bg-blue-50 p-3 rounded-lg">
-          <p className="text-gray-500 text-sm">Avg Session</p>
-          <p className="text-2xl font-bold text-blue-600">
-            {workouts > 0 ? Math.round(totalMinutes / workouts) : 0} min
-          </p>
+        
+        <div className="text-center">
+          <div className="text-lg font-medium text-blue-700 mb-1">{lastWorkoutDate}</div>
+          <div className="text-sm text-gray-600">Last Workout</div>
         </div>
       </div>
       
-      {detailed && exercises.length > 0 && (
-        <div>
-          <h4 className="font-medium mb-2">Recent Exercises</h4>
-          <div className="bg-gray-50 rounded-lg p-3">
-            <ul className="space-y-2">
-              {exercises.slice(0, 3).map((exercise, idx) => (
-                <li key={idx} className="flex justify-between">
-                  <span>{exercise.name}</span>
-                  <span className="text-gray-500">{exercise.completed} times</span>
-                </li>
-              ))}
-            </ul>
+      <div className="mt-6 pt-6 border-t border-gray-200">
+        <h4 className="text-lg font-medium mb-2">Recent Activity</h4>
+        {workouts.length > 0 ? (
+          <div className="space-y-2">
+            {workouts.slice(-3).reverse().map((workout, index) => (
+              <div key={index} className="flex justify-between items-center">
+                <span className="text-gray-700">Completed workout: Workout #{workout.id}</span>
+                <span className="text-sm text-gray-500">{formatDate(workout.completedAt)}</span>
+              </div>
+            ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <p className="text-gray-600">No recent activity to display.</p>
+        )}
+      </div>
     </div>
   );
 };

@@ -1,139 +1,104 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
-import { useAuth } from './AuthContext'; // Use the hook instead of importing the context
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 
-export const SubscriptionContext = createContext();
+// Create the context
+const SubscriptionContext = createContext();
 
+// Create a custom hook to use the subscription context
+export const useSubscription = () => {
+  return useContext(SubscriptionContext);
+};
+
+// Create the provider component
 export const SubscriptionProvider = ({ children }) => {
-  const { currentUser } = useAuth(); // Use the hook
-  const [userSubscription, setUserSubscription] = useState('basic'); // Default to basic
-  const [subscriptionDetails, setSubscriptionDetails] = useState(null);
+  const { user, isAuthenticated } = useAuth();
+  const [tier, setTier] = useState('basic'); // Default to basic tier
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  // Fetch subscription data when user is logged in
+  // Check for existing subscription on auth change or component mount
   useEffect(() => {
-    if (!currentUser) {
-      setUserSubscription('basic');
-      setSubscriptionDetails(null);
-      setIsLoading(false);
-      return;
-    }
-
-    const fetchSubscription = async () => {
-      setIsLoading(true);
-      setError(null);
-      
+    const checkSubscription = () => {
       try {
-        // In a real app, you would call your API endpoint
-        // const response = await api.get('/subscription');
+        console.log("Checking subscription for user:", user?.id);
         
-        // For now, we'll simulate this with a timeout
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Mock data - in real app, this would come from response.data
-        const mockSubscriptionData = {
-          tier: localStorage.getItem('userSubscription') || 'basic',
-          status: 'active',
-          renewalDate: '2023-12-31',
-          paymentMethod: localStorage.getItem('userSubscription') !== 'basic' ? 'Credit Card' : null,
-          features: {
-            workouts: localStorage.getItem('userSubscription') === 'basic' ? 5 : 
-                     localStorage.getItem('userSubscription') === 'premium' ? 30 : 50,
-            professionalSupport: localStorage.getItem('userSubscription') === 'elite',
-            familyProfiles: localStorage.getItem('userSubscription') === 'elite' ? 3 : 0,
-            advancedTracking: localStorage.getItem('userSubscription') !== 'basic',
+        if (isAuthenticated && user) {
+          // Get subscription from localStorage or use default
+          const storedSubscription = localStorage.getItem('subscription');
+          
+          if (storedSubscription) {
+            // Parse stored subscription data
+            const subscriptionData = JSON.parse(storedSubscription);
+            console.log("Found subscription:", subscriptionData);
+            
+            // Set tier from stored data
+            setTier(subscriptionData.tier);
+          } else {
+            // No stored subscription, default to basic
+            console.log("No subscription found, defaulting to basic tier");
+            setTier('basic');
+            
+            // For demo purposes, store a basic subscription
+            localStorage.setItem('subscription', JSON.stringify({
+              tier: 'basic',
+              userId: user.id,
+              startDate: new Date().toISOString()
+            }));
           }
-        };
-        
-        setUserSubscription(mockSubscriptionData.tier);
-        setSubscriptionDetails(mockSubscriptionData);
-      } catch (err) {
-        console.error('Error fetching subscription data:', err);
-        setError('Failed to load subscription details. Please try again later.');
-        // Default to basic on error to be safe
-        setUserSubscription('basic');
+        } else {
+          // No authenticated user, default to basic
+          console.log("No authenticated user, defaulting to basic tier");
+          setTier('basic');
+        }
+      } catch (error) {
+        // Handle any errors
+        console.error('Error checking subscription:', error);
+        // Default to basic tier
+        setTier('basic');
       } finally {
+        // Set loading to false regardless of outcome
         setIsLoading(false);
       }
     };
-
-    fetchSubscription();
-  }, [currentUser]);
-
+    
+    checkSubscription();
+  }, [isAuthenticated, user]);
+  
   // Update subscription tier
-  const updateSubscription = async (newTier) => {
-    if (!currentUser) return;
+  const updateTier = (newTier) => {
+    console.log("Updating subscription tier to:", newTier);
     
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      // In a real app, you would call your API endpoint
-      // const response = await api.post('/subscription/update', { tier: newTier });
-      
-      // For now, we'll simulate this with a timeout
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Store in localStorage for demo purposes (in real app, this comes from backend)
-      localStorage.setItem('userSubscription', newTier);
-      
-      // Update state with new subscription tier
-      setUserSubscription(newTier);
-      
-      // Update subscription details
-      setSubscriptionDetails(prev => ({
-        ...prev,
-        tier: newTier,
-        features: {
-          workouts: newTier === 'basic' ? 5 : newTier === 'premium' ? 30 : 50,
-          professionalSupport: newTier === 'elite',
-          familyProfiles: newTier === 'elite' ? 3 : 0,
-          advancedTracking: newTier !== 'basic',
-        }
-      }));
-      
-      return true;
-    } catch (err) {
-      console.error('Error updating subscription:', err);
-      setError('Failed to update subscription. Please try again later.');
+    if (!['basic', 'premium', 'elite'].includes(newTier)) {
+      console.error('Invalid tier:', newTier);
       return false;
-    } finally {
-      setIsLoading(false);
     }
-  };
-
-  // Check if user has access to a specific tier feature
-  const hasAccess = (requiredTier) => {
-    const tierOrder = ['basic', 'premium', 'elite'];
-    const userTierIndex = tierOrder.indexOf(userSubscription);
-    const requiredTierIndex = tierOrder.indexOf(requiredTier);
     
-    return userTierIndex >= requiredTierIndex;
+    // Update state
+    setTier(newTier);
+    
+    // Update in localStorage
+    if (isAuthenticated && user) {
+      localStorage.setItem('subscription', JSON.stringify({
+        tier: newTier,
+        userId: user.id,
+        updatedAt: new Date().toISOString()
+      }));
+    }
+    
+    return true;
   };
-
+  
+  // Value object to be provided to consumers
+  const value = {
+    tier,
+    isLoading,
+    updateTier
+  };
+  
   return (
-    <SubscriptionContext.Provider
-      value={{
-        userSubscription,
-        subscriptionDetails,
-        updateSubscription,
-        hasAccess,
-        isLoading,
-        error
-      }}
-    >
+    <SubscriptionContext.Provider value={value}>
       {children}
     </SubscriptionContext.Provider>
   );
-};
-
-// Add the custom hook
-export const useSubscription = () => {
-  const context = useContext(SubscriptionContext);
-  if (context === undefined) {
-    throw new Error("useSubscription must be used within a SubscriptionProvider");
-  }
-  return context;
 };
 
 export default SubscriptionContext;

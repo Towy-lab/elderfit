@@ -1,153 +1,134 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 
-// Create the progress context
-export const ProgressContext = createContext();
+// Create the context
+const ProgressContext = createContext();
 
+// Create a custom hook to use the progress context
+export const useProgress = () => {
+  return useContext(ProgressContext);
+};
+
+// Create the provider component
 export const ProgressProvider = ({ children }) => {
-  const { currentUser } = useAuth();
-  const [userProgress, setUserProgress] = useState(null);
+  const { user, isAuthenticated } = useAuth();
+  const [workouts, setWorkouts] = useState([]);
+  const [streak, setStreak] = useState(0);
+  const [lastWorkout, setLastWorkout] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  // Fetch user progress data
+  // Load progress data when the component mounts or auth changes
   useEffect(() => {
-    if (!currentUser) {
-      setUserProgress(null);
-      setIsLoading(false);
-      return;
-    }
-
-    const fetchProgress = async () => {
-      setIsLoading(true);
-      setError(null);
-      
+    const loadProgressData = () => {
       try {
-        // In a real app, you would call your API endpoint
-        // const response = await api.get('/progress');
+        console.log("Loading progress data for user:", user?.id);
         
-        // For now, we'll simulate this with a timeout
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        // Mock progress data
-        const mockProgressData = {
-          workoutsCompleted: 12,
-          totalMinutes: 245,
-          streak: 3,
-          lastWorkout: '2023-08-28',
-          achievements: [
-            { id: 1, title: 'First Workout', date: '2023-08-15' },
-            { id: 2, title: '5 Workouts Completed', date: '2023-08-20' },
-            { id: 3, title: '10 Workouts Completed', date: '2023-08-27' }
-          ],
-          weeklyProgress: [
-            { date: '2023-08-21', minutes: 25 },
-            { date: '2023-08-22', minutes: 0 },
-            { date: '2023-08-23', minutes: 30 },
-            { date: '2023-08-24', minutes: 15 },
-            { date: '2023-08-25', minutes: 0 },
-            { date: '2023-08-26', minutes: 20 },
-            { date: '2023-08-27', minutes: 25 }
-          ]
-        };
-        
-        setUserProgress(mockProgressData);
-      } catch (err) {
-        console.error('Error fetching progress data:', err);
-        setError('Failed to load progress data. Please try again later.');
+        if (isAuthenticated && user) {
+          // In a real app, this would fetch from an API
+          // For now, we'll use mock data or localStorage
+          const storedProgress = localStorage.getItem('userProgress');
+          
+          if (storedProgress) {
+            const progressData = JSON.parse(storedProgress);
+            console.log("Found progress data:", progressData);
+            
+            setWorkouts(progressData.workouts || []);
+            setStreak(progressData.streak || 0);
+            setLastWorkout(progressData.lastWorkout || null);
+          } else {
+            // No stored progress, initialize with defaults
+            console.log("No progress data found, initializing with defaults");
+            
+            // Mock default data
+            const defaultProgress = {
+              workouts: [],
+              streak: 0,
+              lastWorkout: null
+            };
+            
+            setWorkouts(defaultProgress.workouts);
+            setStreak(defaultProgress.streak);
+            setLastWorkout(defaultProgress.lastWorkout);
+            
+            // Store the defaults
+            localStorage.setItem('userProgress', JSON.stringify(defaultProgress));
+          }
+        } else {
+          // Reset progress for unauthenticated users
+          console.log("No authenticated user, resetting progress");
+          setWorkouts([]);
+          setStreak(0);
+          setLastWorkout(null);
+        }
+      } catch (error) {
+        console.error('Error loading progress data:', error);
+        // Set to defaults on error
+        setWorkouts([]);
+        setStreak(0);
+        setLastWorkout(null);
       } finally {
         setIsLoading(false);
       }
     };
-
-    fetchProgress();
-  }, [currentUser]);
-
-  // Record a completed workout
-  const recordWorkout = async (workoutData) => {
-    if (!currentUser) return;
     
-    setIsLoading(true);
-    setError(null);
+    loadProgressData();
+  }, [isAuthenticated, user]);
+
+  // Track workout completion
+  const completeWorkout = (workoutId, exercisesCompleted) => {
+    if (!isAuthenticated) return false;
     
     try {
-      // In a real app, you would call your API endpoint
-      // const response = await api.post('/progress/workout', workoutData);
+      const now = new Date();
+      const completionDate = now.toISOString();
       
-      // For now, we'll simulate this with a timeout
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Create the workout completion record
+      const completedWorkout = {
+        id: workoutId,
+        completedAt: completionDate,
+        exercisesCompleted
+      };
       
-      // Update local progress data
-      setUserProgress(prev => {
-        if (!prev) return {
-          workoutsCompleted: 1,
-          totalMinutes: workoutData.minutes || 0,
-          streak: 1,
-          lastWorkout: new Date().toISOString().split('T')[0],
-          achievements: [],
-          weeklyProgress: [
-            { date: new Date().toISOString().split('T')[0], minutes: workoutData.minutes || 0 }
-          ]
-        };
-        
-        return {
-          ...prev,
-          workoutsCompleted: prev.workoutsCompleted + 1,
-          totalMinutes: prev.totalMinutes + (workoutData.minutes || 0),
-          streak: calculateStreak(prev.lastWorkout, prev.streak),
-          lastWorkout: new Date().toISOString().split('T')[0],
-          weeklyProgress: [
-            ...prev.weeklyProgress,
-            { date: new Date().toISOString().split('T')[0], minutes: workoutData.minutes || 0 }
-          ].slice(-7) // Keep only the last 7 days
-        };
-      });
+      // Update workouts list
+      const updatedWorkouts = [...workouts, completedWorkout];
+      setWorkouts(updatedWorkouts);
+      
+      // Update last workout
+      setLastWorkout(completionDate);
+      
+      // Calculate streak
+      // In a real app, this would have more complex logic
+      const newStreak = streak + 1;
+      setStreak(newStreak);
+      
+      // Save to localStorage
+      localStorage.setItem('userProgress', JSON.stringify({
+        workouts: updatedWorkouts,
+        streak: newStreak,
+        lastWorkout: completionDate
+      }));
       
       return true;
-    } catch (err) {
-      console.error('Error recording workout:', err);
-      setError('Failed to record workout. Please try again later.');
+    } catch (error) {
+      console.error('Error completing workout:', error);
       return false;
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  // Helper function to calculate streak
-  const calculateStreak = (lastWorkout, currentStreak) => {
-    const today = new Date().toISOString().split('T')[0];
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-    
-    if (lastWorkout === yesterday) {
-      return currentStreak + 1;
-    } else if (lastWorkout === today) {
-      return currentStreak;
-    } else {
-      return 1; // Reset streak
-    }
+  // Value object to be provided to consumers
+  const value = {
+    workouts,
+    streak,
+    lastWorkout,
+    isLoading,
+    completeWorkout
   };
-
+  
   return (
-    <ProgressContext.Provider
-      value={{
-        userProgress,
-        recordWorkout,
-        isLoading,
-        error
-      }}
-    >
+    <ProgressContext.Provider value={value}>
       {children}
     </ProgressContext.Provider>
   );
-};
-
-// Custom hook for using progress context
-export const useProgress = () => {
-  const context = useContext(ProgressContext);
-  if (context === undefined) {
-    throw new Error('useProgress must be used within a ProgressProvider');
-  }
-  return context;
 };
 
 export default ProgressContext;

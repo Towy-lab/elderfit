@@ -1,109 +1,111 @@
-import React, { useContext } from 'react';
-import { SubscriptionContext } from '../../contexts/SubscriptionContext';
-import { Link } from 'react-router-dom';
-import WorkoutCard from '../../components/WorkoutCard';
+import React from 'react';
+import { useSubscription } from '../../contexts/SubscriptionContext';
 
 const EliteContent = () => {
-  const { userSubscription } = useContext(SubscriptionContext);
-  
-  // Check if user has access to this content
-  if (userSubscription !== 'elite') {
-    return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold mb-4">Elite Content</h1>
-        <div className="bg-purple-50 p-8 rounded-lg max-w-2xl mx-auto">
-          <h2 className="text-xl font-semibold text-purple-800 mb-3">
-            This content requires an Elite subscription
-          </h2>
-          <p className="text-purple-600 mb-6">
-            Upgrade to Elite to access professional support, custom routines, 
-            and our complete library of specialized programs.
-          </p>
-          <Link 
-            to="/subscription/elite" 
-            className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 inline-block"
-          >
-            Upgrade to Elite
-          </Link>
-        </div>
-      </div>
-    );
-  }
-  
-  // Elite workouts and features
-  const eliteWorkouts = [
-    { id: 201, title: 'Elite Recovery Program', duration: '30 min', level: 'Advanced' },
-    { id: 202, title: 'Professional Strength Circuit', duration: '35 min', level: 'Advanced' },
-    { id: 203, title: 'Advanced Balance Master', duration: '25 min', level: 'Advanced' },
-    { id: 204, title: 'Customized Joint Care', duration: '20 min', level: 'Advanced' },
-    { id: 205, title: 'Elite Cardio Program', duration: '30 min', level: 'Advanced' },
-    { id: 206, title: 'Specialized Mobility Circuit', duration: '25 min', level: 'Advanced' },
-  ];
+  const { tier } = useSubscription();
   
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Elite Exclusive Programs</h1>
-      
-      {/* Professional support section */}
-      <section className="mb-10 bg-purple-50 p-6 rounded-lg">
-        <h2 className="text-xl font-semibold text-purple-800 mb-4">Professional Support</h2>
-        <div className="flex flex-col md:flex-row gap-6">
-          <div className="flex-1 bg-white p-5 rounded-lg shadow-sm">
-            <h3 className="font-medium text-lg mb-2">Book a Consultation</h3>
-            <p className="text-gray-600 mb-4">
-              Schedule one-on-one time with our certified fitness professionals 
-              specializing in senior fitness.
-            </p>
-            <Link
-              to="/professional/booking"
-              className="inline-block bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
-            >
-              Book Now
-            </Link>
-          </div>
-          
-          <div className="flex-1 bg-white p-5 rounded-lg shadow-sm">
-            <h3 className="font-medium text-lg mb-2">Custom Routine Builder</h3>
-            <p className="text-gray-600 mb-4">
-              Work with our professionals to create a completely personalized 
-              routine tailored to your specific needs.
-            </p>
-            <Link
-              to="/routine-builder"
-              className="inline-block bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
-            >
-              Start Building
-            </Link>
-          </div>
-        </div>
-      </section>
-      
-      {/* Family management section */}
-      <section className="mb-10">
-        <h2 className="text-xl font-semibold mb-4">Family Profile Management</h2>
-        <div className="bg-blue-50 p-6 rounded-lg">
-          <p className="text-gray-700 mb-4">
-            Manage fitness routines for your spouse or family members. Monitor their 
-            progress and ensure they're exercising safely.
+      <div className="max-w-3xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8">Elite Tier Content</h1>
+        
+        <div className="bg-white shadow-md rounded-lg p-6 mb-8">
+          <h2 className="text-xl font-semibold mb-4">Personal Fitness Consultation</h2>
+          <p className="mb-4">
+            As an Elite member, you have access to monthly one-on-one consultations with a certified fitness professional specializing in senior health.
           </p>
-          <Link
-            to="/family"
-            className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            Manage Family Profiles
-          </Link>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h3 className="font-medium mb-2">Your Next Consultation</h3>
+            <p className="mb-3">Schedule your personal consultation at a time that works for you.</p>
+            <button 
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+              onClick={() => alert('This would open the scheduling calendar')}
+            >
+              Schedule Consultation
+            </button>
+          </div>
         </div>
-      </section>
-      
-      {/* Elite workouts grid */}
-      <section>
-        <h2 className="text-xl font-semibold mb-4">Elite Workout Programs</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {eliteWorkouts.map(workout => (
-            <WorkoutCard key={workout.id} workout={workout} />
-          ))}
+        
+        <div className="bg-white shadow-md rounded-lg p-6 mb-8">
+          <h2 className="text-xl font-semibold mb-4">Elite Video Library</h2>
+          <p className="mb-4">
+            Exclusive workout videos created by top senior fitness experts, including specialized routines for various health conditions.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="border border-gray-200 rounded p-4">
+              <h3 className="font-medium mb-2">Arthritis Management Series</h3>
+              <p>Specialized exercises for those managing joint pain and arthritis.</p>
+              <button className="mt-2 text-blue-600 hover:text-blue-800">Watch Videos</button>
+            </div>
+            <div className="border border-gray-200 rounded p-4">
+              <h3 className="font-medium mb-2">Post-Rehabilitation Workouts</h3>
+              <p>Gentle routines designed for recovery after surgery or injury.</p>
+              <button className="mt-2 text-blue-600 hover:text-blue-800">Watch Videos</button>
+            </div>
+            <div className="border border-gray-200 rounded p-4">
+              <h3 className="font-medium mb-2">Cardiac Health Exercises</h3>
+              <p>Safe cardiovascular training optimized for heart health.</p>
+              <button className="mt-2 text-blue-600 hover:text-blue-800">Watch Videos</button>
+            </div>
+            <div className="border border-gray-200 rounded p-4">
+              <h3 className="font-medium mb-2">Balance & Fall Prevention</h3>
+              <p>Advanced techniques to improve stability and confidence.</p>
+              <button className="mt-2 text-blue-600 hover:text-blue-800">Watch Videos</button>
+            </div>
+          </div>
         </div>
-      </section>
+        
+        <div className="bg-white shadow-md rounded-lg p-6 mb-8">
+          <h2 className="text-xl font-semibold mb-4">Advanced Tracking & Analysis</h2>
+          <p className="mb-4">
+            Comprehensive progress tracking with detailed analytics and personalized recommendations.
+          </p>
+          <div className="bg-gray-50 p-4 rounded-lg mb-4">
+            <h3 className="font-medium mb-2">Your Fitness Progress</h3>
+            <div className="h-40 bg-gray-200 rounded flex items-center justify-center">
+              <p className="text-gray-500">Progress charts and analytics would display here</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button className="border border-blue-600 text-blue-600 hover:bg-blue-50 px-4 py-2 rounded">
+              Export Health Data
+            </button>
+            <button className="border border-blue-600 text-blue-600 hover:bg-blue-50 px-4 py-2 rounded">
+              Share With Healthcare Provider
+            </button>
+          </div>
+        </div>
+        
+        <div className="bg-white shadow-md rounded-lg p-6">
+          <h2 className="text-xl font-semibold mb-4">Elite Resources</h2>
+          <ul className="divide-y divide-gray-200">
+            <li className="py-3">
+              <a href="#" className="flex justify-between items-center">
+                <span>Comprehensive Nutrition Plan</span>
+                <span className="text-blue-600">Download PDF</span>
+              </a>
+            </li>
+            <li className="py-3">
+              <a href="#" className="flex justify-between items-center">
+                <span>Sleep Optimization Guide</span>
+                <span className="text-blue-600">Download PDF</span>
+              </a>
+            </li>
+            <li className="py-3">
+              <a href="#" className="flex justify-between items-center">
+                <span>Stress Management Techniques</span>
+                <span className="text-blue-600">Download PDF</span>
+              </a>
+            </li>
+            <li className="py-3">
+              <a href="#" className="flex justify-between items-center">
+                <span>Home Exercise Environment Setup</span>
+                <span className="text-blue-600">Download PDF</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
   );
 };
