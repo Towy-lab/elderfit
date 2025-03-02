@@ -10,26 +10,17 @@ import UpgradeCard from '../components/subscription/UpgradeCard';
 import DashboardGuide from './DashboardGuide';
 
 const Dashboard = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const { tier } = useSubscription();
   const [recommendedWorkouts, setRecommendedWorkouts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
-  
-  console.log("Dashboard rendered with auth state:", { 
-    isAuthenticated, 
-    user,
-    userExists: !!user,
-    userStorageExists: !!localStorage.getItem('user'),
-    tier
-  });
   
   // Fetch recommended workouts
   useEffect(() => {
     const getRecommendedWorkouts = async () => {
       try {
         setIsLoading(true);
-        console.log("Fetching workouts for tier:", tier);
         
         // Mock data for now - replace with actual API call
         const mockWorkouts = [
@@ -62,7 +53,6 @@ const Dashboard = () => {
         // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 800));
         
-        console.log("Workouts loaded:", mockWorkouts);
         setRecommendedWorkouts(mockWorkouts);
         setIsLoading(false);
       } catch (error) {
@@ -136,21 +126,6 @@ const Dashboard = () => {
             description="Upgrade to Premium or Elite to access personalized workout plans, video demonstrations, and track your favorite exercises."
           />
         </section>
-      )}
-
-      {/* Debug Information - only visible during development */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-12 p-4 border border-gray-300 rounded bg-gray-50">
-          <h3 className="font-bold mb-2">Debug Information</h3>
-          <pre className="text-xs overflow-auto">
-            {JSON.stringify({ 
-              user,
-              isAuthenticated,
-              tier,
-              localStorage: localStorage.getItem('user')
-            }, null, 2)}
-          </pre>
-        </div>
       )}
     </div>
   );
