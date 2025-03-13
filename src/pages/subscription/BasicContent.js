@@ -1,60 +1,90 @@
+// src/pages/subscription/BasicContent.js
 import React from 'react';
-import { useSubscription } from '../../contexts/SubscriptionContext';
+import { Link } from 'react-router-dom';
 
 const BasicContent = () => {
-  const { tier } = useSubscription();
-  
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Basic Tier Content</h1>
-        
-        <div className="bg-white shadow-md rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">Getting Started with Fitness</h2>
-          <p className="mb-4">
-            Welcome to ElderFit Secrets! This section contains essential exercises and routines that are perfect for beginners.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="border border-gray-200 rounded p-4">
-              <h3 className="font-medium mb-2">Chair Exercises</h3>
-              <p>Simple exercises you can do while seated to improve mobility.</p>
+    <div className="container py-5">
+      <div className="row">
+        <div className="col-12">
+          <h1>Basic Plan Content</h1>
+          <p className="lead">Welcome to your Basic plan features and content.</p>
+        </div>
+      </div>
+      
+      <div className="row mt-4">
+        <div className="col-md-4 mb-4">
+          <div className="card h-100">
+            <div className="card-header">
+              <h3>Beginner Workouts</h3>
             </div>
-            <div className="border border-gray-200 rounded p-4">
-              <h3 className="font-medium mb-2">Gentle Stretches</h3>
-              <p>Easy stretches to improve flexibility and reduce stiffness.</p>
+            <div className="card-body">
+              <p>Access our collection of beginner-friendly workouts designed specifically for seniors.</p>
+              <ul>
+                <li>Simple movements</li>
+                <li>Low impact exercises</li>
+                <li>Clear instructions</li>
+              </ul>
+            </div>
+            <div className="card-footer">
+              <Link to="/workouts/beginner" className="btn btn-primary">View Workouts</Link>
             </div>
           </div>
         </div>
         
-        <div className="bg-white shadow-md rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">Weekly Fitness Tips</h2>
-          <ul className="list-disc pl-5 space-y-2">
-            <li>Stay hydrated by drinking water before, during, and after exercise.</li>
-            <li>Always warm up for 5-10 minutes before starting your workout.</li>
-            <li>Listen to your body and rest when needed.</li>
-            <li>Consistency is more important than intensity when starting out.</li>
-          </ul>
+        <div className="col-md-4 mb-4">
+          <div className="card h-100">
+            <div className="card-header">
+              <h3>Exercise Library</h3>
+            </div>
+            <div className="card-body">
+              <p>Browse our basic exercise library with step-by-step instructions.</p>
+              <ul>
+                <li>Detailed form guides</li>
+                <li>Exercise benefits</li>
+                <li>Video demonstrations</li>
+              </ul>
+            </div>
+            <div className="card-footer">
+              <Link to="/exercises" className="btn btn-primary">Explore Exercises</Link>
+            </div>
+          </div>
         </div>
         
-        {/* Upgrade Banner */}
-        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-md">
-          <h3 className="font-bold text-lg text-blue-800 mb-2">Upgrade for More Content</h3>
-          <p className="mb-3">
-            Upgrade to Premium or Elite to access video demonstrations, personalized routines, and more advanced exercises.
-          </p>
-          <div>
-            <button 
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mr-3"
-              onClick={() => alert('This would open the upgrade flow')}
-            >
-              Upgrade Now
-            </button>
-            <button 
-              className="text-blue-600 hover:text-blue-800 underline"
-              onClick={() => alert('This would show a comparison of plans')}
-            >
-              View Plans
-            </button>
+        <div className="col-md-4 mb-4">
+          <div className="card h-100">
+            <div className="card-header">
+              <h3>Progress Tracking</h3>
+            </div>
+            <div className="card-body">
+              <p>Track your workout progress for up to 5 different workouts.</p>
+              <ul>
+                <li>Record completed workouts</li>
+                <li>Set simple goals</li>
+                <li>View basic statistics</li>
+              </ul>
+            </div>
+            <div className="card-footer">
+              <Link to="/progress" className="btn btn-primary">Track Progress</Link>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="row mt-4">
+        <div className="col-12">
+          <div className="card">
+            <div className="card-body">
+              <div className="row align-items-center">
+                <div className="col-md-8">
+                  <h3>Want More Features?</h3>
+                  <p>Upgrade to Premium or Elite to unlock personalized recommendations, advanced safety features, and much more!</p>
+                </div>
+                <div className="col-md-4 text-center text-md-end">
+                  <Link to="/subscription/upgrade" className="btn btn-success btn-lg">Upgrade Now</Link>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

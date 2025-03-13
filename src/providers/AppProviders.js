@@ -1,19 +1,18 @@
 import React from 'react';
-import { AuthProvider } from '../contexts/AuthContext';
+import { AuthProvider } from './AuthProvider';
 import { SubscriptionProvider } from '../contexts/SubscriptionContext';
-import { ProgressProvider } from '../contexts/ProgressContext';
 
-// Combine all context providers
-const AppProviders = ({ children }) => {
+// Comment out or conditionally include providers that might not exist
+// import { SafetyProvider } from './SafetyProvider';
+// import { SchedulingProvider } from './SchedulingProvider';
+
+export const AppProviders = ({ children }) => {
   return (
     <AuthProvider>
       <SubscriptionProvider>
-        <ProgressProvider>
-          {children}
-        </ProgressProvider>
+        {/* Temporarily remove the missing providers */}
+        {children}
       </SubscriptionProvider>
     </AuthProvider>
   );
 };
-
-export default AppProviders;

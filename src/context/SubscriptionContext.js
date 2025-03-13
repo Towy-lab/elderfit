@@ -1,207 +1,193 @@
-import React, { createContext, useState, useEffect } from 'react';
+// src/contexts/SubscriptionContext.js
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
+import { useAuth } from '../hooks/useAuth'; // Updated import path
+import { 
+  getSubscription, 
+  upgradeSubscription as apiUpgradeSubscription, 
+  upgradeFromBasic as apiUpgradeFromBasic,
+  downgradeToBasic as apiDowngradeToBasic,
+  cancelSubscription as apiCancelSubscription,
+  createCheckoutSession as apiCreateCheckoutSession,
+  signupBasic as apiSignupBasic
+} from '../services/api';
 
-// Create the context
-export const SubscriptionContext = createContext(null);
+// Create context
+const SubscriptionContext = createContext();
 
-// Create a provider component
+// Create provider component
 export const SubscriptionProvider = ({ children }) => {
-  // Subscription states: 'none', 'basic', 'premium', 'elite'
-  const [subscriptionStatus, setSubscriptionStatus] = useState('none');
-  const [subscriptionDetails, setSubscriptionDetails] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const auth = useAuth();
+  const isAuthenticated = auth?.isAuthenticated || false;
+  const user = auth?.user || null;
+  
+  const [subscription, setSubscription] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Check subscription status on mount and when auth state changes
+  // Fetch subscription data - use useCallback to memoize
+  const fetchSubscription = useCallback(async () => {
+    if (!isAuthenticated) {
+      setSubscription(null);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getSubscription();
+      setSubscription(data);
+    } catch (err) {
+      console.error('Error fetching subscription data:', err);
+      setError('Failed to load subscription information');
+      setSubscription(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated]); // Only depends on isAuthenticated
+
+  // Fetch subscription when user changes or auth state changes
   useEffect(() => {
-    const checkSubscriptionStatus = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Get the current user from your auth system
-        const user = localStorage.getItem('user') 
-          ? JSON.parse(localStorage.getItem('user')) 
-          : null;
-        
-        if (!user) {
-          // No user logged in
-          setSubscriptionStatus('none');
-          setSubscriptionDetails(null);
-          setIsLoading(false);
-          return;
-        }
+    fetchSubscription();
+  }, [isAuthenticated, user?._id, fetchSubscription]); // Now fetchSubscription is properly included
 
-        // Call your backend API to get subscription status
-        const response = await fetch('/api/subscription-status', {
-          headers: {
-            'Authorization': `Bearer ${user.token}`
-          }
-        });
+  // Check if user has access to a specific tier
+  const hasTierAccess = (requiredTier) => {
+    if (!subscription || !subscription.hasSubscription) {
+      return requiredTier === 'basic';
+    }
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch subscription status');
-        }
-
-        const data = await response.json();
-        
-        setSubscriptionStatus(data.status);
-        setSubscriptionDetails(data.details);
-      } catch (err) {
-        console.error('Error checking subscription status:', err);
-        setError(err.message);
-        // Fallback to stored subscription if available
-        const storedSubscription = localStorage.getItem('subscription');
-        if (storedSubscription) {
-          const parsedSubscription = JSON.parse(storedSubscription);
-          setSubscriptionStatus(parsedSubscription.status);
-          setSubscriptionDetails(parsedSubscription.details);
-        } else {
-          setSubscriptionStatus('none');
-        }
-      } finally {
-        setIsLoading(false);
-      }
+    const tierLevels = {
+      'basic': 0,
+      'premium': 1,
+      'elite': 2
     };
 
-    checkSubscriptionStatus();
-    
-    // Set up a subscription status check every 30 minutes
-    const interval = setInterval(checkSubscriptionStatus, 30 * 60 * 1000);
-    
-    return () => clearInterval(interval);
-  }, []);
+    const userTierLevel = tierLevels[subscription.tier] || 0;
+    const requiredTierLevel = tierLevels[requiredTier] || 0;
 
-  // Function to update subscription after successful payment
-  const updateSubscriptionAfterPayment = async (sessionId) => {
+    return userTierLevel >= requiredTierLevel;
+  };
+
+  // Rest of your existing functions...
+  // Upgrade subscription
+  const upgradeSubscription = async (newTier) => {
     try {
-      setIsLoading(true);
+      setLoading(true);
       
-      const user = localStorage.getItem('user') 
-        ? JSON.parse(localStorage.getItem('user')) 
-        : null;
+      // If current subscription is free basic and upgrading to paid tier
+      if (subscription?.tier === 'basic' && !subscription?.id && newTier !== 'basic') {
+        const data = await apiUpgradeFromBasic({ tier: newTier });
+        return { success: true, sessionId: data.sessionId };
+      } 
       
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
-      // Verify the payment with your backend
-      const response = await fetch('/api/verify-subscription', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token}`
-        },
-        body: JSON.stringify({ sessionId })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to verify subscription payment');
-      }
-
-      const data = await response.json();
-      
-      // Update subscription state
-      setSubscriptionStatus(data.status);
-      setSubscriptionDetails(data.details);
-      
-      // Store subscription info in localStorage as a fallback
-      localStorage.setItem('subscription', JSON.stringify({
-        status: data.status,
-        details: data.details
-      }));
-      
-      return { success: true, data };
+      // If already on a paid plan
+      const data = await apiUpgradeSubscription({ tier: newTier });
+      await fetchSubscription(); // Refresh subscription data
+      return { success: true, message: data.message };
     } catch (err) {
-      console.error('Error updating subscription:', err);
-      setError(err.message);
-      return { success: false, error: err.message };
+      console.error('Error upgrading subscription:', err);
+      setError(err.response?.data?.error || 'Failed to upgrade subscription');
+      return { success: false, error: err.response?.data?.error || 'Failed to upgrade subscription' };
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  // Function to check if user has access to a specific feature
-  const hasAccess = (requiredLevel) => {
-    // Define access levels in order of increasing privileges
-    const levels = ['none', 'basic', 'premium', 'elite'];
-    
-    const currentLevelIndex = levels.indexOf(subscriptionStatus);
-    const requiredLevelIndex = levels.indexOf(requiredLevel);
-    
-    return currentLevelIndex >= requiredLevelIndex;
+  // Downgrade to basic (free) tier
+  const downgradeToBasic = async () => {
+    try {
+      setLoading(true);
+      const data = await apiDowngradeToBasic();
+      await fetchSubscription(); // Refresh subscription data
+      return { success: true, message: data.message };
+    } catch (err) {
+      console.error('Error downgrading to basic:', err);
+      setError(err.response?.data?.error || 'Failed to downgrade subscription');
+      return { success: false, error: err.response?.data?.error || 'Failed to downgrade subscription' };
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Function to handle subscription cancellation
+  // Cancel subscription
   const cancelSubscription = async () => {
     try {
-      setIsLoading(true);
-      
-      const user = localStorage.getItem('user') 
-        ? JSON.parse(localStorage.getItem('user')) 
-        : null;
-      
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
-      const response = await fetch('/api/cancel-subscription', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${user.token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to cancel subscription');
-      }
-
-      const data = await response.json();
-      
-      // Update subscription state based on cancellation result
-      // Note: Often subscriptions remain active until the end of the billing period
-      setSubscriptionDetails({
-        ...subscriptionDetails,
-        canceledAt: data.canceledAt,
-        activeUntil: data.activeUntil,
-        status: 'canceled_pending'
-      });
-      
-      // Update localStorage
-      localStorage.setItem('subscription', JSON.stringify({
-        status: subscriptionStatus,
-        details: {
-          ...subscriptionDetails,
-          canceledAt: data.canceledAt,
-          activeUntil: data.activeUntil,
-          status: 'canceled_pending'
-        }
-      }));
-      
-      return { success: true, data };
+      setLoading(true);
+      const data = await apiCancelSubscription();
+      await fetchSubscription(); // Refresh subscription data
+      return { success: true, message: data.message };
     } catch (err) {
       console.error('Error cancelling subscription:', err);
-      setError(err.message);
-      return { success: false, error: err.message };
+      setError(err.response?.data?.error || 'Failed to cancel subscription');
+      return { success: false, error: err.response?.data?.error || 'Failed to cancel subscription' };
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  // Provider value
-  const value = {
-    subscriptionStatus,
-    subscriptionDetails,
-    isLoading,
-    error,
-    setSubscriptionStatus,
-    setSubscriptionDetails,
-    updateSubscriptionAfterPayment,
-    hasAccess,
-    cancelSubscription
+  // Get checkout session for new subscription
+  const createCheckoutSession = async (tier) => {
+    try {
+      setLoading(true);
+      
+      // For basic tier, use a different endpoint
+      if (tier.toLowerCase() === 'basic') {
+        const data = await apiSignupBasic();
+        return { success: true, isFree: true, message: data.message };
+      }
+      
+      const data = await apiCreateCheckoutSession({ tier });
+      
+      // Check if this is a free tier redirect
+      if (data.isFree && data.redirectTo) {
+        const response = await apiSignupBasic();
+        return { success: true, isFree: true, message: response.message };
+      }
+      
+      return { success: true, isFree: false, sessionId: data.sessionId };
+    } catch (err) {
+      console.error('Error creating checkout session:', err);
+      setError(err.response?.data?.error || 'Failed to create checkout session');
+      return { success: false, error: err.response?.data?.error || 'Failed to create checkout session' };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Format subscription tier display name
+  const formatTierName = (tier) => {
+    if (!tier) return 'Free';
+    return tier.charAt(0).toUpperCase() + tier.slice(1);
   };
 
   return (
-    <SubscriptionContext.Provider value={value}>
+    <SubscriptionContext.Provider
+      value={{
+        subscription,
+        loading,
+        error,
+        hasTierAccess,
+        upgradeSubscription,
+        downgradeToBasic,
+        cancelSubscription,
+        createCheckoutSession,
+        formatTierName,
+        refreshSubscription: fetchSubscription
+      }}
+    >
       {children}
     </SubscriptionContext.Provider>
   );
 };
+
+// Create custom hook for using the subscription context
+export const useSubscription = () => {
+  const context = useContext(SubscriptionContext);
+  if (context === undefined) {
+    throw new Error('useSubscription must be used within a SubscriptionProvider');
+  }
+  return context;
+};
+
+export default SubscriptionContext;

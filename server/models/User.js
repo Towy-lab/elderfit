@@ -1,42 +1,130 @@
-// This is a simplified model stub for demonstration
-// In a real app, you'd use a database like MongoDB with Mongoose
+// server/models/User.js - Updated to support Stripe subscriptions
 
-const users = [];
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
-class User {
-  static findById(id) {
-    return users.find(user => user.id === id);
+const UserSchema = new mongoose.Schema({
+  firstName: {
+    type: String,
+    required: true
+  },
+  lastName: {
+    type: String,
+    required: true
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  password: {
+    type: String,
+    required: true
+  },
+  dateOfBirth: {
+    type: Date
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  // Stripe related fields
+  stripeCustomerId: {
+    type: String
+  },
+  subscription: {
+    id: String,
+    status: {
+      type: String,
+      enum: ['active', 'past_due', 'unpaid', 'canceled', 'incomplete', 'incomplete_expired', 'trialing'],
+      default: 'incomplete'
+    },
+    tier: {
+      type: String,
+      enum: ['basic', 'premium', 'elite'],
+      default: 'basic'
+    },
+    priceId: String,
+    currentPeriodEnd: Date,
+    cancelAtPeriodEnd: {
+      type: Boolean,
+      default: false
+    },
+    downgradeToBasic: {
+      type: Boolean,
+      default: false
+    }
+  },
+  // User's emergency contacts
+  emergencyContacts: [{
+    name: String,
+    relationship: String,
+    phoneNumber: String,
+    email: String
+  }],
+  // Health and safety information
+  healthInfo: {
+    mobilityLevel: {
+      type: String,
+      enum: ['high', 'medium', 'low'],
+      default: 'medium'
+    },
+    medicalConditions: [String],
+    medications: [String],
+    healthGoals: [String]
+  }
+});
+
+// Method to validate password
+UserSchema.methods.matchPassword = async function(enteredPassword) {
+  return await bcrypt.compare(enteredPassword, this.password);
+};
+
+// Sign JWT and return
+UserSchema.methods.getSignedJwtToken = function() {
+  return jwt.sign(
+    { id: this._id },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRE }
+  );
+};
+
+// Check if user has access to a specific tier's features
+UserSchema.methods.hasAccessToTier = function(tier) {
+  const tierLevels = {
+    'basic': 0,
+    'premium': 1,
+    'elite': 2
+  };
+  
+  // If no valid subscription, only allow basic access
+  if (!this.subscription || this.subscription.status !== 'active') {
+    return tier === 'basic';
   }
   
-  static findOne(query) {
-    if (query.stripeCustomerId) {
-      return users.find(user => user.stripeCustomerId === query.stripeCustomerId);
-    }
-    if (query.email) {
-      return users.find(user => user.email === query.email);
-    }
-    return null;
-  }
+  const userTierLevel = tierLevels[this.subscription.tier] || 0;
+  const requestedTierLevel = tierLevels[tier] || 0;
   
-  constructor(data) {
-    this.id = data.id || Date.now().toString();
-    this.email = data.email;
-    this.name = data.name;
-    this.stripeCustomerId = data.stripeCustomerId;
-    this.subscription = data.subscription;
-  }
-  
-  save() {
-    const existingUserIndex = users.findIndex(user => user.id === this.id);
-    
-    if (existingUserIndex >= 0) {
-      users[existingUserIndex] = this;
-    } else {
-      users.push(this);
-    }
-    
-    return this;
-  }
-}
+  // User can access requested tier if their subscription tier is equal or higher
+  return userTierLevel >= requestedTierLevel;
+};
 
-module.exports = User;
+// Check if user's subscription is active
+UserSchema.methods.hasActiveSubscription = function() {
+  return this.subscription && this.subscription.status === 'active';
+};
+
+// Encrypt password before saving
+UserSchema.pre('save', async function(next) {
+  // Only hash the password if it's modified (or new)
+  if (!this.isModified('password')) {
+    next();
+  }
+  
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
+
+module.exports = mongoose.model('User', UserSchema);

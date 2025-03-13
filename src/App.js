@@ -1,37 +1,90 @@
-import React from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
-import AppProviders from './providers/AppProviders';
+// src/App.js - With explicit fix for dashboard redirect
+import React, { useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+// Import existing components
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
-import ProtectedRoute from './components/auth/ProtectedRoute';
-import SubscriptionRoute from './components/subscription/SubscriptionRoute';
-
-// Pages
-import MarketingHome from './pages/MarketingHome';
+import Home from './pages/Home';
+import Dashboard from './pages/Dashboard';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
-import Dashboard from './pages/Dashboard';
-import WorkoutDetail from './pages/WorkoutDetail';
-import Help from './pages/Help';
+import Profile from './pages/account/ProfilePage';
+import NotFound from './pages/NotFound';
+// Import subscription-related components
+import PaymentSuccessPage from './pages/subscription/PaymentSuccessPage';
+import PaymentCancelPage from './pages/subscription/PaymentCancelPage';
+import BasicSuccessPage from './pages/subscription/BasicSuccessPage';
+import SubscriptionUpgradePage from './pages/subscription/SubscriptionUpgradePage';
+import PricingPlans from './components/subscription/PricingPlans';
+import SubscriptionManagement from './components/subscription/SubscriptionManagement';
+// Import tier-specific content pages
 import BasicContent from './pages/subscription/BasicContent';
 import PremiumContent from './pages/subscription/PremiumContent';
 import EliteContent from './pages/subscription/EliteContent';
+// Import auth context
+import { useAuth } from './contexts/AuthContext';
 
+// Import AppProviders as named import
+import { AppProviders } from './providers/AppProviders';
+
+// Protected Route component for React Router v6
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
+  
+  // Add logging
+  console.log('ProtectedRoute rendering for path:', location.pathname);
+  console.log('Auth state:', { isAuthenticated, loading });
+  
+  // If still loading auth state, show loading indicator
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+  
+  // If not authenticated, redirect to login
+  if (!isAuthenticated) {
+    console.log('Not authenticated, redirecting to login');
+    return <Navigate to="/login" replace />;
+  }
+  
+  // If authenticated, render the protected component
+  console.log('Authenticated, rendering protected content');
+  return children;
+};
+
+// Main App component with debugging
 function App() {
   const location = useLocation();
-  const isHomePage = location.pathname === '/';
   
+  // Add debug logging for App component
+  useEffect(() => {
+    console.log('App mounted, current path:', location.pathname);
+    
+    // Check if we're on the root path and log it
+    if (location.pathname === '/') {
+      console.log('App is on root path (/)');
+    }
+  }, [location.pathname]);
+
   return (
     <AppProviders>
-      <div className="flex flex-col min-h-screen">
-        {/* Only show Navbar on non-home pages */}
-        {!isHomePage && <Navbar />}
-        
-        <main className="flex-grow">
+      <div className="App">
+        <Navbar />
+        <main className="main-content">
           <Routes>
-            <Route path="/" element={<MarketingHome />} />
+            {/* Explicitly define home route with highest priority */}
+            <Route index element={<Home />} />
+            <Route exact path="/" element={<Home />} />
+            
+            {/* Public routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/subscription/plans" element={<PricingPlans />} />
+            <Route path="/subscription/success" element={<PaymentSuccessPage />} />
+            <Route path="/subscription/cancel" element={<PaymentCancelPage />} />
+            <Route path="/subscription/basic-success" element={<BasicSuccessPage />} />
+            
+            {/* Protected routes with explicit checks */}
             <Route 
               path="/dashboard" 
               element={
@@ -40,24 +93,33 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+            
             <Route 
-              path="/workout/:id" 
+              path="/subscription/manage" 
               element={
                 <ProtectedRoute>
-                  <WorkoutDetail />
+                  <SubscriptionManagement />
                 </ProtectedRoute>
               } 
             />
             <Route 
-              path="/help" 
+              path="/subscription/upgrade" 
               element={
                 <ProtectedRoute>
-                  <Help />
+                  <SubscriptionUpgradePage />
                 </ProtectedRoute>
               } 
             />
             <Route 
-              path="/basic" 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/content/basic" 
               element={
                 <ProtectedRoute>
                   <BasicContent />
@@ -65,38 +127,27 @@ function App() {
               } 
             />
             <Route 
-              path="/premium" 
+              path="/content/premium" 
               element={
-                <SubscriptionRoute requiredTier="premium">
+                <ProtectedRoute>
                   <PremiumContent />
-                </SubscriptionRoute>
+                </ProtectedRoute>
               } 
             />
             <Route 
-              path="/elite" 
+              path="/content/elite" 
               element={
-                <SubscriptionRoute requiredTier="elite">
+                <ProtectedRoute>
                   <EliteContent />
-                </SubscriptionRoute>
+                </ProtectedRoute>
               } 
             />
-            <Route path="*" element={
-              <div className="container mx-auto px-4 py-16 text-center">
-                <h1 className="text-4xl font-bold mb-4">Page Not Found</h1>
-                <p className="mb-8">Sorry, the page you're looking for doesn't exist.</p>
-                <a 
-                  href="/" 
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg"
-                >
-                  Return Home
-                </a>
-              </div>
-            } />
+            
+            {/* Catch-all for 404 */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
-        
-        {/* Only show Footer on non-home pages */}
-        {!isHomePage && <Footer />}
+        <Footer />
       </div>
     </AppProviders>
   );

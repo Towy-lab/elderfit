@@ -1,14 +1,14 @@
 // src/components/Login.js
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../providers/AuthProvider';
+import { useAuth } from '../hooks/useAuth';
 
 export const Login = () => {
   const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, isLoading } = useAuth();
+  const { login, loading } = useAuth();
 
   const from = location.state?.from?.pathname || '/';
 
@@ -16,11 +16,21 @@ export const Login = () => {
     e.preventDefault();
     setError('');
     
-    const success = await login(credentials);
-    if (success) {
-      navigate(from, { replace: true });
-    } else {
-      setError('Invalid credentials');
+    try {
+      console.log('Submitting login with:', { email: credentials.email, password: '***' });
+      
+      // Pass email and password as separate parameters
+      const result = await login(credentials.email, credentials.password);
+      
+      console.log('Login result:', result);
+      
+      if (!result.success) {
+        setError(result.error || 'Login failed');
+      }
+      // Navigation is handled by AuthProvider
+    } catch (error) {
+      console.error('Login submission error:', error);
+      setError('Failed to connect to server');
     }
   };
 
@@ -62,10 +72,10 @@ export const Login = () => {
           </div>
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={loading}
             className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
           >
-            {isLoading ? 'Signing in...' : 'Sign in'}
+            {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
       </div>

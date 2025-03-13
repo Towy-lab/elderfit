@@ -1,105 +1,102 @@
+// server/routes/stripe.js - Modified to handle free Basic tier
+
 const express = require('express');
 const router = express.Router();
-const dotenv = require('dotenv');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const auth = require('../middleware/auth');
+const User = require('../models/User');
+const emailService = require('../services/email');
 
-// Make sure environment variables are loaded
-dotenv.config();
-
-// Initialize Stripe with proper error handling
-let stripe;
-try {
-  if (!process.env.STRIPE_SECRET_KEY) {
-    console.warn('Warning: STRIPE_SECRET_KEY is not set in environment variables');
-    // Create a mock Stripe for development without real API keys
-    stripe = {
-      customers: {
-        create: () => Promise.resolve({ id: 'mock_customer_id' }),
-        list: () => Promise.resolve({ data: [] })
-      },
-      subscriptions: {
-        list: () => Promise.resolve({ data: [] }),
-        update: () => Promise.resolve({ id: 'mock_subscription_id', status: 'active' })
-      },
-      checkout: {
-        sessions: {
-          create: () => Promise.resolve({ id: 'mock_session_id' }),
-          retrieve: () => Promise.resolve({ 
-            id: 'mock_session_id',
-            metadata: { userId: '1234', planId: 'basic' },
-            subscription: {
-              id: 'mock_subscription_id',
-              status: 'active',
-              current_period_end: Math.floor(Date.now()/1000) + 30*24*60*60,
-              cancel_at_period_end: false
-            }
-          })
-        }
-      },
-      prices: {
-        retrieve: () => Promise.resolve({ 
-          id: 'mock_price_id',
-          unit_amount: 1999,
-          currency: 'usd',
-          recurring: { interval: 'month' },
-          product: {
-            id: 'prod_premium',
-            name: 'Premium Plan'
-          }
-        })
-      },
-      subscriptionItems: {
-        list: () => Promise.resolve({ data: [{ price: { id: 'mock_price_id' } }] })
-      },
-      webhooks: {
-        constructEvent: () => ({ type: 'mock_event', data: { object: {} } })
-      }
-    };
-  } else {
-    stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+// Helper function to determine price ID based on tier
+function getPriceIdForTier(tier) {
+  // Basic tier is free, so no price ID needed
+  if (tier.toLowerCase() === 'basic') {
+    return null;
   }
-} catch (error) {
-  console.error('Error initializing Stripe:', error);
-  stripe = null;
+  
+  // Map subscription tiers to Stripe Price IDs
+  // Replace these with your actual Stripe Price IDs
+  const prices = {
+    'premium': process.env.STRIPE_PRICE_PREMIUM,
+    'elite': process.env.STRIPE_PRICE_ELITE
+  };
+  
+  return prices[tier.toLowerCase()];
 }
 
-const authMiddleware = require('../middleware/auth');
-const User = require('../models/User');
-
-// Create a Stripe checkout session
-router.post('/create-checkout-session', authMiddleware, async (req, res) => {
+// Handle Basic (free) tier signup - no Stripe needed
+router.post('/signup-basic', auth, async (req, res) => {
   try {
-    const { priceId, planName, planId } = req.body;
-    const userId = req.user.id;
+    const user = await User.findById(req.user.id);
     
-    // Get user from database
-    const user = User.findById(userId);
+    // Update user's subscription to Basic tier
+    user.subscription = {
+      tier: 'basic',
+      status: 'active',
+      // No Stripe subscription ID for free tier
+    };
     
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+    await user.save();
+    
+    // Send welcome email for basic tier
+    await emailService.sendSubscriptionWelcomeEmail(user.email, {
+      firstName: user.firstName,
+      tier: 'basic'
+    });
+    
+    res.json({ 
+      success: true, 
+      message: 'Basic tier activated successfully',
+      subscription: {
+        tier: 'basic',
+        status: 'active'
+      }
+    });
+  } catch (error) {
+    console.error('Basic signup error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Create a checkout session for paid subscriptions
+router.post('/create-checkout-session', auth, async (req, res) => {
+  try {
+    const { tier } = req.body;
+    
+    // If trying to checkout for Basic tier, redirect to the free signup
+    if (tier.toLowerCase() === 'basic') {
+      return res.json({ 
+        isFree: true,
+        redirectTo: '/api/stripe/signup-basic' 
+      });
     }
     
-    // Create a customer in Stripe if not exists
-    let customerId = user.stripeCustomerId;
+    const user = await User.findById(req.user.id);
     
-    if (!customerId) {
+    // Get price ID for the selected tier
+    const priceId = getPriceIdForTier(tier);
+    if (!priceId) {
+      return res.status(400).json({ error: 'Invalid subscription tier' });
+    }
+    
+    // Create Stripe customer if not exists
+    if (!user.stripeCustomerId) {
       const customer = await stripe.customers.create({
         email: user.email,
+        name: `${user.firstName} ${user.lastName}`,
         metadata: {
-          userId: user.id
+          userId: user._id.toString()
         }
       });
       
-      customerId = customer.id;
-      
-      // Save the Stripe customer ID to your database
-      user.stripeCustomerId = customerId;
-      user.save();
+      user.stripeCustomerId = customer.id;
+      await user.save();
     }
     
-    // Create the session
+    // Create checkout session
     const session = await stripe.checkout.sessions.create({
+      customer: user.stripeCustomerId,
       payment_method_types: ['card'],
-      customer: customerId,
       line_items: [
         {
           price: priceId,
@@ -107,373 +104,430 @@ router.post('/create-checkout-session', authMiddleware, async (req, res) => {
         },
       ],
       mode: 'subscription',
-      success_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/subscription/cancel`,
+      success_url: `${process.env.FRONTEND_URL}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.FRONTEND_URL}/subscription/cancel`,
       metadata: {
-        userId: user.id,
-        planId: planId,
-        planName: planName
+        userId: user._id.toString(),
+        tier: tier
+      },
+    });
+    
+    res.json({ 
+      isFree: false,
+      sessionId: session.id 
+    });
+  } catch (error) {
+    console.error('Checkout session error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Upgrade existing subscription
+router.post('/upgrade-subscription', auth, async (req, res) => {
+  try {
+    const { tier } = req.body;
+    const user = await User.findById(req.user.id);
+    
+    // Ensure user has a subscription
+    if (!user.subscription || !user.subscription.id) {
+      return res.status(400).json({ 
+        error: 'No subscription found for this user',
+        redirectTo: '/api/stripe/upgrade-from-basic'
+      });
+    }
+    
+    // Get price ID for the selected tier
+    const priceId = getPriceIdForTier(tier);
+    if (!priceId) {
+      return res.status(400).json({ error: 'Invalid subscription tier' });
+    }
+    
+    // Get current subscription
+    const subscription = await stripe.subscriptions.retrieve(user.subscription.id);
+    
+    // Update the subscription with new price
+    await stripe.subscriptions.update(subscription.id, {
+      cancel_at_period_end: false,
+      proration_behavior: 'create_prorations',
+      items: [{
+        id: subscription.items.data[0].id,
+        price: priceId,
+      }],
+      metadata: {
+        tier: tier
       }
     });
     
-    res.status(200).json({ sessionId: session.id });
+    // Update user's subscription in database
+    user.subscription.tier = tier;
+    user.subscription.priceId = priceId;
+    await user.save();
+    
+    // Send confirmation email
+    await emailService.sendSubscriptionUpgradeEmail(user.email, {
+      firstName: user.firstName,
+      tier: tier
+    });
+    
+    res.json({ success: true, message: `Subscription upgraded to ${tier}` });
   } catch (error) {
-    console.error('Error creating checkout session:', error);
-    res.status(500).json({ error: error.message });
+    console.error('Subscription upgrade error:', error);
+    res.status(400).json({ error: error.message });
   }
 });
 
-// Get subscription status
-router.get('/subscription-status', authMiddleware, async (req, res) => {
+// Downgrade to Basic (free) tier
+router.post('/downgrade-to-basic', auth, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const user = await User.findById(req.user.id);
     
-    // Get user from database
-    const user = User.findById(userId);
-    
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+    // If user doesn't have a paid subscription, nothing to do
+    if (!user.subscription || !user.subscription.id) {
+      return res.status(400).json({ error: 'No paid subscription found to downgrade' });
     }
     
-    // Check if user has a free basic subscription
-    if (user.subscription && user.subscription.isFree && user.subscription.planLevel === 'basic') {
-      return res.status(200).json({
-        status: 'basic',
-        details: {
-          planLevel: 'basic',
-          planName: 'Basic',
-          status: 'active',
-          isFree: true,
-          startDate: user.subscription.startDate,
-          currentPeriodEnd: user.subscription.currentPeriodEnd || new Date(2099, 11, 31)
+    // Cancel the current subscription at period end
+    await stripe.subscriptions.update(user.subscription.id, {
+      cancel_at_period_end: true
+    });
+    
+    // Update user's subscription status
+    user.subscription.cancelAtPeriodEnd = true;
+    user.subscription.downgradeToBasic = true; // Flag to indicate downgrade to basic
+    await user.save();
+    
+    // Send downgrade email
+    await emailService.sendSubscriptionDowngradeEmail(user.email, {
+      firstName: user.firstName,
+      currentTier: user.subscription.tier,
+      endDate: new Date(user.subscription.currentPeriodEnd)
+    });
+    
+    res.json({ 
+      success: true, 
+      message: 'Your subscription will be downgraded to the free Basic plan at the end of your billing period' 
+    });
+  } catch (error) {
+    console.error('Downgrade error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Upgrade from free Basic tier to paid tier
+router.post('/upgrade-from-basic', auth, async (req, res) => {
+  try {
+    const { tier } = req.body;
+    const user = await User.findById(req.user.id);
+    
+    // Verify user is on Basic tier
+    if (user.subscription && 
+        user.subscription.tier !== 'basic' && 
+        user.subscription.id) {
+      return res.status(400).json({ 
+        error: 'Cannot use this endpoint to upgrade from a paid tier',
+        redirectTo: '/api/stripe/upgrade-subscription'
+      });
+    }
+    
+    // Get price ID for the selected tier
+    const priceId = getPriceIdForTier(tier);
+    if (!priceId) {
+      return res.status(400).json({ error: 'Invalid subscription tier' });
+    }
+    
+    // Create or use existing Stripe customer
+    if (!user.stripeCustomerId) {
+      const customer = await stripe.customers.create({
+        email: user.email,
+        name: `${user.firstName} ${user.lastName}`,
+        metadata: {
+          userId: user._id.toString()
         }
       });
+      
+      user.stripeCustomerId = customer.id;
+      await user.save();
     }
     
-    // Otherwise check for paid subscriptions via Stripe
-    if (!user.stripeCustomerId) {
-      return res.status(200).json({ 
-        status: 'none',
-        details: null
-      });
-    }
-    
-    // Get subscriptions from Stripe
-    const subscriptions = await stripe.subscriptions.list({
+    // Create checkout session for the upgrade
+    const session = await stripe.checkout.sessions.create({
       customer: user.stripeCustomerId,
-      status: 'active',
-      expand: ['data.default_payment_method']
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      mode: 'subscription',
+      success_url: `${process.env.FRONTEND_URL}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.FRONTEND_URL}/subscription/cancel`,
+      metadata: {
+        userId: user._id.toString(),
+        tier: tier,
+        upgradeFromBasic: 'true'
+      },
     });
     
-    if (subscriptions.data.length === 0) {
-      return res.status(200).json({ 
-        status: 'none',
-        details: null
-      });
-    }
-    
-    // Get the current subscription
-    const subscription = subscriptions.data[0];
-    
-    // Map Stripe products to our subscription levels
-    const productToPlan = {
-      'prod_basic': 'basic',
-      'prod_premium': 'premium',
-      'prod_elite': 'elite'
-    };
-    
-    // Get the product ID from the subscription
-    const priceId = subscription.items.data[0].price.id;
-    const price = await stripe.prices.retrieve(priceId, {
-      expand: ['product']
-    });
-    
-    const productId = price.product.id;
-    const planLevel = productToPlan[productId] || 'basic';
-    
-    // Get subscription details
-    const details = {
-      id: subscription.id,
-      status: subscription.status,
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-      cancelAtPeriodEnd: subscription.cancel_at_period_end,
-      planName: price.product.name,
-      planLevel: planLevel,
-      priceId: priceId,
-      amount: price.unit_amount / 100,
-      currency: price.currency,
-      interval: price.recurring.interval,
-      isFree: false
-    };
-    
-    // Save updated subscription info to user
-    user.subscription = {
-      stripeSubscriptionId: subscription.id,
-      planLevel: planLevel,
-      status: subscription.status,
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-      cancelAtPeriodEnd: subscription.cancel_at_period_end,
-      isFree: false
-    };
-    
-    user.save();
-    
-    res.status(200).json({
-      status: planLevel,
-      details: details
-    });
+    res.json({ sessionId: session.id });
   } catch (error) {
-    console.error('Error getting subscription status:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Verify subscription payment
-router.post('/verify-subscription', authMiddleware, async (req, res) => {
-  try {
-    const { sessionId } = req.body;
-    const userId = req.user.id;
-    
-    // Get checkout session
-    const session = await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ['subscription', 'subscription.default_payment_method']
-    });
-    
-    if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
-    }
-    
-    // Verify that this checkout session is for this user
-    if (session.metadata.userId !== userId) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
-    
-    // Map Stripe products to our subscription levels
-    const planId = session.metadata.planId;
-    let status;
-    
-    if (planId.includes('basic')) {
-      status = 'basic';
-    } else if (planId.includes('premium')) {
-      status = 'premium';
-    } else if (planId.includes('elite')) {
-      status = 'elite';
-    } else {
-      status = 'basic'; // Default fallback
-    }
-    
-    // Get subscription details from session
-    const subscription = session.subscription;
-    
-    // Update user in database
-    const user = User.findById(userId);
-    
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    
-    user.subscription = {
-      stripeSubscriptionId: subscription.id,
-      planLevel: status,
-      status: subscription.status,
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-      cancelAtPeriodEnd: subscription.cancel_at_period_end,
-      isFree: false
-    };
-    
-    user.save();
-    
-    // Return subscription details
-    const details = {
-      id: subscription.id,
-      status: subscription.status,
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-      cancelAtPeriodEnd: subscription.cancel_at_period_end,
-      planName: session.metadata.planName,
-      planLevel: status,
-      isFree: false
-    };
-    
-    res.status(200).json({
-      status: status,
-      details: details
-    });
-  } catch (error) {
-    console.error('Error verifying subscription:', error);
-    res.status(500).json({ error: error.message });
+    console.error('Upgrade from basic error:', error);
+    res.status(400).json({ error: error.message });
   }
 });
 
 // Cancel subscription
-router.post('/cancel-subscription', authMiddleware, async (req, res) => {
+router.post('/cancel-subscription', auth, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const user = await User.findById(req.user.id);
     
-    // Get user from database
-    const user = User.findById(userId);
-    
-    if (!user || !user.subscription || !user.subscription.stripeSubscriptionId) {
-      return res.status(404).json({ error: 'No active subscription found' });
+    if (!user.subscription || !user.subscription.id) {
+      return res.status(400).json({ error: 'No subscription found for this user' });
     }
     
-    const subscriptionId = user.subscription.stripeSubscriptionId;
-    
-    // Cancel at period end (user will still have access until subscription expires)
-    const subscription = await stripe.subscriptions.update(subscriptionId, {
+    // Cancel at period end rather than immediately
+    await stripe.subscriptions.update(user.subscription.id, {
       cancel_at_period_end: true
     });
     
-    // Update user in database
+    // Update local subscription status
     user.subscription.cancelAtPeriodEnd = true;
-    user.save();
+    await user.save();
     
-    res.status(200).json({
-      canceledAt: new Date(),
-      activeUntil: new Date(subscription.current_period_end * 1000)
+    // Send cancellation email
+    await emailService.sendSubscriptionCancellationEmail(user.email, {
+      firstName: user.firstName
     });
+    
+    res.json({ success: true, message: 'Subscription will be canceled at the end of the billing period' });
   } catch (error) {
-    console.error('Error cancelling subscription:', error);
-    res.status(500).json({ error: error.message });
+    console.error('Subscription cancellation error:', error);
+    res.status(400).json({ error: error.message });
   }
 });
 
-// Webhook to handle subscription events from Stripe
+// Retrieve subscription details
+router.get('/subscription', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    
+    // If user has no subscription information at all
+    if (!user.subscription) {
+      return res.json({ hasSubscription: false });
+    }
+    
+    // If user has a basic subscription (which is free)
+    if (user.subscription.tier === 'basic' && !user.subscription.id) {
+      return res.json({
+        hasSubscription: true,
+        tier: 'basic',
+        status: 'active',
+        isFree: true
+      });
+    }
+    
+    // If user has a paid subscription that needs to be retrieved from Stripe
+    if (user.subscription.id) {
+      // Get the latest subscription details from Stripe
+      const subscription = await stripe.subscriptions.retrieve(user.subscription.id);
+      
+      // Format the response
+      const response = {
+        hasSubscription: true,
+        status: subscription.status,
+        tier: user.subscription.tier,
+        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        cancelAtPeriodEnd: subscription.cancel_at_period_end,
+        isFree: false,
+        downgradeToBasic: user.subscription.downgradeToBasic || false
+      };
+      
+      return res.json(response);
+    }
+    
+    // Default case - user has subscription object but no active subscription
+    return res.json({ 
+      hasSubscription: false, 
+      tier: user.subscription.tier || 'basic'
+    });
+  } catch (error) {
+    console.error('Subscription retrieval error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Webhook handler for Stripe events
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
   let event;
   
   try {
-    const signature = req.headers['stripe-signature'];
-    
     event = stripe.webhooks.constructEvent(
       req.body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET || 'whsec_test'
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
-    console.error(`Webhook signature verification failed: ${err.message}`);
+    console.error('Webhook signature verification failed:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
   
-  // Handle the event
+  // Handle the event based on its type
   switch (event.type) {
     case 'customer.subscription.created':
-    case 'customer.subscription.updated':
-    case 'customer.subscription.deleted':
-      const subscription = event.data.object;
-      await handleSubscriptionChange(subscription);
+      await handleSubscriptionCreated(event.data.object);
       break;
-    case 'invoice.payment_succeeded':
-      const invoice = event.data.object;
-      await handleInvoicePayment(invoice);
+    case 'customer.subscription.updated':
+      await handleSubscriptionUpdated(event.data.object);
+      break;
+    case 'customer.subscription.deleted':
+      await handleSubscriptionDeleted(event.data.object);
       break;
     case 'invoice.payment_failed':
-      const failedInvoice = event.data.object;
-      await handleFailedPayment(failedInvoice);
+      await handlePaymentFailed(event.data.object);
       break;
     default:
       // Unexpected event type
       console.log(`Unhandled event type ${event.type}`);
   }
   
-  // Return a 200 response to acknowledge receipt of the event
-  res.send();
+  // Return a response to acknowledge receipt of the event
+  res.json({ received: true });
 });
 
-// Helper function to handle subscription changes
-async function handleSubscriptionChange(subscription) {
+// Handle subscription created event
+async function handleSubscriptionCreated(subscription) {
   try {
-    // Get the customer ID from the subscription
-    const customerId = subscription.customer;
-    
-    // Find the user in your database
-    const user = await User.findOne({ stripeCustomerId: customerId });
+    // Find user by Stripe customer ID
+    const user = await User.findOne({ 
+      stripeCustomerId: subscription.customer 
+    });
     
     if (!user) {
-      console.error(`User not found for Stripe customer: ${customerId}`);
-      return;
+      throw new Error('User not found for subscription');
     }
     
-    // Map the subscription status to your app's subscription level
-    const subscriptionItems = await stripe.subscriptionItems.list({
-      subscription: subscription.id
-    });
+    // Determine tier from metadata or price ID
+    let tier = subscription.metadata.tier || 'basic';
     
-    if (subscriptionItems.data.length === 0) {
-      console.error(`No subscription items found for subscription: ${subscription.id}`);
-      return;
-    }
-    
-    const priceId = subscriptionItems.data[0].price.id;
-    const price = await stripe.prices.retrieve(priceId, {
-      expand: ['product']
-    });
-    
-    const productId = price.product.id;
-    
-    // Map product to plan level
-    const productToPlan = {
-      'prod_basic': 'basic',
-      'prod_premium': 'premium',
-      'prod_elite': 'elite'
-    };
-    
-    const planLevel = productToPlan[productId] || 'basic';
-    
-    // Update user subscription in database
+    // Update user's subscription details
     user.subscription = {
-      stripeSubscriptionId: subscription.id,
-      planLevel: planLevel,
+      id: subscription.id,
       status: subscription.status,
+      tier: tier,
+      priceId: subscription.items.data[0].price.id,
       currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-      cancelAtPeriodEnd: subscription.cancel_at_period_end,
-      isFree: false
+      cancelAtPeriodEnd: subscription.cancel_at_period_end
     };
     
     await user.save();
     
-    console.log(`Updated subscription for user ${user.id} to ${planLevel}`);
+    // Send welcome email
+    await emailService.sendSubscriptionWelcomeEmail(user.email, {
+      firstName: user.firstName,
+      tier: tier
+    });
   } catch (error) {
-    console.error('Error handling subscription change:', error);
+    console.error('Error handling subscription created event:', error);
   }
 }
 
-// Helper function to handle successful invoice payment
-async function handleInvoicePayment(invoice) {
+// Handle subscription updated event
+async function handleSubscriptionUpdated(subscription) {
   try {
-    // Only process subscription invoices
-    if (invoice.subscription) {
-      const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
-      await handleSubscriptionChange(subscription);
-    }
-  } catch (error) {
-    console.error('Error handling invoice payment:', error);
-  }
-}
-
-// Helper function to handle failed payments
-async function handleFailedPayment(invoice) {
-  try {
-    // Find the user by customer ID
-    const customerId = invoice.customer;
-    const user = await User.findOne({ stripeCustomerId: customerId });
+    // Find user by subscription ID
+    const user = await User.findOne({ 
+      'subscription.id': subscription.id 
+    });
     
     if (!user) {
-      console.error(`User not found for Stripe customer: ${customerId}`);
-      return;
+      throw new Error('User not found for subscription');
     }
     
-    // Send notification to user about failed payment
-    // This is where you would implement your notification system
-    console.log(`Payment failed for user ${user.id}, invoice: ${invoice.id}`);
+    // Determine tier from metadata or existing tier
+    let tier = subscription.metadata.tier || user.subscription.tier;
     
-    // You might want to mark the subscription as problematic in your database
-    if (user.subscription && invoice.subscription === user.subscription.stripeSubscriptionId) {
-      user.subscription.paymentFailed = true;
-      user.subscription.lastFailedPayment = new Date();
-      await user.save();
+    // Update subscription details
+    user.subscription.status = subscription.status;
+    user.subscription.currentPeriodEnd = new Date(subscription.current_period_end * 1000);
+    user.subscription.cancelAtPeriodEnd = subscription.cancel_at_period_end;
+    
+    if (subscription.status === 'active' && user.subscription.status !== 'active') {
+      // Send reactivation email if subscription was previously inactive
+      await emailService.sendSubscriptionReactivatedEmail(user.email, {
+        firstName: user.firstName,
+        tier: tier
+      });
     }
+    
+    await user.save();
   } catch (error) {
-    console.error('Error handling failed payment:', error);
+    console.error('Error handling subscription updated event:', error);
+  }
+}
+
+// Handle subscription deleted event
+async function handleSubscriptionDeleted(subscription) {
+  try {
+    // Find user by subscription ID
+    const user = await User.findOne({ 
+      'subscription.id': subscription.id 
+    });
+    
+    if (!user) {
+      throw new Error('User not found for subscription');
+    }
+    
+    // If this was a downgrade to basic, set to basic tier
+    // Otherwise just set to canceled
+    if (user.subscription.downgradeToBasic) {
+      user.subscription = {
+        tier: 'basic',
+        status: 'active'
+      };
+      
+      // Send downgrade complete email
+      await emailService.sendSubscriptionDowngradeCompleteEmail(user.email, {
+        firstName: user.firstName
+      });
+    } else {
+      user.subscription = {
+        tier: 'basic', // Default to basic tier when subscription ends
+        status: 'canceled'
+      };
+      
+      // Send subscription ended email
+      await emailService.sendSubscriptionEndedEmail(user.email, {
+        firstName: user.firstName
+      });
+    }
+    
+    await user.save();
+  } catch (error) {
+    console.error('Error handling subscription deleted event:', error);
+  }
+}
+
+// Handle payment failed event
+async function handlePaymentFailed(invoice) {
+  try {
+    // Find user by customer ID
+    const user = await User.findOne({ 
+      stripeCustomerId: invoice.customer 
+    });
+    
+    if (!user) {
+      throw new Error('User not found for invoice');
+    }
+    
+    // Send payment failed email
+    await emailService.sendPaymentFailedEmail(user.email, {
+      firstName: user.firstName,
+      amount: invoice.amount_due / 100, // Convert from cents
+      nextAttemptDate: new Date(invoice.next_payment_attempt * 1000)
+    });
+  } catch (error) {
+    console.error('Error handling payment failed event:', error);
   }
 }
 
