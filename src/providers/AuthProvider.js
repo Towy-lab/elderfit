@@ -93,29 +93,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Register function
+  // Register function - updated to not navigate directly to dashboard
   const register = async (userData) => {
     try {
       setLoading(true);
       console.log('Registering user:', { ...userData, password: '***' });
       
-      // Use dedicated register function
+      // Use dedicated register function from api.js
       const data = await registerUser(userData);
       
       console.log('Registration response:', data);
       
-      // Save token to localStorage
-      localStorage.setItem('token', data.token);
-      
-      // Set user data
-      setUser(data.user);
-      setIsAuthenticated(true);
-      
-      console.log('Registration successful, navigating to dashboard');
-      // Explicitly navigate to dashboard
-      navigate('/dashboard');
-      
+      // We return success but don't navigate or save token
+      // This will let the Registration component handle the redirect flow
       return { success: true };
+      
     } catch (err) {
       console.error('Registration failed:', err);
       

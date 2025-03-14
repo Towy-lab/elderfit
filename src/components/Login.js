@@ -1,7 +1,7 @@
-// src/components/Login.js
+// src/components/Login.js or src/pages/auth/Login.js (adjust path as needed)
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth'; // Adjust path as needed
 
 export const Login = () => {
   const [credentials, setCredentials] = useState({ email: '', password: '' });
@@ -78,7 +78,17 @@ export const Login = () => {
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+        <div className="text-center mt-4">
+          <p className="text-sm text-gray-600">
+            Don't have an account?{' '}
+            <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
+              Sign Up
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
 };
+
+export default Login;

@@ -23,16 +23,30 @@ axiosInstance.interceptors.request.use(
 
 // Authentication API functions
 export const loginUser = async (email, password) => {
-  // Add a console.log to see what's being sent
-  console.log('Sending login request to server:', { email, password: '***' });
+  console.log('Sending login request with:', { email, password: '***' });
   
-  // Make sure the path matches exactly what your server expects
-  const response = await axiosInstance.post('/auth/login', { email, password });
+  // Create a proper object for the request body
+  const requestData = { 
+    email, 
+    password 
+  };
+  
+  const response = await axiosInstance.post('/auth/login', requestData);
   return response.data;
 };
 
 export const registerUser = async (userData) => {
-  const response = await axiosInstance.post('/auth/register', userData);
+  console.log('Sending registration data:', { ...userData, password: '***' });
+  
+  // Make sure we're sending a proper object
+  const requestData = {
+    name: userData.name,
+    email: userData.email,
+    password: userData.password
+    // Note: age is not included since we don't want to collect it
+  };
+  
+  const response = await axiosInstance.post('/auth/register', requestData);
   return response.data;
 };
 
@@ -72,7 +86,7 @@ export const fetchRecommendedWorkouts = async () => {
   return response.data;
 };
 
-// New subscription-related API functions
+// Subscription-related API functions
 export const getSubscription = async () => {
   const response = await axiosInstance.get('/stripe/subscription');
   return response.data;

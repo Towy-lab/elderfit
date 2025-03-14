@@ -3,43 +3,78 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const dotenv = require('dotenv');
+const mongoose = require('mongoose');
+const path = require('path');
 
 // Load environment variables
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 31415;
+
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('MongoDB Connected Successfully'))
+.catch(err => {
+  console.error('MongoDB Connection Error:', err);
+});
+
+// Define User model schema
+const UserSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  password: {
+    type: String,
+    required: true
+  },
+  age: {
+    type: Number,
+    default: 55
+  },
+  subscription: {
+    type: {
+      type: String,
+      default: 'basic'
+    },
+    startDate: {
+      type: Date,
+      default: Date.now
+    }
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+// Create the User model
+const User = mongoose.model('User', UserSchema);
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Simple in-memory user store (replace with MongoDB in production)
-const users = [
-  {
-    id: '1',
-    name: 'Test User',
-    email: 'test@example.com',
-    // Password: "password123"
-    password: '$2a$10$XFE.rQ1AuSsUAO1f/dTPceZiGwWzuqA3UroaEYAOsQvJYBnFiqNdK',
-    age: 65,
-    subscription: {
-      type: 'basic',
-      startDate: new Date()
-    }
-  }
-];
-
 // AUTH ROUTES
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { name, email, password, age } = req.body;
-    console.log('Register attempt:', req.body);
+    const { name, email, password } = req.body;
+    console.log('Register attempt:', { name, email });
     
     // Check if user exists
-    if (users.find(user => user.email === email)) {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
     }
     
@@ -48,35 +83,34 @@ app.post('/api/auth/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
     
     // Create new user
-    const newUser = {
-      id: Date.now().toString(),
+    const newUser = new User({
       name,
       email,
       password: hashedPassword,
-      age: age || 55,
       subscription: {
         type: 'basic',
         startDate: new Date()
       }
-    };
+    });
     
-    // Add to users array
-    users.push(newUser);
+    // Save user to database
+    await newUser.save();
     
     // Create JWT
-    const token = jwt.sign({ userId: newUser.id }, process.env.JWT_SECRET || 'fallback-secret', { expiresIn: '7d' });
+    const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
     
     // Return user data and token
     res.status(201).json({
       token,
       user: {
-        id: newUser.id,
+        id: newUser._id,
         name: newUser.name,
         email: newUser.email,
-        age: newUser.age,
         subscription: newUser.subscription
       }
     });
+    
+    console.log('Registration successful for:', email);
   } catch (err) {
     console.error('Register error:', err);
     res.status(500).json({ error: 'Server error' });
@@ -85,25 +119,32 @@ app.post('/api/auth/register', async (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
   try {
-    console.log('Login attempt for:', req.body.email);
-    console.log('Request body:', req.body);
+    const { email, password } = req.body;
+    console.log('Login attempt for:', email);
     
-    // For testing purposes, allow any login
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid credentials' });
+    }
+    
+    // Check password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Invalid credentials' });
+    }
+    
     // Create JWT token
-    const token = jwt.sign({ userId: "test-user-id" }, process.env.JWT_SECRET || 'fallback-secret', { expiresIn: '7d' });
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
     
-    console.log('Login successful for:', req.body.email);
+    console.log('Login successful for:', email);
     res.json({
       token,
       user: {
-        id: "test-user-id",
-        name: "Test User",
-        email: req.body.email || "test@example.com",
-        age: 65,
-        subscription: {
-          type: 'basic',
-          startDate: new Date()
-        }
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        subscription: user.subscription
       }
     });
   } catch (err) {
@@ -122,7 +163,7 @@ const auth = (req, res, next) => {
     }
     
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     // Add user to request
     req.user = { id: decoded.userId };
@@ -132,19 +173,24 @@ const auth = (req, res, next) => {
   }
 };
 
-// Protected route example
-app.get('/api/auth/me', auth, (req, res) => {
-  // For testing, return a test user
-  res.json({
-    id: "test-user-id",
-    name: "Test User",
-    email: "test@example.com",
-    age: 65,
-    subscription: {
-      type: 'basic',
-      startDate: new Date()
+// Protected route - get current user
+app.get('/api/auth/me', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
     }
-  });
+    
+    res.json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      subscription: user.subscription
+    });
+  } catch (err) {
+    console.error('Error getting user:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // Health check
