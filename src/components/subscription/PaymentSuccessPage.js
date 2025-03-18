@@ -1,113 +1,164 @@
-// src/pages/subscription/PaymentSuccessPage.js - Fixed imports
+// src/pages/subscription/PaymentSuccessPage.js
 import React, { useEffect, useState } from 'react';
-import { useLocation, useHistory, Link } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useSubscription } from '../../contexts/SubscriptionContext';
-import LoadingSpinner from '../../components/LoadingSpinner';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import ConfettiExplosion from 'react-confetti-explosion';
 
 const PaymentSuccessPage = () => {
-  const location = useLocation();
-  const history = useHistory();
-  const { refreshUser } = useAuth();
-  const { refreshSubscription, subscription, formatTierName } = useSubscription();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [searchParams] = useSearchParams();
+  const { refreshSubscription, subscription, loading } = useSubscription();
+  const [isExploding, setIsExploding] = useState(false);
+  const navigate = useNavigate();
+  
+  // Get session ID from URL
+  const sessionId = searchParams.get('session_id');
   
   useEffect(() => {
-    const verifyPayment = async () => {
-      try {
-        // Get the session ID from URL query parameters
-        const searchParams = new URLSearchParams(location.search);
-        const sessionId = searchParams.get('session_id');
-        
-        if (!sessionId) {
-          setError('Invalid payment session');
-          setLoading(false);
-          return;
-        }
-        
-        // Refresh to get updated subscription info
-        await refreshUser();
-        await refreshSubscription();
-      } catch (error) {
-        console.error('Error verifying payment:', error);
-        setError('Failed to verify payment. Please contact support.');
-      } finally {
-        setLoading(false);
+    // Refresh subscription details to get the latest information
+    const fetchData = async () => {
+      await refreshSubscription();
+      
+      // Show confetti after a short delay
+      setTimeout(() => {
+        setIsExploding(true);
+      }, 500);
+      
+      // Redirect to dashboard after a delay if no subscription is found
+      if (!loading && !subscription) {
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 5000);
       }
     };
     
-    verifyPayment();
-  }, [location, refreshUser, refreshSubscription]);
+    fetchData();
+  }, []);
   
-  // Redirect to dashboard after 5 seconds
-  useEffect(() => {
-    if (!loading && !error) {
-      const timer = setTimeout(() => {
-        history.push('/dashboard');
-      }, 5000);
-      
-      return () => clearTimeout(timer);
+  // Format tier and subscription details
+  const getTierDetails = () => {
+    if (!subscription) return {};
+    
+    let tierName, tierDescription, tierFeatures = [];
+    
+    switch (subscription.tier) {
+      case 'premium':
+        tierName = 'Premium';
+        tierDescription = 'Personalized fitness journey for healthy aging';
+        tierFeatures = [
+          'Personalized workout plans',
+          'Advanced progress tracking',
+          'Video demonstrations',
+          'Nutrition guidance',
+          'Monthly health reports'
+        ];
+        break;
+      case 'elite':
+        tierName = 'Elite';
+        tierDescription = 'The ultimate senior fitness experience';
+        tierFeatures = [
+          'All Premium features',
+          'One-on-one professional support',
+          'Custom workout programming',
+          'Priority health consultations',
+          'Exclusive content and community'
+        ];
+        break;
+      default:
+        tierName = 'Basic';
+        tierDescription = 'Essential fitness tools for beginners';
+        tierFeatures = [
+          'Basic workout routines',
+          'Simple progress tracking',
+          'Exercise guides'
+        ];
     }
-  }, [loading, error, history]);
+    
+    return { tierName, tierDescription, tierFeatures };
+  };
+  
+  const { tierName, tierDescription, tierFeatures } = getTierDetails();
   
   if (loading) {
     return (
-      <div className="payment-success-page text-center p-5">
+      <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner />
-        <p className="mt-3">Verifying your payment...</p>
-      </div>
-    );
-  }
-  
-  if (error) {
-    return (
-      <div className="payment-error-page text-center p-5">
-        <div className="alert alert-danger">
-          <h2>Payment Verification Error</h2>
-          <p>{error}</p>
-          <button
-            onClick={() => history.push('/subscription/plans')}
-            className="btn btn-primary mt-3"
-          >
-            Back to Subscription Plans
-          </button>
-        </div>
       </div>
     );
   }
   
   return (
-    <div className="payment-success-page text-center p-5">
-      <div className="success-icon mb-4">
-        <i className="fa fa-check-circle text-success" style={{ fontSize: '4rem' }}></i>
-      </div>
-      
-      <h1>Thank You!</h1>
-      <h2>Your payment was successful</h2>
-      
-      <div className="card my-4">
-        <div className="card-body">
-          <h3>Subscription Details</h3>
-          <p>
-            <strong>Plan: </strong> 
-            {formatTierName(subscription?.tier)}
-          </p>
-          <p>
-            <strong>Status: </strong>
-            <span className="badge bg-success">Active</span>
+    <div className="min-h-screen bg-gray-50 py-16">
+      <div className="max-w-3xl mx-auto px-4">
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          {/* Success Banner */}
+          <div className="bg-green-600 py-8 px-6 text-white text-center relative">
+            {isExploding && <ConfettiExplosion duration={3000} particleCount={100} width={1600} />}
+            <div className="mb-4 flex justify-center">
+              <svg className="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h1 className="text-3xl font-bold mb-2">Subscription Successful!</h1>
+            <p className="text-xl opacity-90">Your {tierName} plan is now active</p>
+          </div>
+          
+          {/* Subscription Details */}
+          <div className="p-8">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-semibold mb-2">{tierName} Plan</h2>
+              <p className="text-gray-600">{tierDescription}</p>
+            </div>
+            
+            {/* Plan Features */}
+            <div className="bg-gray-50 rounded-lg p-6 mb-8">
+              <h3 className="text-lg font-medium mb-4">Your {tierName} Plan Includes:</h3>
+              <ul className="space-y-3">
+                {tierFeatures.map((feature, index) => (
+                  <li key={index} className="flex items-start">
+                    <svg className="h-5 w-5 text-green-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="ml-2">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+            {/* Next Steps */}
+            <div className="text-center">
+              <p className="text-gray-600 mb-6">
+                Thank you for subscribing to ElderFit Secrets. Your journey to better fitness starts now!
+              </p>
+              
+              <div className="flex flex-wrap justify-center gap-4">
+                <Link
+                  to="/dashboard"
+                  className="px-6 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                >
+                  Go to Dashboard
+                </Link>
+                <Link
+                  to="/subscription/manage"
+                  className="px-6 py-3 border border-indigo-600 text-indigo-600 rounded-md hover:bg-indigo-50"
+                >
+                  Manage Subscription
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Help Section */}
+        <div className="mt-8 text-center">
+          <p className="text-gray-600">
+            Need help or have questions?{' '}
+            <Link to="/help" className="text-indigo-600 hover:underline">
+              Contact our support team
+            </Link>
           </p>
         </div>
       </div>
-      
-      <p>You will be redirected to the dashboard in a few seconds...</p>
-      
-      <Link
-        to="/dashboard"
-        className="btn btn-primary mt-3"
-      >
-        Go to Dashboard Now
-      </Link>
     </div>
   );
 };

@@ -1,4 +1,4 @@
-// src/App.js - With explicit fix for dashboard redirect
+// src/App.js
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 // Import existing components
@@ -56,6 +56,11 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   const location = useLocation();
   
+  // Add effect for scrolling to top on route changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+  
   // Add debug logging for App component
   useEffect(() => {
     console.log('App mounted, current path:', location.pathname);
@@ -83,6 +88,9 @@ function App() {
             <Route path="/subscription/success" element={<PaymentSuccessPage />} />
             <Route path="/subscription/cancel" element={<PaymentCancelPage />} />
             <Route path="/subscription/basic-success" element={<BasicSuccessPage />} />
+            
+            {/* Redirect old pricing page to new subscription plans page */}
+            <Route path="/pricing" element={<Navigate to="/subscription/plans" replace />} />
             
             {/* Protected routes with explicit checks */}
             <Route 

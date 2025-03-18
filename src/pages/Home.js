@@ -1,7 +1,8 @@
-// src/pages/Home.js - Updated with yellow background and blue text to match header
+// src/pages/Home.js
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import PricingPlans from '../components/subscription/PricingPlans';
 
 const Home = () => {
   const { isAuthenticated } = useAuth();
@@ -121,119 +122,12 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Plans Section */}
-      <section className="py-12 bg-gray-100">
+      {/* Plans Section - Using PricingPlans component */}
+      <section id="pricing" className="py-12 bg-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center mb-12">Choose Your Plan</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="bg-blue-600 p-6 text-white text-center">
-                <h3 className="text-xl font-bold">Basic</h3>
-                <div className="text-3xl font-bold mt-2">Free</div>
-              </div>
-              <div className="p-6">
-                <ul className="space-y-3">
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 text-green-500 mr-2">✓</span>
-                    <span>Access to basic workout routines</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 text-green-500 mr-2">✓</span>
-                    <span>Step-by-step exercise instructions</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 text-green-500 mr-2">✓</span>
-                    <span>Track up to 5 workouts</span>
-                  </li>
-                  <li className="flex items-start text-gray-400">
-                    <span className="flex-shrink-0 text-red-500 mr-2">✗</span>
-                    <span>Personalized recommendations</span>
-                  </li>
-                  <li className="flex items-start text-gray-400">
-                    <span className="flex-shrink-0 text-red-500 mr-2">✗</span>
-                    <span>Family monitoring dashboard</span>
-                  </li>
-                </ul>
-              </div>
-              <div className="px-6 pb-6 text-center">
-                <Link to="/subscription/plans" className="inline-block w-full py-2 px-4 border border-blue-600 text-blue-600 font-medium rounded-md hover:bg-blue-50 transition-colors">
-                  Start For Free
-                </Link>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-lg border-2 border-blue-500 overflow-hidden">
-              <div className="bg-blue-600 p-6 text-white text-center">
-                <h3 className="text-xl font-bold">Premium</h3>
-                <div className="text-3xl font-bold mt-2">$9.99/mo</div>
-              </div>
-              <div className="p-6">
-                <ul className="space-y-3">
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 text-green-500 mr-2">✓</span>
-                    <span>Everything in Basic</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 text-green-500 mr-2">✓</span>
-                    <span>Unlimited workout tracking</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 text-green-500 mr-2">✓</span>
-                    <span>Personalized exercise recommendations</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 text-green-500 mr-2">✓</span>
-                    <span>Safety features & modifications</span>
-                  </li>
-                  <li className="flex items-start text-gray-400">
-                    <span className="flex-shrink-0 text-red-500 mr-2">✗</span>
-                    <span>Family monitoring dashboard</span>
-                  </li>
-                </ul>
-              </div>
-              <div className="px-6 pb-6 text-center">
-                <Link to="/subscription/plans" className="inline-block w-full py-2 px-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">
-                  Subscribe
-                </Link>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="bg-green-600 p-6 text-white text-center">
-                <h3 className="text-xl font-bold">Elite</h3>
-                <div className="text-3xl font-bold mt-2">$14.99/mo</div>
-              </div>
-              <div className="p-6">
-                <ul className="space-y-3">
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 text-green-500 mr-2">✓</span>
-                    <span>Everything in Premium</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 text-green-500 mr-2">✓</span>
-                    <span>One-on-one virtual coaching</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 text-green-500 mr-2">✓</span>
-                    <span>Family monitoring dashboard</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 text-green-500 mr-2">✓</span>
-                    <span>Emergency contact integration</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 text-green-500 mr-2">✓</span>
-                    <span>Priority customer support</span>
-                  </li>
-                </ul>
-              </div>
-              <div className="px-6 pb-6 text-center">
-                <Link to="/subscription/plans" className="inline-block w-full py-2 px-4 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 transition-colors">
-                  Subscribe
-                </Link>
-              </div>
-            </div>
-          </div>
+          {/* Integrate the PricingPlans component */}
+          <PricingPlans isHomePage={true} />
         </div>
       </section>
 

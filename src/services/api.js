@@ -1,4 +1,4 @@
-// src/services/api.js
+// src/services/api.js - Enhanced with Stripe-related functions
 import axios from 'axios';
 
 // Create an axios instance with default config
@@ -43,7 +43,6 @@ export const registerUser = async (userData) => {
     name: userData.name,
     email: userData.email,
     password: userData.password
-    // Note: age is not included since we don't want to collect it
   };
   
   const response = await axiosInstance.post('/auth/register', requestData);
@@ -55,7 +54,7 @@ export const getCurrentUser = async () => {
   return response.data;
 };
 
-// Existing API functions
+// Exercise and workout-related API functions
 export const getExercises = async () => {
   const response = await axiosInstance.get('/exercises');
   return response.data;
@@ -92,18 +91,25 @@ export const getSubscription = async () => {
   return response.data;
 };
 
-export const createCheckoutSession = async (tier) => {
-  const response = await axiosInstance.post('/stripe/create-checkout-session', { tier });
+export const createCheckoutSession = async (data) => {
+  const { tier, interval = 'month' } = data;
+  const response = await axiosInstance.post('/stripe/create-checkout-session', { tier, interval });
   return response.data;
 };
 
-export const upgradeSubscription = async (tier) => {
-  const response = await axiosInstance.post('/stripe/upgrade-subscription', { tier });
+export const upgradeSubscription = async (data) => {
+  const { tier, interval = 'month', prorationBehavior = 'create_prorations' } = data;
+  const response = await axiosInstance.post('/stripe/upgrade-subscription', { 
+    tier, 
+    interval, 
+    prorationBehavior 
+  });
   return response.data;
 };
 
-export const upgradeFromBasic = async (tier) => {
-  const response = await axiosInstance.post('/stripe/upgrade-from-basic', { tier });
+export const upgradeFromBasic = async (data) => {
+  const { tier, interval = 'month' } = data;
+  const response = await axiosInstance.post('/stripe/upgrade-from-basic', { tier, interval });
   return response.data;
 };
 
@@ -112,13 +118,81 @@ export const downgradeToBasic = async () => {
   return response.data;
 };
 
+export const immediateDowngradeToBasic = async () => {
+  const response = await axiosInstance.post('/stripe/immediate-downgrade-to-basic');
+  return response.data;
+};
+
 export const cancelSubscription = async () => {
   const response = await axiosInstance.post('/stripe/cancel-subscription');
   return response.data;
 };
 
+export const cancelSubscriptionImmediately = async () => {
+  const response = await axiosInstance.post('/stripe/cancel-subscription-immediately');
+  return response.data;
+};
+
 export const signupBasic = async () => {
   const response = await axiosInstance.post('/stripe/signup-basic');
+  return response.data;
+};
+
+export const calculateProration = async (data) => {
+  const { tier, interval = 'month' } = data;
+  const response = await axiosInstance.post('/stripe/calculate-proration', { tier, interval });
+  return response.data;
+};
+
+export const reactivateSubscription = async () => {
+  const response = await axiosInstance.post('/stripe/reactivate-subscription');
+  return response.data;
+};
+
+export const changeBillingCycle = async (interval) => {
+  const response = await axiosInstance.post('/stripe/change-billing-cycle', { interval });
+  return response.data;
+};
+
+// User profile and preferences API functions
+export const updateUserProfile = async (profileData) => {
+  const response = await axiosInstance.put('/users/profile', profileData);
+  return response.data;
+};
+
+export const updateUserPreferences = async (preferences) => {
+  const response = await axiosInstance.put('/users/preferences', preferences);
+  return response.data;
+};
+
+export const getUserActivityHistory = async () => {
+  const response = await axiosInstance.get('/users/activity-history');
+  return response.data;
+};
+
+// Payment-related API functions
+export const getPaymentMethods = async () => {
+  const response = await axiosInstance.get('/stripe/payment-methods');
+  return response.data;
+};
+
+export const addPaymentMethod = async (paymentMethodId) => {
+  const response = await axiosInstance.post('/stripe/payment-methods', { paymentMethodId });
+  return response.data;
+};
+
+export const updateDefaultPaymentMethod = async (paymentMethodId) => {
+  const response = await axiosInstance.put('/stripe/default-payment-method', { paymentMethodId });
+  return response.data;
+};
+
+export const removePaymentMethod = async (paymentMethodId) => {
+  const response = await axiosInstance.delete(`/stripe/payment-methods/${paymentMethodId}`);
+  return response.data;
+};
+
+export const getInvoices = async () => {
+  const response = await axiosInstance.get('/stripe/invoices');
   return response.data;
 };
 
