@@ -7,16 +7,20 @@ const jwt = require('jsonwebtoken');
 const UserSchema = new mongoose.Schema({
   firstName: {
     type: String,
-    required: true
+    required: true,
+    trim: true
   },
   lastName: {
     type: String,
-    required: true
+    required: true,
+    trim: true
   },
   email: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
+    trim: true,
+    lowercase: true
   },
   password: {
     type: String,
@@ -38,7 +42,7 @@ const UserSchema = new mongoose.Schema({
     status: {
       type: String,
       enum: ['active', 'past_due', 'unpaid', 'canceled', 'incomplete', 'incomplete_expired', 'trialing'],
-      default: 'incomplete'
+      default: 'active' // Changed from 'incomplete' to 'active' for new users
     },
     tier: {
       type: String,
@@ -86,7 +90,7 @@ UserSchema.methods.getSignedJwtToken = function() {
   return jwt.sign(
     { id: this._id },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRE }
+    { expiresIn: process.env.JWT_EXPIRE || '7d' }
   );
 };
 
@@ -115,16 +119,20 @@ UserSchema.methods.hasActiveSubscription = function() {
   return this.subscription && this.subscription.status === 'active';
 };
 
-// Encrypt password before saving
+// Encrypt password before saving - FIXED with return statement
 UserSchema.pre('save', async function(next) {
   // Only hash the password if it's modified (or new)
   if (!this.isModified('password')) {
-    next();
+    return next(); // FIXED: added return here
   }
   
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 module.exports = mongoose.model('User', UserSchema);

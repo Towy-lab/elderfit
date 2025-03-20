@@ -26,7 +26,48 @@ const PricingPlans = ({ isHomePage = false }) => {
   const [processingTier, setProcessingTier] = useState(null);
   const [error, setError] = useState(null);
   
-  // Handle subscription selection
+  // Simple checkout test function
+  const handleSimpleCheckout = async () => {
+    try {
+      console.log('Attempting simple test checkout...');
+      setProcessingTier('test');
+      
+      const response = await fetch('http://localhost:31415/api/stripe/simple-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({})
+      });
+      
+      const data = await response.json();
+      console.log('Simple checkout response:', data);
+      
+      // Redirect to Stripe Checkout
+      if (data.url) {
+        window.location.href = data.url;
+      } else if (data.sessionId) {
+        // If Stripe.js is loaded
+        if (window.Stripe) {
+          const stripe = window.Stripe('pk_test_51R40QxGCjT8uHlI9WQdabIoRw4icN3pWYm7uzGh7BEOiXdbpCIEFrgOBqjrrPHQxJcUwScTYUWwe6dujC9lBoNi300saDYDTse');
+          stripe.redirectToCheckout({ sessionId: data.sessionId });
+        } else {
+          // Fallback direct URL construction
+          window.location.href = `https://checkout.stripe.com/pay/${data.sessionId}`;
+        }
+      } else {
+        setError('Could not create checkout session');
+      }
+    } catch (error) {
+      console.error('Simple checkout error:', error);
+      setError('Failed to connect to the server');
+    } finally {
+      setProcessingTier(null);
+    }
+  };
+  
+  // Handle subscription selection - IMPROVED VERSION
   const handleSelectPlan = async (tier) => {
     try {
       setError(null);
@@ -78,11 +119,23 @@ const PricingPlans = ({ isHomePage = false }) => {
         if (result.isFree) {
           console.log('Free tier redirect');
           navigate('/subscription/basic-success');
+        } else if (result.url) {
+          // Use the direct URL if provided (newer approach)
+          console.log(`Redirecting to Stripe URL: ${result.url}`);
+          window.location.href = result.url;
+          return;
         } else if (result.sessionId) {
           // Log before redirect for debugging
           console.log(`Redirecting to Stripe: ${result.sessionId}`);
-          // Use the complete Stripe checkout URL
-          window.location.href = `https://checkout.stripe.com/pay/${result.sessionId}`;
+          
+          // Use Stripe.js if available
+          if (window.Stripe) {
+            const stripe = window.Stripe('pk_test_51R40QxGCjT8uHlI9WQdabIoRw4icN3pWYm7uzGh7BEOiXdbpCIEFrgOBqjrrPHQxJcUwScTYUWwe6dujC9lBoNi300saDYDTse');
+            stripe.redirectToCheckout({ sessionId: result.sessionId });
+          } else {
+            // Use the complete Stripe checkout URL as fallback
+            window.location.href = `https://checkout.stripe.com/pay/${result.sessionId}`;
+          }
           return;
         }
       } else {
@@ -171,6 +224,19 @@ const PricingPlans = ({ isHomePage = false }) => {
         <div className="text-center mb-12">
           {!isHomePage && (
             <h2 className="text-3xl font-bold text-gray-900">Choose Your ElderFit Subscription</h2>
+          )}
+          
+          {/* Test button for debugging - only show in non-home page version */}
+          {!isHomePage && (
+            <div className="my-4">
+              <button
+                onClick={handleSimpleCheckout}
+                disabled={processingTier === 'test'}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                {processingTier === 'test' ? 'Processing...' : 'Test Simple Checkout'}
+              </button>
+            </div>
           )}
           
           <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">

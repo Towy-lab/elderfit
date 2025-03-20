@@ -94,35 +94,36 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Register function - updated to not navigate directly to dashboard
-  const register = async (userData) => {
-    try {
-      setLoading(true);
-      console.log('Registering user:', { ...userData, password: '***' });
-      
-      // Use dedicated register function from api.js
-      const data = await registerUser(userData);
-      
-      console.log('Registration response:', data);
-      
-      // We return success but don't navigate or save token
-      // This will let the Registration component handle the redirect flow
-      return { success: true };
-      
-    } catch (err) {
-      console.error('Registration failed:', err);
-      
-      let errorMessage = 'Registration failed. Please try again.';
-      if (err.response && err.response.data) {
-        console.error('Error response:', err.response.data);
-        errorMessage = err.response.data.error || errorMessage;
-      }
-      
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
-    } finally {
-      setLoading(false);
+  // src/providers/AuthProvider.js (partial)
+const register = async (userData) => {
+  try {
+    setLoading(true);
+    console.log('Registering user:', { ...userData, password: '***' });
+    
+    // Use dedicated register function from api.js
+    const data = await registerUser(userData);
+    
+    console.log('Registration response:', data);
+    
+    // We return success but don't navigate or save token
+    // This will let the Registration component handle the redirect flow
+    return { success: true };
+    
+  } catch (err) {
+    console.error('Registration failed:', err);
+    
+    let errorMessage = 'Registration failed. Please try again.';
+    if (err.response && err.response.data) {
+      console.error('Error response:', err.response.data);
+      errorMessage = err.response.data.error || errorMessage;
     }
-  };
+    
+    setError(errorMessage);
+    return { success: false, error: errorMessage };
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Logout function
   const logout = () => {

@@ -5,9 +5,21 @@ const bcrypt = require('bcryptjs');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const path = require('path');
+const stripeRoutes = require('./routes/stripe');
 
-// Load environment variables
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+// Load environment variables with better debugging
+const dotenvPath = path.resolve(__dirname, '../.env');
+console.log('Looking for .env file at:', dotenvPath);
+dotenv.config({ path: dotenvPath });
+
+// Verify key environment variables
+console.log('Environment variables check:');
+console.log('STRIPE_SECRET_KEY exists:', !!process.env.STRIPE_SECRET_KEY);
+console.log('STRIPE_WEBHOOK_SECRET exists:', !!process.env.STRIPE_WEBHOOK_SECRET);
+console.log('STRIPE_PRICE_PREMIUM_MONTHLY exists:', !!process.env.STRIPE_PRICE_PREMIUM_MONTHLY);
+console.log('STRIPE_PRICE_PREMIUM_YEARLY exists:', !!process.env.STRIPE_PRICE_PREMIUM_YEARLY);
+console.log('STRIPE_PRICE_ELITE_MONTHLY exists:', !!process.env.STRIPE_PRICE_ELITE_MONTHLY);
+console.log('STRIPE_PRICE_ELITE_YEARLY exists:', !!process.env.STRIPE_PRICE_ELITE_YEARLY);
 
 // Initialize Express app
 const app = express();
@@ -23,54 +35,41 @@ mongoose.connect(process.env.MONGO_URI, {
   console.error('MongoDB Connection Error:', err);
 });
 
-// Define User model schema
-const UserSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  password: {
-    type: String,
-    required: true
-  },
-  age: {
-    type: Number,
-    default: 55
-  },
-  subscription: {
-    type: {
-      type: String,
-      default: 'basic'
-    },
-    startDate: {
-      type: Date,
-      default: Date.now
-    }
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
+// Import User model (instead of defining it here)
+const User = require('./models/User');
 
-// Create the User model
-const User = mongoose.model('User', UserSchema);
+// Special middleware for Stripe webhooks - must come before express.json()
+app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
 
-// Middleware
+// Regular middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Debug middleware to log all requests
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
+
+// Register Stripe routes
+app.use('/api/stripe', stripeRoutes);
+
 // AUTH ROUTES
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
-    console.log('Register attempt:', { name, email });
+    // Debug: Log all request details
+    console.log('Raw request body:', JSON.stringify(req.body));
+    
+    const { firstName, lastName, email, password } = req.body;
+    
+    // Debug: Log extracted fields
+    console.log('Extracted fields:', { 
+      firstName: typeof firstName + ' : ' + firstName, 
+      lastName: typeof lastName + ' : ' + lastName, 
+      email: typeof email + ' : ' + email,
+      password: typeof password + ' : ' + (password ? '[PRESENT]' : '[MISSING]')
+    });
     
     // Check if user exists
     const existingUser = await User.findOne({ email });
@@ -78,23 +77,51 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'User already exists' });
     }
     
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    // Check if the required fields are present
+    if (!firstName || !lastName || !email || !password) {
+      return res.status(400).json({ 
+        error: 'Missing required fields',
+        details: {
+          firstName: !!firstName,
+          lastName: !!lastName,
+          email: !!email,
+          password: !!password
+        }
+      });
+    }
     
-    // Create new user
+    // Try to create the user with explicit fields
     const newUser = new User({
-      name,
-      email,
-      password: hashedPassword,
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+      password: password,
       subscription: {
-        type: 'basic',
-        startDate: new Date()
+        tier: 'basic',
+        status: 'active'
       }
     });
     
-    // Save user to database
-    await newUser.save();
+    console.log('User to be created:', {
+      firstName: newUser.firstName,
+      lastName: newUser.lastName,
+      email: newUser.email,
+      subscription: newUser.subscription
+    });
+    
+    // Save user to database with detailed error handling
+    try {
+      await newUser.validate(); // First validate
+      console.log('User validation passed!');
+      await newUser.save();
+      console.log('User saved successfully!');
+    } catch (saveErr) {
+      console.error('User save error:', saveErr);
+      return res.status(400).json({ 
+        error: 'Invalid user data', 
+        details: saveErr.message 
+      });
+    }
     
     // Create JWT
     const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -104,7 +131,8 @@ app.post('/api/auth/register', async (req, res) => {
       token,
       user: {
         id: newUser._id,
-        name: newUser.name,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
         email: newUser.email,
         subscription: newUser.subscription
       }
@@ -113,7 +141,7 @@ app.post('/api/auth/register', async (req, res) => {
     console.log('Registration successful for:', email);
   } catch (err) {
     console.error('Register error:', err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error', details: err.message });
   }
 });
 
@@ -128,8 +156,8 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
     
-    // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
+    // Check password using the method defined in the User model
+    const isMatch = await user.matchPassword(password);
     if (!isMatch) {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
@@ -142,7 +170,8 @@ app.post('/api/auth/login', async (req, res) => {
       token,
       user: {
         id: user._id,
-        name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
         subscription: user.subscription
       }
@@ -183,7 +212,8 @@ app.get('/api/auth/me', auth, async (req, res) => {
     
     res.json({
       id: user._id,
-      name: user.name,
+      firstName: user.firstName,
+      lastName: user.lastName,
       email: user.email,
       subscription: user.subscription
     });

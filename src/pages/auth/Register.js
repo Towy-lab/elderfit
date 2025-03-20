@@ -1,11 +1,11 @@
-// src/pages/auth/Register.js
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth'; // Adjust path as needed
+import { useAuth } from '../../hooks/useAuth';
 
 export const Register = () => {
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: ''
@@ -31,10 +31,16 @@ export const Register = () => {
       return;
     }
 
+    if (!formData.firstName || !formData.lastName) {
+      setError('First name and last name are required');
+      return;
+    }
+
     try {
       // Create a clean user data object (excluding confirmPassword)
       const userData = {
-        name: formData.name,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         email: formData.email,
         password: formData.password
       };
@@ -68,20 +74,37 @@ export const Register = () => {
         )}
         
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-              Full Name
-            </label>
-            <input
-              id="name"
-              name="name"
-              type="text"
-              required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Enter your full name"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+                First Name
+              </label>
+              <input
+                id="firstName"
+                name="firstName"
+                type="text"
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                value={formData.firstName}
+                onChange={handleChange}
+                placeholder="First name"
+              />
+            </div>
+            <div>
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+                Last Name
+              </label>
+              <input
+                id="lastName"
+                name="lastName"
+                type="text"
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                value={formData.lastName}
+                onChange={handleChange}
+                placeholder="Last name"
+              />
+            </div>
           </div>
           
           <div>

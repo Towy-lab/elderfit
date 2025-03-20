@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Create an axios instance with default config
 const axiosInstance = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || '/api',
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:31415/api',
   headers: {
     'Content-Type': 'application/json'
   }
@@ -34,23 +34,26 @@ export const loginUser = async (email, password) => {
   const response = await axiosInstance.post('/auth/login', requestData);
   return response.data;
 };
-
+// Add this function to your api.js file
+export const getCurrentUser = async () => {
+  const response = await axiosInstance.get('/auth/me');
+  return response.data;
+};
+// In api.js
 export const registerUser = async (userData) => {
   console.log('Sending registration data:', { ...userData, password: '***' });
   
-  // Make sure we're sending a proper object
+  // Ensure all required fields are included
   const requestData = {
-    name: userData.name,
+    firstName: userData.firstName || userData.name || 'Default', // Fallback
+    lastName: userData.lastName || userData.name || 'User',     // Fallback
     email: userData.email,
     password: userData.password
   };
   
+  console.log('Sending formatted data:', { ...requestData, password: '***' });
+  
   const response = await axiosInstance.post('/auth/register', requestData);
-  return response.data;
-};
-
-export const getCurrentUser = async () => {
-  const response = await axiosInstance.get('/auth/me');
   return response.data;
 };
 
