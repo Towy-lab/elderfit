@@ -2,31 +2,39 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const dotenv = require('dotenv');
-const mongoose = require('mongoose');
+const fs = require('fs');
 const path = require('path');
-const stripeRoutes = require('./routes/stripe');
+const mongoose = require('mongoose');
+
+// Enhanced debugging for environment variables
+const dotenvPath = path.resolve(__dirname, '../.env');
+console.log('Absolute path to .env file:', dotenvPath);
+console.log('.env file exists at this path:', fs.existsSync(dotenvPath));
+console.log('Current working directory:', process.cwd());
 
 // Load environment variables with better debugging
-const dotenvPath = path.resolve(__dirname, '../.env');
-console.log('Looking for .env file at:', dotenvPath);
-dotenv.config({ path: dotenvPath });
+const dotenv = require('dotenv');
+const result = dotenv.config({ path: dotenvPath });
+console.log('dotenv config result:', result.error ? 'ERROR: ' + result.error : 'Success - .env loaded');
 
-// Verify key environment variables
+// Manually log some critical environment variables
 console.log('Environment variables check:');
-console.log('STRIPE_SECRET_KEY exists:', !!process.env.STRIPE_SECRET_KEY);
-console.log('STRIPE_WEBHOOK_SECRET exists:', !!process.env.STRIPE_WEBHOOK_SECRET);
-console.log('STRIPE_PRICE_PREMIUM_MONTHLY exists:', !!process.env.STRIPE_PRICE_PREMIUM_MONTHLY);
-console.log('STRIPE_PRICE_PREMIUM_YEARLY exists:', !!process.env.STRIPE_PRICE_PREMIUM_YEARLY);
-console.log('STRIPE_PRICE_ELITE_MONTHLY exists:', !!process.env.STRIPE_PRICE_ELITE_MONTHLY);
-console.log('STRIPE_PRICE_ELITE_YEARLY exists:', !!process.env.STRIPE_PRICE_ELITE_YEARLY);
+console.log('STRIPE_SECRET_KEY:', process.env.STRIPE_SECRET_KEY ? 'exists (first 4 chars: ' + process.env.STRIPE_SECRET_KEY.substring(0, 4) + '...)' : 'MISSING');
+console.log('MONGO_URI:', process.env.MONGO_URI ? 'exists' : 'MISSING');
+console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'exists' : 'MISSING');
 
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 31415;
 
+// Import routes after environment variables are loaded
+const stripeRoutes = require('./routes/stripe');
+
 // Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI, {
+const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/elderfit';
+console.log('Connecting to MongoDB with URI:', mongoUri);
+
+mongoose.connect(mongoUri, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
