@@ -26,33 +26,89 @@ export const SubscriptionProvider = ({ children }) => {
   const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [lastFetchTime, setLastFetchTime] = useState(null);
+  const [lastRequestTime, setLastRequestTime] = useState(0); // Add this for debouncing
+  const MIN_REFRESH_INTERVAL = 3000; // 3 seconds between refreshes
 
-  // Fetch subscription data
-  const fetchSubscription = async () => {
+  // Fetch subscription data with improved logging, caching, and force refresh option
+  const fetchSubscription = async (forceRefresh = false) => {
+    // Get current time to prevent excessive API calls
+    const now = new Date();
+    const minTimeBetweenFetches = 1000; // 1 second minimum between fetches
+    
+    // If we fetched recently and this isn't the first fetch, and not forcing refresh, don't fetch again
+    if (
+      !forceRefresh &&
+      lastFetchTime && 
+      now - lastFetchTime < minTimeBetweenFetches && 
+      subscription !== null
+    ) {
+      console.log('Skipping subscription fetch - too soon since last fetch');
+      return subscription;
+    }
+    
     if (!isAuthenticated) {
+      console.log('Not authenticated, clearing subscription data');
       setSubscription(null);
       setLoading(false);
-      return;
+      return null;
     }
 
     try {
       setLoading(true);
       setError(null);
+      console.log('Fetching subscription data from API');
+      
       const data = await getSubscription();
+      console.log('Subscription data received:', data);
+      
       setSubscription(data);
+      setLastFetchTime(new Date());
+      return data; // Return data for further processing
     } catch (err) {
       console.error('Error fetching subscription data:', err);
+      
+      // Check if it's an authentication error
+      if (err.response && err.response.status === 401) {
+        console.log('Authentication error fetching subscription, clearing data');
+        setSubscription(null);
+      } else {
+        // For other errors, keep existing subscription data
+        console.log('API error, keeping existing subscription data');
+      }
+      
       setError('Failed to load subscription information');
-      setSubscription(null);
+      return null;
     } finally {
       setLoading(false);
     }
   };
 
+  // Add this improved forceRefreshSubscription function with debouncing
+// In src/contexts/SubscriptionContext.js
+const forceRefreshSubscription = async (bypassThrottle = false) => {
+  const now = Date.now();
+  if (!bypassThrottle && now - lastRequestTime < MIN_REFRESH_INTERVAL) {
+    console.log('Throttling subscription refresh - too many requests');
+    return subscription;
+  }
+  
+  console.log('Forcing subscription refresh from API');
+  setLastRequestTime(now);
+  return await fetchSubscription(true);
+};
+
   // Fetch subscription when user changes
   useEffect(() => {
-    fetchSubscription();
-  }, [isAuthenticated, user?._id]);
+    if (isAuthenticated) {
+      console.log('User authenticated, fetching subscription data');
+      fetchSubscription();
+    } else {
+      console.log('User not authenticated, clearing subscription data');
+      setSubscription(null);
+      setLoading(false);
+    }
+  }, [isAuthenticated, user?._id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Check if user has access to a specific tier
   const hasTierAccess = (requiredTier) => {
@@ -122,22 +178,25 @@ export const SubscriptionProvider = ({ children }) => {
       
       // If current subscription is free basic and upgrading to paid tier
       if (subscription?.tier === 'basic' && !subscription?.id && newTier !== 'basic') {
+        console.log('Upgrading from basic to paid tier:', newTier);
         const data = await apiUpgradeFromBasic({ tier: newTier, interval });
         return { 
           success: true, 
           sessionId: data.sessionId,
+          url: data.url,
           message: 'Redirecting to payment...'
         };
       } 
       
       // If already on a paid plan
+      console.log('Upgrading existing paid subscription to:', newTier);
       const data = await apiUpgradeSubscription({ 
         tier: newTier,
         interval,
         prorationBehavior
       });
       
-      await fetchSubscription(); // Refresh subscription data
+      await forceRefreshSubscription(); // Use force refresh here
       return { success: true, message: data.message };
     } catch (err) {
       console.error('Error upgrading subscription:', err);
@@ -157,7 +216,7 @@ export const SubscriptionProvider = ({ children }) => {
     try {
       setLoading(true);
       const data = await apiDowngradeToBasic();
-      await fetchSubscription(); // Refresh subscription data
+      await forceRefreshSubscription(); // Use force refresh here
       return { 
         success: true, 
         message: data.message,
@@ -181,7 +240,7 @@ export const SubscriptionProvider = ({ children }) => {
     try {
       setLoading(true);
       const data = await apiImmediateDowngradeToBasic();
-      await fetchSubscription(); // Refresh subscription data
+      await forceRefreshSubscription(); // Use force refresh here
       return { 
         success: true, 
         message: data.message,
@@ -205,14 +264,14 @@ export const SubscriptionProvider = ({ children }) => {
     try {
       setLoading(true);
       const data = await apiCancelSubscription();
-      await fetchSubscription(); // Refresh subscription data
+      await forceRefreshSubscription(); // Use force refresh here
       return { 
         success: true, 
         message: data.message,
         effectiveDate: data.effectiveDate
       };
     } catch (err) {
-      console.error('Error cancelling subscription:', err);
+      console.error('Error canceling subscription:', err);
       setError(err.response?.data?.error || 'Failed to cancel subscription');
       
       return { 
@@ -229,14 +288,14 @@ export const SubscriptionProvider = ({ children }) => {
     try {
       setLoading(true);
       const data = await apiCancelSubscriptionImmediately();
-      await fetchSubscription(); // Refresh subscription data
+      await forceRefreshSubscription(); // Use force refresh here
       return { 
         success: true, 
         message: data.message,
         effectiveDate: data.effectiveDate
       };
     } catch (err) {
-      console.error('Error cancelling subscription immediately:', err);
+      console.error('Error canceling subscription immediately:', err);
       setError(err.response?.data?.error || 'Failed to cancel subscription immediately');
       
       return { 
@@ -248,7 +307,7 @@ export const SubscriptionProvider = ({ children }) => {
     }
   };
 
-  // Get checkout session for new subscription
+  // Create checkout session for new subscription
   const createCheckoutSession = async (tier, interval = 'month') => {
     try {
       setLoading(true);
@@ -256,6 +315,7 @@ export const SubscriptionProvider = ({ children }) => {
       // For basic tier, use a different endpoint
       if (tier.toLowerCase() === 'basic') {
         const data = await apiSignupBasic();
+        await forceRefreshSubscription(); // Force refresh after signup
         return { 
           success: true, 
           isFree: true, 
@@ -268,6 +328,7 @@ export const SubscriptionProvider = ({ children }) => {
       // Check if this is a free tier redirect
       if (data.isFree && data.redirectTo) {
         const response = await apiSignupBasic();
+        await forceRefreshSubscription(); // Force refresh after signup
         return { 
           success: true, 
           isFree: true, 
@@ -278,7 +339,8 @@ export const SubscriptionProvider = ({ children }) => {
       return { 
         success: true, 
         isFree: false, 
-        sessionId: data.sessionId 
+        sessionId: data.sessionId,
+        url: data.url // Add URL if available
       };
     } catch (err) {
       console.error('Error creating checkout session:', err);
@@ -357,27 +419,29 @@ export const SubscriptionProvider = ({ children }) => {
     return downgradeTiers;
   };
 
+  // Create context value
+  const value = {
+    subscription,
+    loading,
+    error,
+    hasTierAccess,
+    calculateProration,
+    upgradeSubscription,
+    downgradeToBasic,
+    immediateDowngradeToBasic,
+    cancelSubscription,
+    cancelSubscriptionImmediately,
+    createCheckoutSession,
+    formatTierName,
+    formatDate,
+    getValidUpgradeTiers,
+    getValidDowngradeTiers,
+    refreshSubscription: fetchSubscription,
+    forceRefreshSubscription
+  };
+
   return (
-    <SubscriptionContext.Provider
-      value={{
-        subscription,
-        loading,
-        error,
-        hasTierAccess,
-        calculateProration,
-        upgradeSubscription,
-        downgradeToBasic,
-        immediateDowngradeToBasic,
-        cancelSubscription,
-        cancelSubscriptionImmediately,
-        createCheckoutSession,
-        formatTierName,
-        formatDate,
-        getValidUpgradeTiers,
-        getValidDowngradeTiers,
-        refreshSubscription: fetchSubscription
-      }}
-    >
+    <SubscriptionContext.Provider value={value}>
       {children}
     </SubscriptionContext.Provider>
   );

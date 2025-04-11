@@ -1,30 +1,52 @@
-// server/middleware/auth.js
+// Enhanced auth middleware - update this in your server/middleware/auth.js file
 const jwt = require('jsonwebtoken');
 
-module.exports = function(req, res, next) {
-  // Get token from header
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-  
-  console.log('Auth middleware - checking token');
-  
-  // Check if no token
-  if (!token) {
-    console.log('Auth middleware - no token provided');
-    return res.status(401).json({ error: 'Authorization denied' });
-  }
-
+const auth = (req, res, next) => {
   try {
-    // Verify token
-    console.log('Auth middleware - verifying token');
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('Auth middleware - decoded token:', decoded);
+    // Get token from header
+    const authHeader = req.header('Authorization');
+    let token;
     
-    // Add user from payload
-    req.user = { id: decoded.userId };
-    console.log('Auth middleware - set req.user:', req.user);
-    next();
+    // Handle different authorization header formats
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.replace('Bearer ', '');
+    } else {
+      token = authHeader; // Try using the header value directly
+    }
+    
+    // Also check for token in query params (for easier debugging)
+    if (!token && req.query.token) {
+      token = req.query.token;
+    }
+    
+    // Check for token in the body for POST requests
+    if (!token && req.body && req.body.token) {
+      token = req.body.token;
+    }
+    
+    if (!token) {
+      console.log(`No token provided in request to ${req.originalUrl}`);
+      return res.status(401).json({ error: 'No token, authorization denied' });
+    }
+    
+    // Add debug logging
+    console.log(`Auth middleware processing token for ${req.originalUrl}: ${token.substring(0, 10)}...`);
+    
+    // Verify token
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      
+      // Add user to request
+      req.user = { id: decoded.userId };
+      next();
+    } catch (jwtError) {
+      console.error(`JWT verification failed for ${req.originalUrl}:`, jwtError.message);
+      return res.status(401).json({ error: 'Token is not valid' });
+    }
   } catch (err) {
-    console.error('Auth middleware - token verification failed:', err);
-    res.status(401).json({ error: 'Token is not valid' });
+    console.error('Auth middleware error:', err);
+    res.status(500).json({ error: 'Server error in auth middleware' });
   }
 };
+
+module.exports = auth;

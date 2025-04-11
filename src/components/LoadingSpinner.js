@@ -1,29 +1,31 @@
+// src/components/LoadingSpinner.js
 import React from 'react';
-import { Loader2 } from 'lucide-react';
 
-const sizeMap = {
-  small: 'w-4 h-4',
-  medium: 'w-6 h-6',
-  large: 'w-8 h-8',
-  xlarge: 'w-12 h-12'
-};
-
-const LoadingSpinner = ({ 
-  size = 'medium', 
-  color = 'text-blue-500',
-  className = '',
-  label = 'Loading...'
-}) => {
+const LoadingSpinner = ({ size = 'md', color = 'indigo' }) => {
+  // Size mappings
+  const sizeClasses = {
+    sm: 'h-4 w-4',
+    md: 'h-8 w-8',
+    lg: 'h-12 w-12',
+    xl: 'h-16 w-16'
+  };
+  
+  // Color mappings
+  const colorClasses = {
+    indigo: 'border-indigo-500',
+    blue: 'border-blue-500',
+    green: 'border-green-500',
+    red: 'border-red-500',
+    gray: 'border-gray-500'
+  };
+  
+  // Get the appropriate classes or use defaults
+  const sizeClass = sizeClasses[size] || sizeClasses.md;
+  const colorClass = colorClasses[color] || colorClasses.indigo;
+  
   return (
-    <div 
-      role="status"
-      className={`flex items-center justify-center ${className}`}
-      aria-label={label}
-    >
-      <Loader2 
-        className={`animate-spin ${sizeMap[size]} ${color}`}
-      />
-      <span className="sr-only">{label}</span>
+    <div className="flex justify-center">
+      <div className={`animate-spin rounded-full ${sizeClass} border-t-2 border-b-2 ${colorClass}`}></div>
     </div>
   );
 };

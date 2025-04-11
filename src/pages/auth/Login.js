@@ -1,7 +1,6 @@
-// src/pages/auth/Login.js
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth'; // Adjust path as needed
+import { useAuth } from '../../hooks/useAuth';
 
 export const Login = () => {
   const [credentials, setCredentials] = useState({ email: '', password: '' });
@@ -9,10 +8,24 @@ export const Login = () => {
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, loading } = useAuth();
+  const { login, loading, isAuthenticated } = useAuth();
 
-  // Check for success message from registration
+  // Extract redirect URL from query parameter
+  const getRedirectUrl = () => {
+    const searchParams = new URLSearchParams(location.search);
+    return searchParams.get('redirect') || '/dashboard';
+  };
+
+  // Check for success message from registration or other redirect
   useEffect(() => {
+    // If already authenticated, redirect to the intended destination
+    if (isAuthenticated) {
+      const redirectUrl = getRedirectUrl();
+      navigate(redirectUrl);
+      return;
+    }
+
+    // Handle message from state (usually from registration)
     if (location.state?.message) {
       setMessage(location.state.message);
       
@@ -23,7 +36,7 @@ export const Login = () => {
       
       return () => clearTimeout(timer);
     }
-  }, [location.state]);
+  }, [location.state, navigate, isAuthenticated, location.search]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,8 +48,12 @@ export const Login = () => {
       
       if (!result.success) {
         setError(result.error || 'Login failed');
+      } else {
+        // Get the redirect URL and navigate there
+        const redirectUrl = getRedirectUrl();
+        console.log('Login successful, redirecting to:', redirectUrl);
+        navigate(redirectUrl);
       }
-      // Navigation is handled by AuthProvider
     } catch (error) {
       console.error('Login submission error:', error);
       setError('Failed to connect to server');

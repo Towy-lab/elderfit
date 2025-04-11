@@ -43,14 +43,21 @@ mongoose.connect(mongoUri, {
   console.error('MongoDB Connection Error:', err);
 });
 
-// Import User model (instead of defining it here)
+// Import User model
 const User = require('./models/User');
 
 // Special middleware for Stripe webhooks - must come before express.json()
+// This must be defined before any other middleware that could consume the request body
 app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
 
-// Regular middleware
-app.use(cors());
+// Expanded CORS configuration
+app.use(cors({
+  origin: '*', // For development, allow all origins
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Regular middleware (after the webhook middleware)
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -62,6 +69,17 @@ app.use((req, res, next) => {
 
 // Register Stripe routes
 app.use('/api/stripe', stripeRoutes);
+
+// Debug routes for Stripe redirects
+app.get('/subscription/success', (req, res) => {
+  console.log('Received Stripe success redirect:', req.query);
+  res.status(200).send('Success route - this would normally redirect to your frontend');
+});
+
+app.get('/subscription/cancel', (req, res) => {
+  console.log('Received Stripe cancel redirect:', req.query);
+  res.status(200).send('Cancel route - this would normally redirect to your frontend');
+});
 
 // AUTH ROUTES
 app.post('/api/auth/register', async (req, res) => {
@@ -239,4 +257,22 @@ app.get('/api/health', (req, res) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+});
+
+// Global error handler for uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION! Server shutting down...');
+  console.error('Error name:', err.name);
+  console.error('Error message:', err.message);
+  console.error('Stack trace:', err.stack);
+  process.exit(1);
+});
+
+// Global error handler for unhandled promise rejections
+process.on('unhandledRejection', (err) => {
+  console.error('UNHANDLED REJECTION! Server shutting down...');
+  console.error('Error name:', err.name);
+  console.error('Error message:', err.message);
+  console.error('Stack trace:', err.stack);
+  process.exit(1);
 });

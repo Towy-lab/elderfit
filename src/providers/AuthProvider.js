@@ -14,56 +14,73 @@ export const AuthProvider = ({ children }) => {
 
   // Check if user is logged in on mount
   useEffect(() => {
-    const checkAuthStatus = async () => {
+    checkAuthStatus();
+  }, []);
+
+  // Check authentication status function
+  const checkAuthStatus = async () => {
+    try {
+      setLoading(true);
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        console.log('No token found, user is not authenticated');
+        setIsAuthenticated(false);
+        setLoading(false);
+        return;
+      }
+      
+      // Verify token with backend
       try {
-        setLoading(true);
-        // Get token from localStorage
-        const token = localStorage.getItem('token');
-        
-        if (!token) {
-          console.log('No token found, user is not authenticated');
-          setIsAuthenticated(false);
-          setLoading(false);
-          return;
-        }
-        
-        // Verify token with backend
-        try {
-          console.log('Token found, verifying with server...');
-          const userData = await getCurrentUser();
-          console.log('User authenticated:', userData);
-          setUser(userData);
-          setIsAuthenticated(true);
-        } catch (err) {
-          console.log('Token verification failed:', err);
+        console.log('Token found, verifying with server...');
+        const userData = await getCurrentUser();
+        console.log('User authenticated:', userData);
+        setUser(userData);
+        setIsAuthenticated(true);
+      } catch (err) {
+        console.error('Token verification failed:', err);
+        // Only remove token if it's an authentication error
+        if (err.response && err.response.status === 401) {
+          console.log('Removing invalid token');
           localStorage.removeItem('token');
           setIsAuthenticated(false);
           setError('Authentication failed. Please login again.');
+        } else {
+          // For other errors (like network issues), keep the token but set unauthenticated
+          console.log('Keeping token, but setting unauthenticated due to API error');
+          setIsAuthenticated(false);
+          setError('Could not verify authentication. Please try again.');
         }
-      } catch (err) {
-        console.error('Auth check failed:', err);
-        // Clear invalid token
-        localStorage.removeItem('token');
-        setIsAuthenticated(false);
-        setError('Authentication failed. Please login again.');
-      } finally {
-        setLoading(false);
       }
-    };
-    
-    checkAuthStatus();
-  }, []);
+    } catch (err) {
+      console.error('Auth check failed:', err);
+      // Clear invalid token
+      localStorage.removeItem('token');
+      setIsAuthenticated(false);
+      setError('Authentication failed. Please login again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Login function
   const login = async (email, password) => {
     try {
       setLoading(true);
+      setError(null);
       console.log('Attempting login with:', { email, password: '***' });
       
       // Use dedicated login function
       const data = await loginUser(email, password);
       
       console.log('Login response:', data);
+      
+      if (!data || !data.token) {
+        console.error('Login failed: No token received');
+        setError('Login failed. Please try again.');
+        return { success: false, error: 'Login failed: No token received' };
+      }
       
       // Save token to localStorage
       localStorage.setItem('token', data.token);
@@ -72,10 +89,9 @@ export const AuthProvider = ({ children }) => {
       setUser(data.user);
       setIsAuthenticated(true);
       
-      console.log('Login successful, will navigate to dashboard');
-      // Explicitly navigate to dashboard
-      navigate('/dashboard');
+      console.log('Login successful, user data set');
       
+      // Return success, but don't navigate (let the calling component handle navigation)
       return { success: true };
     } catch (err) {
       console.error('Login failed:', err);
@@ -94,36 +110,35 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Register function - updated to not navigate directly to dashboard
-  // src/providers/AuthProvider.js (partial)
-const register = async (userData) => {
-  try {
-    setLoading(true);
-    console.log('Registering user:', { ...userData, password: '***' });
-    
-    // Use dedicated register function from api.js
-    const data = await registerUser(userData);
-    
-    console.log('Registration response:', data);
-    
-    // We return success but don't navigate or save token
-    // This will let the Registration component handle the redirect flow
-    return { success: true };
-    
-  } catch (err) {
-    console.error('Registration failed:', err);
-    
-    let errorMessage = 'Registration failed. Please try again.';
-    if (err.response && err.response.data) {
-      console.error('Error response:', err.response.data);
-      errorMessage = err.response.data.error || errorMessage;
+  const register = async (userData) => {
+    try {
+      setLoading(true);
+      console.log('Registering user:', { ...userData, password: '***' });
+      
+      // Use dedicated register function from api.js
+      const data = await registerUser(userData);
+      
+      console.log('Registration response:', data);
+      
+      // We return success but don't navigate or save token
+      // This will let the Registration component handle the redirect flow
+      return { success: true };
+      
+    } catch (err) {
+      console.error('Registration failed:', err);
+      
+      let errorMessage = 'Registration failed. Please try again.';
+      if (err.response && err.response.data) {
+        console.error('Error response:', err.response.data);
+        errorMessage = err.response.data.error || errorMessage;
+      }
+      
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
     }
-    
-    setError(errorMessage);
-    return { success: false, error: errorMessage };
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   // Logout function
   const logout = () => {
@@ -179,7 +194,8 @@ const register = async (userData) => {
     register,
     logout,
     updateProfile,
-    refreshUser
+    refreshUser,
+    checkAuthStatus // Export this so it can be called from other components
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
