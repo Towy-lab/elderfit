@@ -1,4 +1,4 @@
-// src/services/api.js - Enhanced with Stripe-related functions and improved error handling
+// src/services/api.js
 import axios from 'axios';
 
 // Create an axios instance with default config
@@ -273,6 +273,26 @@ export const immediateDowngradeToBasic = async () => {
   }
 };
 
+export const downgradeToPremium = async (interval = 'month') => {
+  try {
+    const response = await axiosInstance.post('/stripe/downgrade-to-premium', { interval });
+    return response.data;
+  } catch (error) {
+    console.error('Error downgrading to premium tier:', error.message);
+    throw error;
+  }
+};
+
+export const reactivateSubscription = async () => {
+  try {
+    const response = await axiosInstance.post('/stripe/reactivate-subscription');
+    return response.data;
+  } catch (error) {
+    console.error('Error reactivating subscription:', error.message);
+    throw error;
+  }
+};
+
 export const cancelSubscription = async () => {
   try {
     const response = await axiosInstance.post('/stripe/cancel-subscription');
@@ -314,15 +334,7 @@ export const calculateProration = async (data) => {
   }
 };
 
-export const reactivateSubscription = async () => {
-  try {
-    const response = await axiosInstance.post('/stripe/reactivate-subscription');
-    return response.data;
-  } catch (error) {
-    console.error('Error reactivating subscription:', error.message);
-    throw error;
-  }
-};
+
 
 export const changeBillingCycle = async (interval) => {
   try {

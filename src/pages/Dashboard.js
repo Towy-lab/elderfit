@@ -1,4 +1,4 @@
-// src/pages/Dashboard.js - Updated with clear upgrade option and fixed syntax error
+// src/pages/Dashboard.js
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -6,7 +6,7 @@ import { useSubscription } from '../contexts/SubscriptionContext';
 import WorkoutCard from '../components/WorkoutCard';
 import WorkoutProgress from '../components/WorkoutProgress';
 import FavouriteExercises from '../components/FavouriteExercises';
-import LoadingSpinner from '../components/LoadingSpinner';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 import EmptyState from '../components/EmptyState';
 import UpgradeCard from '../components/subscription/UpgradeCard';
 import DashboardGuide from './DashboardGuide';
@@ -98,28 +98,40 @@ const Dashboard = () => {
             </p>
           </div>
           
-          {upgradeOptions.length > 0 && (
-            <div className="mt-4 md:mt-0 flex flex-wrap gap-3">
-              {upgradeOptions.map(tier => (
-                <Link 
-                  key={`upgrade-${tier}`}
-                  to="/subscription/plans"
-                  className={`px-4 py-2 rounded-md text-white font-medium ${
-                    tier === 'premium' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-purple-600 hover:bg-purple-700'
-                  }`}
-                >
-                  Upgrade to {formatTierName(tier)}
-                </Link>
-              ))}
-              
+          <div className="mt-4 md:mt-0 flex flex-wrap gap-3">
+            {/* Show upgrade options if available */}
+            {upgradeOptions.length > 0 && upgradeOptions.map(tier => (
+              <Link 
+                key={`upgrade-${tier}`}
+                to="/subscription/plans"
+                className={`px-4 py-2 rounded-md text-white font-medium ${
+                  tier === 'premium' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-purple-600 hover:bg-purple-700'
+                }`}
+              >
+                Upgrade to {formatTierName(tier)}
+              </Link>
+            ))}
+            
+            {/* Always show Manage Subscription button for paid tiers */}
+            {currentTier !== 'basic' && (
               <Link
                 to="/subscription/manage"
                 className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium"
               >
                 Manage Subscription
               </Link>
-            </div>
-          )}
+            )}
+            
+            {/* Show Upgrade button for Basic tier if no specific upgrade options */}
+            {currentTier === 'basic' && upgradeOptions.length === 0 && (
+              <Link
+                to="/subscription/plans"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-medium"
+              >
+                View Premium Plans
+              </Link>
+            )}
+          </div>
         </div>
       </section>
       

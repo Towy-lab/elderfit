@@ -1,5 +1,4 @@
-// server/models/User.js - Updated to support Stripe subscriptions
-
+// server/models/User.js
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -42,7 +41,7 @@ const UserSchema = new mongoose.Schema({
     status: {
       type: String,
       enum: ['active', 'past_due', 'unpaid', 'canceled', 'incomplete', 'incomplete_expired', 'trialing'],
-      default: 'active' // Changed from 'incomplete' to 'active' for new users
+      default: 'active' // Default to active for new users
     },
     tier: {
       type: String,
@@ -58,7 +57,19 @@ const UserSchema = new mongoose.Schema({
     downgradeToBasic: {
       type: Boolean,
       default: false
-    }
+    },
+    // Fields for handling scheduled downgrades
+    downgradeToTier: String,
+    downgradeToInterval: String,
+    // Payment information
+    interval: {
+      type: String,
+      enum: ['month', 'year'],
+      default: 'month'
+    },
+    // Track payment history
+    lastPaymentDate: Date,
+    nextPaymentDate: Date
   },
   // User's emergency contacts
   emergencyContacts: [{
@@ -77,6 +88,31 @@ const UserSchema = new mongoose.Schema({
     medicalConditions: [String],
     medications: [String],
     healthGoals: [String]
+  },
+  // User preferences
+  preferences: {
+    emailNotifications: {
+      type: Boolean,
+      default: true
+    },
+    workoutReminders: {
+      type: Boolean,
+      default: true
+    },
+    theme: {
+      type: String,
+      default: 'light'
+    }
+  },
+  // Activity tracking
+  lastLogin: Date,
+  loginCount: {
+    type: Number,
+    default: 0
+  },
+  isActive: {
+    type: Boolean,
+    default: true
   }
 });
 
@@ -119,11 +155,36 @@ UserSchema.methods.hasActiveSubscription = function() {
   return this.subscription && this.subscription.status === 'active';
 };
 
-// Encrypt password before saving - FIXED with return statement
+// Method to get the subscription status with scheduled changes
+UserSchema.methods.getSubscriptionStatus = function() {
+  const status = {
+    currentTier: this.subscription?.tier || 'basic',
+    isActive: this.subscription?.status === 'active',
+    willDowngrade: false,
+    scheduledTier: null,
+    currentPeriodEnd: this.subscription?.currentPeriodEnd
+  };
+  
+  if (this.subscription?.cancelAtPeriodEnd) {
+    if (this.subscription.downgradeToTier) {
+      // Scheduled downgrade to another paid tier
+      status.willDowngrade = true;
+      status.scheduledTier = this.subscription.downgradeToTier;
+    } else {
+      // Scheduled downgrade to basic
+      status.willDowngrade = true;
+      status.scheduledTier = 'basic';
+    }
+  }
+  
+  return status;
+};
+
+// Encrypt password before saving
 UserSchema.pre('save', async function(next) {
   // Only hash the password if it's modified (or new)
   if (!this.isModified('password')) {
-    return next(); // FIXED: added return here
+    return next();
   }
   
   try {
@@ -133,6 +194,16 @@ UserSchema.pre('save', async function(next) {
   } catch (error) {
     next(error);
   }
+});
+
+// Update lastLogin when retrieved for authentication
+UserSchema.pre('findOne', function(next) {
+  // Only update lastLogin for authentication queries
+  if (this._conditions.email && this._conditions.password) {
+    this._conditions.lastLogin = new Date();
+    this._conditions.loginCount = { $inc: 1 };
+  }
+  next();
 });
 
 module.exports = mongoose.model('User', UserSchema);
