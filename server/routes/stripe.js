@@ -200,8 +200,8 @@ router.post('/simple-checkout', auth, async (req, res) => {
         quantity: 1,
       }],
       mode: 'subscription',
-      success_url: `http://localhost:3004/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `http://localhost:3004/subscription/cancel`,
+      success_url: `http://localhost:3001/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `http://localhost:3001/subscription/cancel`,
     });
     
     console.log('Simple checkout - checkout session created:', session.id);
@@ -326,8 +326,8 @@ router.post('/create-checkout-session', auth, async (req, res) => {
         quantity: 1,
       }],
       mode: 'subscription',
-      success_url: `http://localhost:3004/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `http://localhost:3004/subscription/cancel`,
+      success_url: `http://localhost:3001/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `http://localhost:3001/subscription/cancel`,
       metadata: {
         userId: user._id.toString(),
         tier: tier,
@@ -653,8 +653,8 @@ router.post('/upgrade-from-basic', auth, async (req, res) => {
         quantity: 1,
       }],
       mode: 'subscription',
-      success_url: `http://localhost:3004/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `http://localhost:3004/subscription/cancel`,
+      success_url: `http://localhost:3001/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `http://localhost:3001/subscription/cancel`,
       metadata: {
         userId: user._id.toString(),
         tier: tier,

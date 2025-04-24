@@ -25,6 +25,17 @@ const SubscriptionManagement = () => {
   
   const navigate = useNavigate();
   
+  // After successful upgrade/downgrade
+  const handleSubscriptionChange = async () => {
+    // API calls to change subscription...
+    
+    // Then refresh user experience
+    await refreshSubscription(); // Refresh user data from server
+    
+    // Navigate to the appropriate content page
+    navigate('/content');
+  };
+  
   const [actionState, setActionState] = useState({
     isChanging: false,
     isConfirming: false,
@@ -56,123 +67,121 @@ const SubscriptionManagement = () => {
   };
   
   // Handle upgrade/downgrade confirmation
-// Handle upgrade/downgrade confirmation
-const handleConfirmChange = async (changeDetails) => {
-  const { tier, interval } = changeDetails;
-  
-  try {
-    setActionState({
-      ...actionState,
-      processing: true,
-      error: null,
-      message: null
-    });
+  const handleConfirmChange = async (changeDetails) => {
+    const { tier, interval } = changeDetails;
     
-    let result;
-    
-    // Handle different types of subscription changes
-    if (tier === 'basic') {
-      // Downgrade to basic
-      result = await downgradeToBasic();
-    } else if (tier === 'premium' && subscription.tier === 'elite') {
-      // Special case: Downgrade from Elite to Premium
-      result = await downgradeToPremium(interval);
-    } else if (actionState.changeType === 'upgrade') {
-      // Upgrade to paid tier
-      result = await upgradeSubscription(tier, { interval });
-    } else {
-      // Other downgrades
-      result = await upgradeSubscription(tier, { 
-        interval,
-        prorationBehavior: 'none' // No proration for downgrades
+    try {
+      setActionState({
+        ...actionState,
+        processing: true,
+        error: null,
+        message: null
       });
-    }
-    
-    if (result.success) {
-      // If we get a sessionId, redirect to Stripe Checkout
-      if (result.sessionId) {
-        window.location.href = result.url || `https://checkout.stripe.com/pay/${result.sessionId}`;
-        return;
+      
+      let result;
+      
+      // Handle different types of subscription changes
+      if (tier === 'basic') {
+        // Downgrade to basic
+        result = await downgradeToBasic();
+      } else if (tier === 'premium' && subscription.tier === 'elite') {
+        // Special case: Downgrade from Elite to Premium
+        result = await downgradeToPremium(interval);
+      } else if (actionState.changeType === 'upgrade') {
+        // Upgrade to paid tier
+        result = await upgradeSubscription(tier, { interval });
+      } else {
+        // Other downgrades
+        result = await upgradeSubscription(tier, { 
+          interval,
+          prorationBehavior: 'none' // No proration for downgrades
+        });
       }
       
-      // Otherwise show success message and refresh
+      if (result.success) {
+        // If we get a sessionId, redirect to Stripe Checkout
+        if (result.sessionId) {
+          window.location.href = result.url || `https://checkout.stripe.com/pay/${result.sessionId}`;
+          return;
+        }
+        
+        // Otherwise show success message and refresh
+        setActionState({
+          ...actionState,
+          isChanging: false,
+          isConfirming: false,
+          processing: false,
+          message: result.message
+        });
+        
+        // Refresh subscription data after successful change
+        refreshSubscription();
+      } else {
+        setActionState({
+          ...actionState,
+          processing: false,
+          error: result.error
+        });
+      }
+    } catch (err) {
+      console.error('Error during plan change:', err);
       setActionState({
         ...actionState,
-        isChanging: false,
-        isConfirming: false,
         processing: false,
-        message: result.message
-      });
-      
-      // Refresh subscription data after successful change
-      refreshSubscription();
-    } else {
-      setActionState({
-        ...actionState,
-        processing: false,
-        error: result.error
+        error: 'An unexpected error occurred. Please try again.'
       });
     }
-  } catch (err) {
-    console.error('Error during plan change:', err);
-    setActionState({
-      ...actionState,
-      processing: false,
-      error: 'An unexpected error occurred. Please try again.'
-    });
-  }
-};
+  };
   
   // Handle reactivation
-// Enhanced handleReactivate function
-const handleReactivate = async () => {
-  try {
-    console.log('Starting subscription reactivation...', subscription);
-    setActionState({
-      ...actionState,
-      processing: true,
-      error: null,
-      message: null
-    });
-    
-    // First, force a refresh to get the latest subscription data
-    console.log('Refreshing subscription data before reactivation...');
-    await refreshSubscription();
-    
-    // Now try to reactivate
-    console.log('Calling reactivateSubscription API...');
-    const result = await reactivateSubscription();
-    console.log('Reactivation API response:', result);
-    
-    if (result.success) {
-      console.log('Reactivation successful, refreshing data');
+  const handleReactivate = async () => {
+    try {
+      console.log('Starting subscription reactivation...', subscription);
       setActionState({
         ...actionState,
-        isChanging: false,
-        isConfirming: false,
-        processing: false,
-        message: result.message
+        processing: true,
+        error: null,
+        message: null
       });
       
-      // Refresh subscription data again
+      // First, force a refresh to get the latest subscription data
+      console.log('Refreshing subscription data before reactivation...');
       await refreshSubscription();
-    } else {
-      console.error('Reactivation returned error:', result.error);
+      
+      // Now try to reactivate
+      console.log('Calling reactivateSubscription API...');
+      const result = await reactivateSubscription();
+      console.log('Reactivation API response:', result);
+      
+      if (result.success) {
+        console.log('Reactivation successful, refreshing data');
+        setActionState({
+          ...actionState,
+          isChanging: false,
+          isConfirming: false,
+          processing: false,
+          message: result.message
+        });
+        
+        // Refresh subscription data again
+        await refreshSubscription();
+      } else {
+        console.error('Reactivation returned error:', result.error);
+        setActionState({
+          ...actionState,
+          processing: false,
+          error: result.error
+        });
+      }
+    } catch (err) {
+      console.error('Error during reactivation:', err);
       setActionState({
         ...actionState,
         processing: false,
-        error: result.error
+        error: `Reactivation error: ${err.message}`
       });
     }
-  } catch (err) {
-    console.error('Error during reactivation:', err);
-    setActionState({
-      ...actionState,
-      processing: false,
-      error: `Reactivation error: ${err.message}`
-    });
-  }
-};
+  };
   
   // Handle cancellation confirmation
   const handleConfirmCancel = async (immediate = false) => {

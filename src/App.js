@@ -21,6 +21,8 @@ import SubscriptionManagement from './components/subscription/SubscriptionManage
 import BasicContent from './pages/subscription/BasicContent';
 import PremiumContent from './pages/subscription/PremiumContent';
 import EliteContent from './pages/subscription/EliteContent';
+// Import safety-related pages
+import SafetyFeaturesPage from './pages/SafetyFeaturesPage';
 // Import auth context
 import { useAuth } from './contexts/AuthContext';
 
@@ -126,6 +128,8 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+            
+            {/* Tier-specific content routes */}
             <Route 
               path="/content/basic" 
               element={
@@ -147,6 +151,16 @@ function App() {
               element={
                 <ProtectedRoute>
                   <EliteContent />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Safety Features Page */}
+            <Route 
+              path="/safety" 
+              element={
+                <ProtectedRoute>
+                  <SafetyFeaturesPage />
                 </ProtectedRoute>
               } 
             />

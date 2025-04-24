@@ -10,6 +10,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import EmptyState from '../components/EmptyState';
 import UpgradeCard from '../components/subscription/UpgradeCard';
 import DashboardGuide from './DashboardGuide';
+import { Shield } from 'lucide-react';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -133,6 +134,34 @@ const Dashboard = () => {
             )}
           </div>
         </div>
+      </section>
+      
+      {/* Safety Features Link */}
+      <section className="mb-8 bg-blue-50 p-4 rounded-lg border border-blue-100">
+        <div className="flex items-center gap-2 mb-2">
+          <Shield className="text-blue-600" />
+          <h3 className="font-medium">Safety Features</h3>
+        </div>
+        <p className="text-sm text-blue-600 mb-3">
+          Access your safety tools and resources to exercise confidently.
+        </p>
+        <Link to="/safety" className="text-sm font-medium text-blue-700 hover:text-blue-900">
+          View Safety Hub →
+        </Link>
+      </section>
+      
+      {/* Tier-Specific Content Link */}
+      <section className="mb-8 bg-gray-50 rounded-lg p-4 border border-gray-200">
+        <h2 className="text-xl font-semibold mb-2">Your Subscription Content</h2>
+        <p className="text-gray-600 mb-3">
+          Access exclusive content available for your {formatTierName(currentTier)} subscription.
+        </p>
+        <Link 
+          to={`/content/${currentTier}`}
+          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 inline-block"
+        >
+          View {formatTierName(currentTier)} Content
+        </Link>
       </section>
       
       {/* Progress Section */}
