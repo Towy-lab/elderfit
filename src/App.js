@@ -25,6 +25,8 @@ import EliteContent from './pages/subscription/EliteContent';
 import SafetyFeaturesPage from './pages/SafetyFeaturesPage';
 // Import auth context
 import { useAuth } from './contexts/AuthContext';
+// Import the new WorkoutsPage component
+import WorkoutsPage from './pages/WorkoutsPage';
 
 // Import AppProviders as named import
 import { AppProviders } from './providers/AppProviders';
@@ -100,6 +102,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/workouts" 
+              element={
+                <ProtectedRoute>
+                  <WorkoutsPage />
                 </ProtectedRoute>
               } 
             />

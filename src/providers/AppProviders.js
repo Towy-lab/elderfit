@@ -1,6 +1,8 @@
 import React from 'react';
 import { AuthProvider } from './AuthProvider';
 import { SubscriptionProvider } from '../contexts/SubscriptionContext';
+import { ContentProvider } from '../contexts/ContentContext';
+import { SafetyProvider } from '../contexts/SafetyContext';
 
 // Comment out or conditionally include providers that might not exist
 // import { SafetyProvider } from './SafetyProvider';
@@ -10,8 +12,12 @@ export const AppProviders = ({ children }) => {
   return (
     <AuthProvider>
       <SubscriptionProvider>
-        {/* Temporarily remove the missing providers */}
-        {children}
+        <ContentProvider>
+          <SafetyProvider>
+            {/* Temporarily remove the missing providers */}
+            {children}
+          </SafetyProvider>
+        </ContentProvider>
       </SubscriptionProvider>
     </AuthProvider>
   );

@@ -36,6 +36,7 @@ const Navbar = () => {
             {isAuthenticated ? (
               <>
                 <Link to="/dashboard" className="hover:text-blue-200 transition-colors">Dashboard</Link>
+                <Link to="/workouts" className="hover:text-blue-200 transition-colors">Workouts</Link>
                 <Link to="/help" className="hover:text-blue-200 transition-colors">Help</Link>
                 
                 {/* Subscription-specific links */}
@@ -100,6 +101,7 @@ const Navbar = () => {
               {isAuthenticated ? (
                 <>
                   <Link to="/dashboard" className="hover:bg-blue-700 px-3 py-2 rounded" onClick={closeMenu}>Dashboard</Link>
+                  <Link to="/workouts" className="hover:bg-blue-700 px-3 py-2 rounded" onClick={closeMenu}>Workouts</Link>
                   <Link to="/help" className="hover:bg-blue-700 px-3 py-2 rounded" onClick={closeMenu}>Help</Link>
                   
                   {/* Subscription-specific links */}

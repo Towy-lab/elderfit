@@ -1,5 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useSubscription } from '../contexts/SubscriptionContext';
+import { Clock, BarChart2, Target } from 'lucide-react';
 import LoadingSpinner from './LoadingSpinner';
 
 // Create a LoadingCard component to fix the undefined error
@@ -13,6 +15,9 @@ const LoadingCard = () => (
 );
 
 const WorkoutCard = ({ workout, isLoading = false, exercises = [] }) => {
+  const { hasTierAccess, formatTierName } = useSubscription();
+  const userHasAccess = hasTierAccess(workout.tier);
+  
   // Fix the conditional hook call issue by moving the hook to component level
   // We'll use a simple check for exercises instead of calling a hook conditionally
   const hasExercises = exercises && exercises.length > 0;
@@ -22,35 +27,68 @@ const WorkoutCard = ({ workout, isLoading = false, exercises = [] }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="p-5">
-        <h3 className="font-semibold text-lg">{workout.title}</h3>
-        <div className="flex items-center mt-1 text-sm text-gray-600">
-          <span>{workout.duration}</span>
-          <span className="mx-2">•</span>
-          <span>{workout.level}</span>
-        </div>
-        
-        {hasExercises && (
-          <div className="mt-3">
-            <p className="text-sm text-gray-600 mb-1">Exercises:</p>
-            <ul className="text-sm text-gray-600">
-              {exercises.slice(0, 3).map((exercise, index) => (
-                <li key={index} className="truncate">• {exercise.name}</li>
-              ))}
-              {exercises.length > 3 && (
-                <li className="text-indigo-600">+ {exercises.length - 3} more</li>
-              )}
-            </ul>
+    <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 flex flex-col h-full">
+      <div className="relative">
+        <img 
+          src={workout.thumbnailUrl || '/images/placeholder-workout.jpg'} 
+          alt={workout.name}
+          className="w-full h-48 object-cover"
+        />
+        {!userHasAccess && (
+          <div className="absolute inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center text-white p-4">
+            <span className="text-sm font-semibold mb-2">
+              {formatTierName(workout.tier)} Content
+            </span>
+            <Link 
+              to="/subscription" 
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-2 rounded-md text-sm"
+            >
+              Upgrade to Access
+            </Link>
           </div>
         )}
+        <div className="absolute top-2 right-2 bg-gray-900 bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+          {workout.tier}
+        </div>
+      </div>
+      
+      <div className="p-4 flex-grow flex flex-col">
+        <h3 className="font-medium text-lg mb-1">{workout.name}</h3>
         
-        <Link
-          to={`/workouts/${workout.id}`}
-          className="mt-4 block w-full text-center bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition duration-200"
-        >
-          View Workout
-        </Link>
+        <div className="flex flex-wrap gap-2 mb-2">
+          <span className="flex items-center text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">
+            <Clock size={12} className="mr-1" />
+            {workout.duration} min
+          </span>
+          <span className="flex items-center text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded-full">
+            <BarChart2 size={12} className="mr-1" />
+            {workout.level}
+          </span>
+          <span className="flex items-center text-xs px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full">
+            <Target size={12} className="mr-1" />
+            {workout.focusArea}
+          </span>
+        </div>
+        
+        <p className="text-gray-600 text-sm mb-3 line-clamp-2">{workout.description}</p>
+        
+        <div className="mt-auto pt-4">
+          {userHasAccess ? (
+            <Link 
+              to={`/workouts/${workout.id}`} 
+              className="w-full block text-center py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Start Workout
+            </Link>
+          ) : (
+            <button 
+              disabled
+              className="w-full py-2 bg-gray-300 text-gray-500 rounded-md cursor-not-allowed"
+            >
+              Locked Content
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
