@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
-import WorkoutCard from '../components/WorkoutCard';
+import WorkoutCard from '../components/workouts/WorkoutCard';
 import WorkoutProgress from '../components/WorkoutProgress';
 import FavouriteExercises from '../components/FavouriteExercises';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -19,6 +19,13 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
   
+  // Extract the first name from user object
+  // Check various possible formats
+  const firstName = user?.firstName || // If firstName exists directly
+                   (user?.name ? user.name.split(' ')[0] : null) || // If we need to split full name
+                   user?.first_name || // If it's stored as first_name
+                   'Friend'; // Default fallback
+  
   // Get valid upgrade options
   const upgradeOptions = getValidUpgradeTiers ? getValidUpgradeTiers() : ['premium', 'elite'];
   const currentTier = subscription?.tier || 'basic';
@@ -33,26 +40,29 @@ const Dashboard = () => {
         const mockWorkouts = [
           {
             id: '1',
-            title: 'Gentle Morning Stretch',
+            name: 'Gentle Morning Stretch',
             duration: 15,
-            difficulty: 'Beginner',
-            imageUrl: '/images/gentle-stretch.jpg',
+            level: 'Beginner',
+            thumbnailUrl: 'https://images.unsplash.com/photo-1616279969862-90f1a57a0b75?auto=format&fit=crop&w=500&q=60',
+            focusArea: 'Flexibility',
             description: 'Start your day with these gentle stretches to improve flexibility and mobility.'
           },
           {
             id: '2',
-            title: 'Chair Strength Workout',
+            name: 'Chair Strength Workout',
             duration: 20,
-            difficulty: 'Beginner',
-            imageUrl: '/images/chair-workout.jpg',
+            level: 'Beginner',
+            thumbnailUrl: 'https://images.unsplash.com/photo-1594381898411-846e7d193883?auto=format&fit=crop&w=500&q=60',
+            focusArea: 'Strength',
             description: 'Build strength while seated with this accessible workout.'
           },
           {
             id: '3',
-            title: 'Balance Improvement',
+            name: 'Balance Improvement',
             duration: 25,
-            difficulty: 'Intermediate',
-            imageUrl: '/images/balance.jpg',
+            level: 'Intermediate',
+            thumbnailUrl: 'https://images.unsplash.com/photo-1559888292-3c849f058cdf?auto=format&fit=crop&w=500&q=60',
+            focusArea: 'Balance',
             description: 'Exercises designed to improve stability and prevent falls.'
           }
         ];
@@ -83,7 +93,7 @@ const Dashboard = () => {
       {/* Dashboard Guide component */}
       <DashboardGuide />
       
-      <h1 className="text-3xl font-bold mb-6">Your Fitness Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-6">Welcome, {firstName}!</h1>
       
       {/* Subscription Status Section */}
       <section className="mb-8 bg-gray-50 rounded-lg p-6 border border-gray-200">
@@ -212,10 +222,9 @@ const Dashboard = () => {
           <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-6">
             <div className="flex flex-col md:flex-row items-center">
               <div className="md:flex-1">
-                <h3 className="text-xl font-semibold text-indigo-800 mb-2">Unlock Premium Features!</h3>
+                <h3 className="text-xl font-semibold text-indigo-800 mb-2">Unlock More Features!</h3>
                 <p className="text-indigo-700 mb-4">
-                  Upgrade to Premium or Elite to access personalized workout plans, video demonstrations, 
-                  favorite exercise tracking, and more advanced features.
+                  Upgrade to <span className="font-semibold text-indigo-700">Premium</span> or <span className="font-semibold text-purple-700">Elite</span> to access personalized workout plans, advanced analytics, exclusive content, and more.
                 </p>
                 <ul className="space-y-2 mb-6">
                   <li className="flex items-start">
@@ -231,19 +240,25 @@ const Dashboard = () => {
                     <span className="ml-2 text-indigo-700">Professional video demonstrations</span>
                   </li>
                   <li className="flex items-start">
-                    <svg className="h-5 w-5 text-indigo-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="h-5 w-5 text-purple-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span className="ml-2 text-indigo-700">Track your favorite exercises</span>
+                    <span className="ml-2 text-purple-700">Elite: AI-powered training, advanced analytics, family plan, and more</span>
                   </li>
                 </ul>
               </div>
               <div className="md:ml-6 flex flex-col sm:flex-row gap-3">
                 <Link 
-                  to="/subscription/plans" 
+                  to="/subscription/plans#premium" 
                   className="px-6 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-medium text-center"
                 >
-                  View Premium Plans
+                  Unlock Premium
+                </Link>
+                <Link 
+                  to="/subscription/plans#elite" 
+                  className="px-6 py-3 bg-purple-600 text-white rounded-md hover:bg-purple-700 font-medium text-center"
+                >
+                  Unlock Elite
                 </Link>
               </div>
             </div>

@@ -58,9 +58,9 @@ const PaymentSuccessPage = () => {
         tierDescription = 'The ultimate senior fitness experience';
         tierFeatures = [
           'All Premium features',
-          'One-on-one professional support',
+          'AI-powered personalized training',
           'Custom workout programming',
-          'Priority health consultations',
+          'Advanced health analytics',
           'Exclusive content and community'
         ];
         break;

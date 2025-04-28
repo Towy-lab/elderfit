@@ -17,6 +17,18 @@ const BasicContent = () => {
     goalsCompleted: 3
   };
   
+  // Function to get exercise image based on type
+  const getExerciseImage = (name) => {
+    const imageMap = {
+      'Seated Chair Stretch': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=500&q=60',
+      'Standing Balance Practice': 'https://images.unsplash.com/photo-1559888292-3c849f058cdf?auto=format&fit=crop&w=500&q=60',
+      'Gentle Arm Strength': 'https://images.unsplash.com/photo-1594381898411-846e7d193883?auto=format&fit=crop&w=500&q=60',
+      'Ankle Mobility': 'https://images.unsplash.com/photo-1595152452543-e5fc28ebc2b8?auto=format&fit=crop&w=500&q=60',
+      'Breathing & Relaxation': 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=500&q=60',
+    };
+    return imageMap[name] || 'https://images.unsplash.com/photo-1520080816484-0e41b8536b2f?auto=format&fit=crop&w=500&q=60';
+  };
+  
   // Sample exercises
   const basicExercises = [
     {
@@ -55,6 +67,14 @@ const BasicContent = () => {
       description: 'Techniques to promote relaxation and proper breathing.'
     }
   ];
+  
+  // Workout level color mapping
+  const levelColors = [
+    { level: 'Beginner', color: 'bg-green-600', text: 'text-green-600' },
+    { level: 'Intermediate', color: 'bg-blue-600', text: 'text-blue-600' },
+    { level: 'Advanced', color: 'bg-red-600', text: 'text-red-600' },
+    { level: 'All Levels', color: 'bg-purple-600', text: 'text-purple-600' }
+  ];
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -72,11 +92,28 @@ const BasicContent = () => {
           <h2 className="text-2xl font-semibold">Beginner Workouts</h2>
         </div>
         
+        {/* Difficulty Level Color Key */}
+        <div className="bg-white p-4 rounded-md mb-4 shadow-sm border border-gray-200">
+          <h3 className="font-medium mb-2">Difficulty Level Key:</h3>
+          <div className="flex flex-wrap gap-4">
+            {levelColors.map(({ level, color, text }) => (
+              <div key={level} className="flex items-center">
+                <div className={`w-4 h-4 rounded-full ${color} mr-2`}></div>
+                <span className={`text-sm ${text} font-medium`}>{level}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
           {basicExercises.map(exercise => (
             <div key={exercise.id} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
-              <div className="h-40 bg-gray-200 relative flex items-center justify-center">
-                <span className="text-gray-500">Exercise Image</span>
+              <div className="h-40 bg-gray-200 relative">
+                <img 
+                  src={getExerciseImage(exercise.name)} 
+                  alt={exercise.name} 
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div className="p-4">
                 <h3 className="font-medium text-lg mb-1">{exercise.name}</h3>
@@ -104,14 +141,40 @@ const BasicContent = () => {
           preview={true}
           previewContent={
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[1, 2, 3].map((item) => (
-                <div key={item} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
-                  <div className="h-40 bg-gray-300 relative flex items-center justify-center">
-                    <span className="text-gray-500">Premium Exercise</span>
+              {[
+                {
+                  name: "Joint-Friendly Strength",
+                  level: "Intermediate",
+                  duration: 20,
+                  image: "https://images.unsplash.com/photo-1575052814086-f385e2e2ad1b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"
+                },
+                {
+                  name: "Balance & Coordination",
+                  level: "Intermediate",
+                  duration: 25,
+                  image: "https://images.unsplash.com/photo-1559888292-3c849f058cdf?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"
+                },
+                {
+                  name: "Core Strength",
+                  level: "Intermediate",
+                  duration: 30,
+                  image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"
+                }
+              ].map((item, index) => (
+                <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
+                  <div className="h-40 bg-gray-300 relative">
+                    <img 
+                      src={item.image} 
+                      alt={item.name} 
+                      className="w-full h-full object-cover opacity-50"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="bg-gray-800 bg-opacity-75 text-white px-3 py-1 rounded-md">Premium</span>
+                    </div>
                   </div>
                   <div className="p-4">
-                    <h3 className="font-medium text-lg mb-1">Premium Workout #{item}</h3>
-                    <p className="text-gray-600 text-sm">20 minutes • Intermediate</p>
+                    <h3 className="font-medium text-lg mb-1">{item.name}</h3>
+                    <p className="text-gray-600 text-sm">{item.duration} minutes • {item.level}</p>
                   </div>
                 </div>
               ))}
@@ -236,10 +299,10 @@ const BasicContent = () => {
                 Why warming up is essential, especially for seniors.
               </p>
               <Link
-                to="/education/warmup"
+                to="/subscription/plans"
                 className="text-green-600 hover:text-green-800 font-medium text-sm inline-block"
               >
-                Read More →
+                Upgrade to Access →
               </Link>
             </div>
             
@@ -248,13 +311,13 @@ const BasicContent = () => {
                 Understanding Exercise Intensity
               </h4>
               <p className="text-gray-600 text-sm mb-3">
-                How to gauge and adjust exercise intensity for your needs.
+                How to gauge and adjust your exercise intensity for safe progress.
               </p>
               <Link
-                to="/education/intensity"
+                to="/subscription/plans"
                 className="text-green-600 hover:text-green-800 font-medium text-sm inline-block"
               >
-                Read More →
+                Upgrade to Access →
               </Link>
             </div>
           </div>
@@ -386,7 +449,7 @@ const BasicContent = () => {
                 </li>
                 <li className="flex items-start">
                   <span className="text-purple-500 mr-2">•</span>
-                  <span className="text-gray-700">One-on-one professional support</span>
+                  <span className="text-gray-700">AI-powered personalized training</span>
                 </li>
                 <li className="flex items-start">
                   <span className="text-purple-500 mr-2">•</span>

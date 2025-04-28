@@ -45,7 +45,7 @@ const TierContentManager = ({
             Upgrade to {formatTierName(requiredTier)}
           </h3>
           <p className="text-white mb-4">
-            Unlock {featureName} and many more premium features!
+            Unlock {featureName} and many more {requiredTier === 'elite' ? 'elite' : 'premium'} features!
           </p>
           <Link 
             to="/subscription/plans" 

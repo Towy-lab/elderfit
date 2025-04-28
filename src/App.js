@@ -27,6 +27,7 @@ import SafetyFeaturesPage from './pages/SafetyFeaturesPage';
 import { useAuth } from './contexts/AuthContext';
 // Import the new WorkoutsPage component
 import WorkoutsPage from './pages/WorkoutsPage';
+import SafetyGuidelines from './pages/safety/Guidelines';
 
 // Import AppProviders as named import
 import { AppProviders } from './providers/AppProviders';
@@ -175,6 +176,9 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+            
+            {/* Safety Guidelines Page (public) */}
+            <Route path="/safety/guidelines" element={<SafetyGuidelines />} />
             
             {/* Catch-all for 404 */}
             <Route path="*" element={<NotFound />} />

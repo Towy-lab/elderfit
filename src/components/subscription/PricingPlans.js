@@ -171,19 +171,19 @@ const PricingPlans = ({ isHomePage = false }) => {
   const eliteFeatures = isHomePage ? 
     [
       'All Premium features',
-      'One-on-one professional support',
+      'AI-powered personalized training',
       'Family profiles management',
       'Advanced safety features',
-      'Priority professional consultations'
+      'Priority support'
     ] : [
       'All Premium features',
       '50+ specialized workout routines',
-      'One-on-one professional support',
+      'AI-powered personalized training',
       'Family profiles management',
       'Advanced safety features',
-      'Priority professional consultations',
+      'Health device integration',
       'Full community access with exclusive content',
-      'Custom routine builder with professional guidance'
+      'Custom routine builder with AI guidance'
     ];
   
   // Pricing configuration
@@ -224,19 +224,6 @@ const PricingPlans = ({ isHomePage = false }) => {
         <div className="text-center mb-12">
           {!isHomePage && (
             <h2 className="text-3xl font-bold text-gray-900">Choose Your ElderFit Subscription</h2>
-          )}
-          
-          {/* Test button for debugging - only show in non-home page version */}
-          {!isHomePage && (
-            <div className="my-4">
-              <button
-                onClick={handleSimpleCheckout}
-                disabled={processingTier === 'test'}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-              >
-                {processingTier === 'test' ? 'Processing...' : 'Test Simple Checkout'}
-              </button>
-            </div>
           )}
           
           <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">
@@ -482,8 +469,7 @@ const PricingPlans = ({ isHomePage = false }) => {
               <div>
                 <h4 className="text-lg font-medium text-gray-900">How do the professional consultations work?</h4>
                 <p className="mt-2 text-gray-600">
-                  With the Elite plan, you can book one-on-one video consultations with our certified fitness 
-                  professionals who specialize in senior fitness.
+                  With the Elite plan, you receive AI-powered personalized fitness guidance and advanced recovery planning. Our intelligent system analyzes your goals, progress, and feedback to provide tailored workout recommendations and adjustments—no appointments or video calls required. You also get access to exclusive resources, advanced analytics, and priority support.
                 </p>
               </div>
             </div>

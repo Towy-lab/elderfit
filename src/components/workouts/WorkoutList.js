@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useContent } from '../../contexts/ContentContext';
 import WorkoutCard from './WorkoutCard';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, Filter, X, Circle } from 'lucide-react';
 
 const WorkoutList = () => {
   const { 
@@ -29,6 +29,14 @@ const WorkoutList = () => {
   if (loading) {
     return <div className="p-8 text-center">Loading workouts...</div>;
   }
+  
+  // Workout level color mapping
+  const levelColors = [
+    { level: 'Beginner', color: 'bg-green-600', text: 'text-green-600' },
+    { level: 'Intermediate', color: 'bg-blue-600', text: 'text-blue-600' },
+    { level: 'Advanced', color: 'bg-red-600', text: 'text-red-600' },
+    { level: 'All Levels', color: 'bg-purple-600', text: 'text-purple-600' }
+  ];
   
   return (
     <div className="container mx-auto px-4 py-8">
@@ -62,6 +70,19 @@ const WorkoutList = () => {
             <Filter size={18} className="mr-2" />
             Filters
           </button>
+        </div>
+      </div>
+      
+      {/* Difficulty Level Color Key */}
+      <div className="bg-white p-4 rounded-md mb-4 shadow-sm border border-gray-200">
+        <h2 className="font-medium mb-2">Difficulty Level Key:</h2>
+        <div className="flex flex-wrap gap-4">
+          {levelColors.map(({ level, color, text }) => (
+            <div key={level} className="flex items-center">
+              <div className={`w-4 h-4 rounded-full ${color} mr-2`}></div>
+              <span className={`text-sm ${text} font-medium`}>{level}</span>
+            </div>
+          ))}
         </div>
       </div>
       

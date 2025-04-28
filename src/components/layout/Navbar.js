@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useContext } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 
@@ -56,6 +56,15 @@ const Navbar = () => {
                     <Link to="/elite" className="hover:text-blue-200 transition-colors">Elite Content</Link>
                   </>
                 )}
+                
+                <li>
+                  <Link
+                    to="/safety/guidelines"
+                    className="px-3 py-1 rounded bg-green-500 text-white font-semibold hover:bg-green-600 transition"
+                  >
+                    Safety Guidelines
+                  </Link>
+                </li>
                 
                 <button 
                   onClick={handleLogout}
@@ -119,6 +128,15 @@ const Navbar = () => {
                       <Link to="/elite" className="hover:bg-blue-700 px-3 py-2 rounded" onClick={closeMenu}>Elite Content</Link>
                     </>
                   )}
+                  
+                  <li>
+                    <Link
+                      to="/safety/guidelines"
+                      className="px-3 py-1 rounded bg-green-500 text-white font-semibold hover:bg-green-600 transition"
+                    >
+                      Safety Guidelines
+                    </Link>
+                  </li>
                   
                   <button 
                     onClick={handleLogout}

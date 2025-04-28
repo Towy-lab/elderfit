@@ -126,12 +126,13 @@ const tierConfig = {
         ]
       },
       elite: {
-        description: "Premium features with professional support",
+        description: "Premium features with advanced technology",
         list: [
           "Complete workout library (50+ routines)",
-          "Professional consultation sessions",
-          "Custom routine creation with expert guidance",
-          "Family profiles (up to 3 members)",
+          "AI-powered personalized training",
+          "Health device integration and analytics",
+          "Specialized condition-specific programs",
+          "Multi-user family plan (up to 5 profiles)",
           "Priority support with 24-hour response",
           "Advanced safety monitoring",
           "VIP community access",
@@ -163,13 +164,13 @@ const tierConfig = {
         ]
       },
       elite: {
-        description: "Premium support with direct access",
+        description: "Premium support with priority service",
         channels: [
           "All premium support plus...",
           "Priority email support (12-hour response)",
-          "One-on-one video consultations with fitness professionals",
-          "Direct messaging with certified trainers",
-          "Custom exercise prescriptions",
+          "AI-assisted fitness recommendations",
+          "Advanced troubleshooting and technical support",
+          "Custom exercise prescriptions via our AI system",
           "Monthly personalized progress reviews"
         ]
       }
