@@ -172,17 +172,19 @@ const PricingPlans = ({ isHomePage = false }) => {
     [
       'All Premium features',
       'AI-powered personalized training',
+      'Monthly curated exercise collections',
       'Family profiles management',
       'Advanced safety features',
       'Priority support'
     ] : [
       'All Premium features',
-      '50+ specialized workout routines',
+      'Specially selected exercise groups with new collections monthly',
       'AI-powered personalized training',
+      'Monthly curated exercise collections',
       'Family profiles management',
       'Advanced safety features',
       'Health device integration',
-      'Full community access with exclusive content',
+      'Exclusive content',
       'Custom routine builder with AI guidance'
     ];
   
@@ -467,9 +469,9 @@ const PricingPlans = ({ isHomePage = false }) => {
               </div>
               
               <div>
-                <h4 className="text-lg font-medium text-gray-900">How do the professional consultations work?</h4>
+                <h4 className="text-lg font-medium text-gray-900">How does the AI-powered training work?</h4>
                 <p className="mt-2 text-gray-600">
-                  With the Elite plan, you receive AI-powered personalized fitness guidance and advanced recovery planning. Our intelligent system analyzes your goals, progress, and feedback to provide tailored workout recommendations and adjustments—no appointments or video calls required. You also get access to exclusive resources, advanced analytics, and priority support.
+                  Our Elite plan features advanced AI technology that analyzes your fitness data, goals, and progress to provide personalized workout recommendations and real-time form guidance. The system continuously learns from your feedback and performance to optimize your training program. You'll receive automated adjustments to your workouts, recovery recommendations, and access to specialized programs—all powered by our intelligent training system.
                 </p>
               </div>
             </div>

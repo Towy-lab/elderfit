@@ -20,9 +20,8 @@ const Footer = () => {
             <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2">
               <li><Link to="/" className="text-gray-300 hover:text-white">Home</Link></li>
-              <li><Link to="/exercises" className="text-gray-300 hover:text-white">Exercises</Link></li>
               <li><Link to="/workouts" className="text-gray-300 hover:text-white">Workouts</Link></li>
-              <li><Link to="/progress" className="text-gray-300 hover:text-white">Progress</Link></li>
+              <li><Link to="/dashboard" className="text-gray-300 hover:text-white">Dashboard</Link></li>
             </ul>
           </div>
 
@@ -42,7 +41,6 @@ const Footer = () => {
             <h3 className="text-lg font-semibold mb-4">Contact Us</h3>
             <ul className="space-y-2 text-gray-300">
               <li>Email: support@elderfitsecrets.com</li>
-              
             </ul>
             <div className="mt-4 flex space-x-4">
               {/* Social Media Icons */}

@@ -1,7 +1,7 @@
 // src/pages/Home.js
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Award, Clock, Shield, ArrowRight, Check, Star, Users, Heart } from 'lucide-react';
+import { Award, Clock, Shield, ArrowRight, Check, Star, Users, Heart, Eye } from 'lucide-react';
 
 const Home = () => {
   const [email, setEmail] = useState('');
@@ -197,19 +197,23 @@ const Home = () => {
           </div>
           
           {/* Elite Plan */}
-          <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 transition-all hover:shadow-lg">
+          <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 transition-all hover:shadow-lg relative">
+            <div className="absolute top-0 right-0 bg-yellow-500 text-blue-900 py-1 px-4 rounded-bl-lg text-sm font-medium">
+              Best Value
+            </div>
             <div className="p-6">
               <h3 className="text-xl font-bold mb-2">Elite</h3>
               <p className="text-3xl font-bold mb-2">$19.99<span className="text-base font-normal">/month</span></p>
-              <p className="text-gray-600 mb-6">For optimal results</p>
+              <p className="text-gray-600 mb-6">For optimal results with AI assistance</p>
               
               <ul className="space-y-3 mb-6">
                 {[
                   'Everything in Premium',
-                  'One-on-one coaching',
-                  'Advanced workout routines',
-                  'Video consultations',
-                  'Specialized programs',
+                  'AI-powered form analysis',
+                  'Real-time safety monitoring',
+                  'Personalized progress tracking',
+                  'Monthly curated exercise collections',
+                  'Advanced workout adaptations',
                   'Priority support',
                 ].map((feature, index) => (
                   <li key={index} className="flex items-start">
@@ -233,40 +237,96 @@ const Home = () => {
       </section>
 
       {/* Features Section */}
-      <section className="mb-12 mx-4 md:mx-8 lg:mx-auto lg:max-w-7xl">
-        <h2 className="text-3xl font-bold text-center mb-12">Why Choose ElderFit Secrets?</h2>
-        <div className="grid md:grid-cols-3 gap-8">
-          {/* Feature 1 */}
-          <div className="bg-white p-6 rounded-lg shadow-md text-center transition-transform hover:transform hover:scale-105">
-            <div className="inline-block p-4 bg-blue-100 rounded-full text-blue-600 mb-4">
-              <Shield size={32} />
+      <section className="py-16 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-12">Why Choose ElderFit Secrets?</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Feature 1 */}
+            <div className="bg-white p-6 rounded-lg shadow-md text-center transition-transform hover:transform hover:scale-105">
+              <div className="inline-block p-4 bg-blue-100 rounded-full text-blue-600 mb-4">
+                <Shield size={32} />
+              </div>
+              <h3 className="text-xl font-semibold mb-3">Safe & Low-Impact</h3>
+              <p className="text-gray-600">
+                All exercises are designed with safety in mind, focusing on gentle movements and proper form.
+              </p>
             </div>
-            <h3 className="text-xl font-semibold mb-3">Safe & Low-Impact</h3>
-            <p className="text-gray-600">
-              All exercises are designed with safety in mind, focusing on gentle movements and proper form.
-            </p>
+
+            {/* Feature 2 */}
+            <div className="bg-white p-6 rounded-lg shadow-md text-center transition-transform hover:transform hover:scale-105">
+              <div className="inline-block p-4 bg-blue-100 rounded-full text-blue-600 mb-4">
+                <Award size={32} />
+              </div>
+              <h3 className="text-xl font-semibold mb-3">AI-Powered Guidance</h3>
+              <p className="text-gray-600">
+                Advanced AI technology that analyzes your movements and provides real-time feedback, ensuring safe and effective workouts.
+              </p>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="bg-white p-6 rounded-lg shadow-md text-center transition-transform hover:transform hover:scale-105">
+              <div className="inline-block p-4 bg-blue-100 rounded-full text-blue-600 mb-4">
+                <Clock size={32} />
+              </div>
+              <h3 className="text-xl font-semibold mb-3">At Your Own Pace</h3>
+              <p className="text-gray-600">
+                Flexible routines that adapt to your needs, allowing you to progress at a comfortable rate.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* New AI Features Section */}
+      <section className="py-16 bg-gradient-to-r from-blue-600 to-blue-800 text-white">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-4">Elite AI-Powered Features</h2>
+          <p className="text-center text-blue-100 mb-12 max-w-3xl mx-auto">
+            Experience the future of senior fitness with our advanced AI technology, exclusively available in the Elite plan.
+          </p>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* AI Feature 1 */}
+            <div className="bg-white bg-opacity-10 p-6 rounded-lg backdrop-blur-sm">
+              <div className="inline-block p-4 bg-white bg-opacity-20 rounded-full text-white mb-4">
+                <Eye size={32} />
+              </div>
+              <h3 className="text-xl font-semibold mb-3">Real-Time Form Analysis</h3>
+              <p className="text-blue-100">
+                Get instant feedback on your exercise form with our AI-powered camera analysis, helping you maintain proper technique and prevent injuries.
+              </p>
+            </div>
+
+            {/* AI Feature 2 */}
+            <div className="bg-white bg-opacity-10 p-6 rounded-lg backdrop-blur-sm">
+              <div className="inline-block p-4 bg-white bg-opacity-20 rounded-full text-white mb-4">
+                <Shield size={32} />
+              </div>
+              <h3 className="text-xl font-semibold mb-3">Safety Monitoring</h3>
+              <p className="text-blue-100">
+                Advanced safety monitoring that detects potential risks and provides immediate guidance to ensure your workout remains safe and effective.
+              </p>
+            </div>
+
+            {/* AI Feature 3 */}
+            <div className="bg-white bg-opacity-10 p-6 rounded-lg backdrop-blur-sm">
+              <div className="inline-block p-4 bg-white bg-opacity-20 rounded-full text-white mb-4">
+                <Star size={32} />
+              </div>
+              <h3 className="text-xl font-semibold mb-3">Monthly Exercise Collections</h3>
+              <p className="text-blue-100">
+                Access specially curated exercise groups each month, designed to target specific areas of senior fitness and wellness.
+              </p>
+            </div>
           </div>
 
-          {/* Feature 2 */}
-          <div className="bg-white p-6 rounded-lg shadow-md text-center transition-transform hover:transform hover:scale-105">
-            <div className="inline-block p-4 bg-blue-100 rounded-full text-blue-600 mb-4">
-              <Award size={32} />
-            </div>
-            <h3 className="text-xl font-semibold mb-3">Expert Guidance</h3>
-            <p className="text-gray-600">
-              Developed by physical therapists and fitness professionals specializing in senior health.
-            </p>
-          </div>
-
-          {/* Feature 3 */}
-          <div className="bg-white p-6 rounded-lg shadow-md text-center transition-transform hover:transform hover:scale-105">
-            <div className="inline-block p-4 bg-blue-100 rounded-full text-blue-600 mb-4">
-              <Clock size={32} />
-            </div>
-            <h3 className="text-xl font-semibold mb-3">At Your Own Pace</h3>
-            <p className="text-gray-600">
-              Flexible routines that adapt to your needs, allowing you to progress at a comfortable rate.
-            </p>
+          <div className="text-center mt-12">
+            <Link
+              to="/subscription"
+              className="inline-block bg-yellow-500 hover:bg-yellow-600 text-blue-900 font-bold px-8 py-3 rounded-lg text-lg transition-colors"
+            >
+              Upgrade to Elite
+            </Link>
           </div>
         </div>
       </section>

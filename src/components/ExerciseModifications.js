@@ -1,11 +1,13 @@
 import React from 'react';
 import { AlertCircle, Check, Info } from 'lucide-react';
+import { TieredFormGuidance } from './safety/TieredFormGuidance';
 
 const ExerciseModifications = ({ 
   modifications, 
   limitations, 
   equipment,
-  className = '' 
+  className = '',
+  exercise 
 }) => {
   const renderEquipmentList = () => {
     if (!equipment || equipment.length === 0) return null;
@@ -74,12 +76,13 @@ const ExerciseModifications = ({
     );
   };
 
-  if (!modifications?.length && !limitations?.length && !equipment?.length) {
+  if (!modifications?.length && !limitations?.length && !equipment?.length && !exercise) {
     return null;
   }
 
   return (
     <div className={`bg-white rounded-lg p-4 ${className}`}>
+      {exercise && <TieredFormGuidance exercise={exercise} />}
       {renderEquipmentList()}
       {renderLimitations()}
       {renderModifications()}

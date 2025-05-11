@@ -2,11 +2,13 @@ import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
+import logo from '../../assets/Elderfit Secrets Logo Emphasizing Wellness.png';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isAuthenticated, user, logout } = useAuth();
   const { tier } = useSubscription();
+  const [useTextLogo, setUseTextLogo] = useState(true);
   
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -27,8 +29,20 @@ const Navbar = () => {
         <div className="flex justify-between items-center py-4">
           {/* Logo */}
           <Link to="/" className="flex items-center" onClick={closeMenu}>
-            <span className="text-2xl font-bold">ElderFit</span>
-            <span className="ml-1 text-sm bg-yellow-500 text-blue-900 px-2 py-1 rounded-md font-semibold">Secrets</span>
+            {useTextLogo ? (
+              <>
+                <span className="text-2xl font-bold">ElderFit</span>
+                <span className="ml-1 text-base bg-yellow-500 text-blue-900 px-2 py-1 rounded-md font-semibold">Secrets</span>
+              </>
+            ) : (
+              <img 
+                src={logo} 
+                alt="ElderFit Secrets Logo" 
+                className="h-24 w-auto py-2 max-h-none"
+                style={{ maxHeight: 'none' }}
+                onError={() => setUseTextLogo(true)}
+              />
+            )}
           </Link>
           
           {/* Desktop Navigation */}
@@ -56,6 +70,13 @@ const Navbar = () => {
                     <Link to="/elite" className="hover:text-blue-200 transition-colors">Elite Content</Link>
                   </>
                 )}
+                
+                <Link 
+                  to="/settings" 
+                  className="hover:text-blue-200 transition-colors"
+                >
+                  Settings
+                </Link>
                 
                 <li>
                   <Link
@@ -128,6 +149,14 @@ const Navbar = () => {
                       <Link to="/elite" className="hover:bg-blue-700 px-3 py-2 rounded" onClick={closeMenu}>Elite Content</Link>
                     </>
                   )}
+                  
+                  <Link 
+                    to="/settings" 
+                    className="hover:bg-blue-700 px-3 py-2 rounded" 
+                    onClick={closeMenu}
+                  >
+                    Settings
+                  </Link>
                   
                   <li>
                     <Link

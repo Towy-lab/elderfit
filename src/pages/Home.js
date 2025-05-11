@@ -62,7 +62,7 @@ const Home = () => {
                   </li>
                   <li className="flex items-start">
                     <span className="flex-shrink-0 text-blue-900 mr-2">✓</span>
-                    <span>Expert guidance from senior fitness specialists</span>
+                    <span>AI-powered guidance with real-time feedback</span>
                   </li>
                 </ul>
               </div>

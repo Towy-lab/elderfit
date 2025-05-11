@@ -28,6 +28,10 @@ import { useAuth } from './contexts/AuthContext';
 // Import the new WorkoutsPage component
 import WorkoutsPage from './pages/WorkoutsPage';
 import SafetyGuidelines from './pages/safety/Guidelines';
+import FAQ from './pages/FAQ';
+// Import the new AITrainingDashboard component
+import AITrainingDashboard from './components/training/AITrainingDashboard';
+import Settings from './pages/Settings';
 
 // Import AppProviders as named import
 import { AppProviders } from './providers/AppProviders';
@@ -179,6 +183,22 @@ function App() {
             
             {/* Safety Guidelines Page (public) */}
             <Route path="/safety/guidelines" element={<SafetyGuidelines />} />
+            
+            {/* FAQ Page (public) */}
+            <Route path="/faq" element={<FAQ />} />
+            
+            {/* AI Training Page */}
+            <Route path="/training/ai" element={<AITrainingDashboard />} />
+            
+            {/* Settings Page */}
+            <Route 
+              path="/settings" 
+              element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              } 
+            />
             
             {/* Catch-all for 404 */}
             <Route path="*" element={<NotFound />} />
