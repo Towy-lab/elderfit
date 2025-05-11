@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthContext from '../contexts/AuthContext';
-import { api, loginUser, registerUser, getCurrentUser } from '../services/api';
+import { api, loginUser, registerUser, getCurrentUser, updateUserProfile } from '../services/api';
 
 // Auth Provider component
 export const AuthProvider = ({ children }) => {
@@ -154,8 +154,58 @@ export const AuthProvider = ({ children }) => {
   const updateProfile = async (profileData) => {
     try {
       setLoading(true);
-      const response = await api.put('/users/profile', profileData);
-      setUser(response.data);
+      setError(null);
+      
+      // Format the profile data
+      const formattedData = {
+        name: profileData.name,
+        email: profileData.email,
+        profile: {
+          fitnessLevel: profileData.profile.fitnessLevel,
+          goals: profileData.profile.goals || [],
+          healthConditions: profileData.profile.healthConditions || [],
+          equipment: profileData.profile.equipment || []
+        }
+      };
+      
+      console.log('Sending formatted profile data:', formattedData);
+      
+      // Use the dedicated API function for profile updates
+      const response = await updateUserProfile(formattedData);
+      
+      if (!response) {
+        throw new Error('No data received from server');
+      }
+      
+      console.log('Received updated user data:', response);
+      
+      // Update user state with new profile data, preserving existing data
+      setUser(prevUser => {
+        if (!prevUser) return response.user;
+        
+        // Get the name from the formatted data since that's what we sent
+        const name = formattedData.name;
+        const [firstName = '', lastName = ''] = name.split(' ');
+        
+        // Create the updated user object
+        const updatedUser = {
+          ...prevUser,
+          firstName,
+          lastName,
+          email: formattedData.email,
+          profile: {
+            ...prevUser.profile,
+            fitnessLevel: formattedData.profile.fitnessLevel,
+            goals: formattedData.profile.goals,
+            healthConditions: formattedData.profile.healthConditions,
+            equipment: formattedData.profile.equipment
+          }
+        };
+        
+        console.log('Updated user state:', updatedUser);
+        return updatedUser;
+      });
+      
       return { success: true };
     } catch (err) {
       console.error('Profile update failed:', err);
@@ -166,7 +216,7 @@ export const AuthProvider = ({ children }) => {
       }
       
       setError(errorMessage);
-      return { success: false, error: errorMessage };
+      throw new Error(errorMessage); // Throw error to be caught by the component
     } finally {
       setLoading(false);
     }

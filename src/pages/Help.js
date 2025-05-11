@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { useSubscription } from '../contexts/SubscriptionContext';
 
 const Help = () => {
-  const { tier } = useSubscription();
+  const { subscription } = useSubscription();
+  const isElite = subscription?.tier === 'elite';
   
   return (
     <div className="container mx-auto px-4 py-8">
@@ -44,19 +45,61 @@ const Help = () => {
               <p className="mt-1">Browse our comprehensive library of senior-friendly exercises, filtering by difficulty, equipment needed, or specific body areas.</p>
             </div>
             
-            {tier !== 'basic' && (
+            {isElite && (
               <div>
                 <h3 className="font-medium text-lg">Video Demonstrations</h3>
                 <p className="mt-1">Premium and Elite members have access to video demonstrations for proper form and technique for each exercise.</p>
               </div>
             )}
             
-            {tier === 'elite' && (
-              <div>
-                <h3 className="font-medium text-lg">Professional Consultations</h3>
-                <p className="mt-1">As an Elite member, you can schedule monthly consultations with a fitness professional. Access this feature from your profile settings.</p>
-              </div>
-            )}
+            <div className="border-t border-gray-200 pt-6 mt-6">
+              <h3 className="font-medium text-lg text-purple-800">AI-Powered Training Features</h3>
+              {isElite ? (
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <h4 className="font-medium text-lg">Personalized AI Training</h4>
+                    <p className="mt-1">Access your personalized AI training dashboard for smart workout recommendations. The AI system:</p>
+                    <ul className="list-disc list-inside mt-2 space-y-1 text-gray-600">
+                      <li>Analyzes your workout history and progress</li>
+                      <li>Adapts exercises to your fitness level and goals</li>
+                      <li>Provides modifications based on your health conditions</li>
+                      <li>Adjusts intensity based on your performance</li>
+                    </ul>
+                    <Link to="/elite/ai-training" className="text-blue-600 hover:text-blue-800 mt-2 inline-block">
+                      Go to AI Training →
+                    </Link>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-lg">Motion Analysis</h4>
+                    <p className="mt-1">Get real-time feedback on your exercise form using our AI motion analysis feature:</p>
+                    <ul className="list-disc list-inside mt-2 space-y-1 text-gray-600">
+                      <li>Real-time form correction and guidance</li>
+                      <li>Safety alerts for improper movements</li>
+                      <li>Progress tracking for form improvement</li>
+                      <li>Personalized tips for better technique</li>
+                    </ul>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-4">
+                  <p className="text-gray-600">
+                    Upgrade to Elite tier to unlock our advanced AI-powered training features, including:
+                  </p>
+                  <ul className="list-disc list-inside mt-2 space-y-1 text-gray-600">
+                    <li>Personalized AI workout recommendations</li>
+                    <li>Real-time motion analysis and form feedback</li>
+                    <li>Adaptive training that learns from your progress</li>
+                  </ul>
+                  <Link 
+                    to="/subscription/plans" 
+                    className="inline-block mt-4 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded"
+                  >
+                    Upgrade to Elite
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         

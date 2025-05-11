@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
+import { Link } from 'react-router-dom';
 
 const DashboardGuide = () => {
   const [dismissed, setDismissed] = useState(false);
@@ -71,6 +72,13 @@ const DashboardGuide = () => {
             {tier === 'basic' && (
               <li><strong>Upgrade Your Experience:</strong> Consider upgrading to Premium or Elite to unlock additional features like personalized routines and video demonstrations.</li>
             )}
+            {tier === 'elite' && (
+              <>
+                <li><strong>AI-Powered Training:</strong> Access your personalized AI training dashboard for smart workout recommendations and motion analysis. Click "Start Training" in the Elite features section.</li>
+                <li><strong>Motion Analysis:</strong> Get real-time feedback on your exercise form using our AI motion analysis feature. Available in the AI Training dashboard.</li>
+                <li><strong>Monthly Consultation:</strong> Schedule your monthly consultation with a fitness professional to review your progress and goals.</li>
+              </>
+            )}
           </ol>
         )}
         
@@ -93,12 +101,12 @@ const DashboardGuide = () => {
           >
             Got it!
           </button>
-          <button 
+          <Link 
+            to="/help"
             className="border border-blue-600 text-blue-600 hover:bg-blue-50 px-4 py-2 rounded"
-            onClick={() => window.location.href = '/help'}
           >
             View Full Help Guide
-          </button>
+          </Link>
         </div>
       </div>
     </div>

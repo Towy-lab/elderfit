@@ -249,6 +249,49 @@ app.get('/api/auth/me', auth, async (req, res) => {
   }
 });
 
+// Profile update endpoint
+app.put('/api/users/me/profile', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.userId);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const { name, email, profile } = req.body;
+    
+    // Update user fields
+    if (name) {
+      const [firstName, lastName] = name.split(' ');
+      user.firstName = firstName;
+      user.lastName = lastName || '';
+    }
+    if (email) user.email = email;
+    if (profile) user.profile = { ...user.profile, ...profile };
+
+    await user.save();
+    
+    res.json({
+      user: {
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        profile: user.profile
+      }
+    });
+  } catch (error) {
+    console.error('Profile update error:', error);
+    res.status(500).json({ error: 'Error updating profile' });
+  }
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'Server is running', timestamp: new Date().toISOString() });

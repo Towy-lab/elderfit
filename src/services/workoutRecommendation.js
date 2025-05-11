@@ -13,6 +13,93 @@ const INTENSITY_MULTIPLIERS = {
   HIGH: 1.2
 };
 
+// Exercise database
+const EXERCISES = {
+  strength: [
+    {
+      id: 'chair-squats',
+      name: 'Chair Squats',
+      description: 'Sit and stand from a chair to build leg strength',
+      difficulty: 1,
+      sets: 3,
+      reps: 10,
+      restSeconds: 60,
+      focusAreas: ['Legs', 'Core'],
+      modifications: ['Use armrests', 'Add cushion']
+    },
+    {
+      id: 'wall-pushups',
+      name: 'Wall Push-ups',
+      description: 'Push-ups against a wall to build upper body strength',
+      difficulty: 1,
+      sets: 3,
+      reps: 12,
+      restSeconds: 45,
+      focusAreas: ['Chest', 'Arms'],
+      modifications: ['Stand closer to wall', 'Use counter']
+    },
+    {
+      id: 'arm-circles',
+      name: 'Arm Circles',
+      description: 'Circular motions with arms to improve shoulder mobility',
+      difficulty: 1,
+      sets: 2,
+      reps: 15,
+      restSeconds: 30,
+      focusAreas: ['Shoulders', 'Arms'],
+      modifications: ['Smaller circles', 'Seated position']
+    }
+  ],
+  balance: [
+    {
+      id: 'heel-toe-walk',
+      name: 'Heel-to-Toe Walk',
+      description: 'Walk in a straight line with heel touching toe',
+      difficulty: 2,
+      sets: 2,
+      reps: 10,
+      restSeconds: 45,
+      focusAreas: ['Balance', 'Coordination'],
+      modifications: ['Use wall support', 'Wider stance']
+    },
+    {
+      id: 'single-leg-stand',
+      name: 'Single Leg Stand',
+      description: 'Stand on one leg while holding onto support',
+      difficulty: 2,
+      sets: 3,
+      reps: 30,
+      restSeconds: 30,
+      focusAreas: ['Balance', 'Core'],
+      modifications: ['Use chair support', 'Shorter duration']
+    }
+  ],
+  flexibility: [
+    {
+      id: 'shoulder-stretch',
+      name: 'Shoulder Stretch',
+      description: 'Cross arm across chest to stretch shoulder',
+      difficulty: 1,
+      sets: 2,
+      reps: 30,
+      restSeconds: 30,
+      focusAreas: ['Shoulders', 'Upper Back'],
+      modifications: ['Gentle stretch', 'Seated position']
+    },
+    {
+      id: 'ankle-rotations',
+      name: 'Ankle Rotations',
+      description: 'Rotate ankles to improve mobility',
+      difficulty: 1,
+      sets: 2,
+      reps: 20,
+      restSeconds: 30,
+      focusAreas: ['Ankles', 'Lower Legs'],
+      modifications: ['Seated position', 'Smaller range']
+    }
+  ]
+};
+
 const analyzeUserProfile = (profile) => {
   const {
     age,
@@ -108,19 +195,31 @@ const determineIntensityMultiplier = (completionRate) => {
 };
 
 const selectBaseWorkout = (userFactors) => {
+  const { goals, healthConditions, baseDifficulty } = userFactors;
+  
+  // Select exercises based on goals and difficulty
+  const selectedExercises = [];
+  
+  // Always include at least one strength exercise
+  const strengthExercises = EXERCISES.strength.filter(ex => ex.difficulty <= baseDifficulty);
+  selectedExercises.push(strengthExercises[Math.floor(Math.random() * strengthExercises.length)]);
+  
+  // Add balance exercises if balance is a goal or if user has balance-related conditions
+  if (goals.includes('balance') || healthConditions.some(condition => 
+    ['vertigo', 'dizziness', 'balance issues'].includes(condition.toLowerCase()))) {
+    const balanceExercises = EXERCISES.balance.filter(ex => ex.difficulty <= baseDifficulty);
+    selectedExercises.push(balanceExercises[Math.floor(Math.random() * balanceExercises.length)]);
+  }
+  
+  // Add flexibility exercises
+  const flexibilityExercises = EXERCISES.flexibility.filter(ex => ex.difficulty <= baseDifficulty);
+  selectedExercises.push(flexibilityExercises[Math.floor(Math.random() * flexibilityExercises.length)]);
+  
   return {
-    id: 'mock-workout-1',
+    id: `workout-${Date.now()}`,
     name: 'Personalized Workout',
-    exercises: [
-      {
-        id: 'ex1',
-        name: 'Chair Squats',
-        sets: 3,
-        reps: 10,
-        restSeconds: 60
-      }
-    ],
-    focusAreas: ['Strength', 'Balance']
+    exercises: selectedExercises,
+    focusAreas: [...new Set(selectedExercises.flatMap(ex => ex.focusAreas))]
   };
 };
 

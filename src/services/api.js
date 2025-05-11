@@ -57,10 +57,27 @@ export const loginUser = async (email, password) => {
   };
   
   try {
+    console.log('Making request to /auth/login with data:', requestData);
     const response = await axiosInstance.post('/auth/login', requestData);
+    console.log('Login response:', response.data);
+    
+    if (!response.data || !response.data.token) {
+      console.error('Login response missing token:', response.data);
+      throw new Error('Invalid response from server - no token received');
+    }
+    
     return response.data;
   } catch (error) {
-    console.error('Login error:', error.message);
+    console.error('Login error:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      config: {
+        url: error.config?.url,
+        method: error.config?.method,
+        data: error.config?.data
+      }
+    });
     // Rethrow to be handled by the component
     throw error;
   }
@@ -334,8 +351,6 @@ export const calculateProration = async (data) => {
   }
 };
 
-
-
 export const changeBillingCycle = async (interval) => {
   try {
     const response = await axiosInstance.post('/stripe/change-billing-cycle', { interval });
@@ -348,11 +363,31 @@ export const changeBillingCycle = async (interval) => {
 
 // User profile and preferences API functions
 export const updateUserProfile = async (profileData) => {
+  console.log('Updating user profile with data:', profileData);
   try {
-    const response = await axiosInstance.put('/users/profile', profileData);
+    // First check if server is running
+    const healthCheck = await checkServerHealth();
+    console.log('Server health check:', healthCheck);
+    
+    if (healthCheck.status === 'error') {
+      throw new Error('Server is not responding. Please try again later.');
+    }
+
+    // Use the correct endpoint that matches our server
+    const response = await axiosInstance.put('/users/me/profile', profileData);
+    console.log('Profile update response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error updating user profile:', error.message);
+    console.error('Error updating user profile:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      config: {
+        url: error.config?.url,
+        method: error.config?.method,
+        data: error.config?.data
+      }
+    });
     throw error;
   }
 };

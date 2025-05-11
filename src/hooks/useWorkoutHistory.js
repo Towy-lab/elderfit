@@ -1,50 +1,41 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from './useAuth';
+import { useAuth } from '../contexts/AuthContext';
+import { useExercises } from '../contexts/ExerciseContext';
 
 export const useWorkoutHistory = () => {
   const { user } = useAuth();
-  const [workoutHistory, setWorkoutHistory] = useState([]);
+  const { workoutHistory: contextHistory, getWorkoutStats } = useExercises();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchWorkoutHistory();
-  }, [user]);
-
-  const fetchWorkoutHistory = async () => {
-    try {
-      setLoading(true);
-      // In a real implementation, this would fetch from your API
-      // For now, we'll return mock data
-      const mockHistory = [
-        {
-          id: '1',
-          date: new Date(),
-          completed: true,
-          exercises: [
-            {
-              id: 'ex1',
-              completed: true,
-              difficultyRating: 3,
-              userRating: 4
-            }
-          ]
-        }
-      ];
-
-      setWorkoutHistory(mockHistory);
-    } catch (err) {
-      setError('Failed to fetch workout history');
-      console.error('Error fetching workout history:', err);
-    } finally {
+    if (user) {
       setLoading(false);
     }
+  }, [user]);
+
+  const getWorkoutHistory = () => {
+    if (!contextHistory || contextHistory.length === 0) {
+      return [];
+    }
+    
+    return contextHistory.map(workout => ({
+      id: workout.id,
+      date: new Date(workout.completedAt),
+      completed: true,
+      exercises: workout.completedExercises.map(exercise => ({
+        id: exercise.exerciseId,
+        completed: true,
+        difficultyRating: 3, // Default difficulty rating
+        userRating: 4 // Default user rating
+      }))
+    }));
   };
 
   return {
-    workoutHistory,
+    workoutHistory: getWorkoutHistory(),
     loading,
     error,
-    refreshHistory: fetchWorkoutHistory
+    refreshHistory: () => setLoading(true)
   };
 };

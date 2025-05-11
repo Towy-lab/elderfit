@@ -29,6 +29,7 @@ import { useAuth } from './contexts/AuthContext';
 import WorkoutsPage from './pages/WorkoutsPage';
 import SafetyGuidelines from './pages/safety/Guidelines';
 import FAQ from './pages/FAQ';
+import Help from './pages/Help';
 // Import the new AITrainingDashboard component
 import AITrainingDashboard from './components/training/AITrainingDashboard';
 import Settings from './pages/Settings';
@@ -187,8 +188,18 @@ function App() {
             {/* FAQ Page (public) */}
             <Route path="/faq" element={<FAQ />} />
             
+            {/* Help Page (public) */}
+            <Route path="/help" element={<Help />} />
+            
             {/* AI Training Page */}
-            <Route path="/training/ai" element={<AITrainingDashboard />} />
+            <Route 
+              path="/elite/ai-training" 
+              element={
+                <ProtectedRoute>
+                  <AITrainingDashboard />
+                </ProtectedRoute>
+              } 
+            />
             
             {/* Settings Page */}
             <Route 
