@@ -1,0 +1,11 @@
+﻿# Dependencies
+node_modules/
+.cache/
+dist/
+
+# Build files
+*.pack
+
+# Environment variables
+.env
+.env.local
