@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
+const http = require('http');
 
 // Enhanced debugging for environment variables
 const dotenvPath = path.resolve(__dirname, '../.env');
@@ -25,23 +26,81 @@ console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'exists' : 'MISSING');
 
 // Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 31415; // Use environment variable or default to 31415
+const PORT = process.env.PORT || 31415;
 
-// Import routes after environment variables are loaded
-const stripeRoutes = require('./routes/stripe');
+// Create HTTP server
+const server = http.createServer(app);
 
-// Connect to MongoDB
-const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/elderfit';
-console.log('Connecting to MongoDB with URI:', mongoUri);
+// Function to start server with retry logic
+const startServer = (retries = 3) => {
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  }).on('error', (err) => {
+    if (err.code === 'EADDRINUSE' && retries > 0) {
+      console.log(`Port ${PORT} is busy, retrying with port ${PORT + 1}...`);
+      PORT++;
+      startServer(retries - 1);
+    } else {
+      console.error('Server error:', err);
+      process.exit(1);
+    }
+  });
+};
 
-mongoose.connect(mongoUri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => console.log('MongoDB Connected Successfully'))
-.catch(err => {
-  console.error('MongoDB Connection Error:', err);
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received. Closing HTTP server...');
+  server.close(() => {
+    console.log('HTTP server closed');
+    mongoose.connection.close(false, () => {
+      console.log('MongoDB connection closed');
+      process.exit(0);
+    });
+  });
 });
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received. Closing HTTP server...');
+  server.close(() => {
+    console.log('HTTP server closed');
+    mongoose.connection.close(false, () => {
+      console.log('MongoDB connection closed');
+      process.exit(0);
+    });
+  });
+});
+
+// Import routes
+const authRoutes = require('./routes/auth');
+const subscriptionRoutes = require('./routes/subscription');
+const stripeRoutes = require('./routes/stripe');
+const contentRoutes = require('./routes/content');
+const devicesRoutes = require('./routes/devices');
+
+// Connect to MongoDB with retry logic
+const connectWithRetry = async (retries = 5, delay = 5000) => {
+  const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/elderfit';
+  console.log('Connecting to MongoDB with URI:', mongoUri);
+
+  try {
+    await mongoose.connect(mongoUri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    });
+    console.log('MongoDB Connected Successfully');
+  } catch (err) {
+    if (retries > 0) {
+      console.log(`MongoDB connection failed. Retrying in ${delay/1000} seconds...`);
+      setTimeout(() => connectWithRetry(retries - 1, delay), delay);
+    } else {
+      console.error('MongoDB Connection Error:', err);
+      process.exit(1);
+    }
+  }
+};
+
+// Start MongoDB connection
+connectWithRetry();
 
 // Import User model
 const User = require('./models/User');
@@ -52,9 +111,11 @@ app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
 
 // Expanded CORS configuration
 app.use(cors({
-  origin: '*', // For development, allow all origins
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  maxAge: 86400 // 24 hours
 }));
 
 // Regular middleware (after the webhook middleware)
@@ -67,8 +128,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// Register Stripe routes
+// Use routes
+app.use('/api/auth', authRoutes);
+app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/stripe', stripeRoutes);
+app.use('/api/content', contentRoutes);
+app.use('/api/devices', devicesRoutes);
 
 // Debug routes for Stripe redirects
 app.get('/subscription/success', (req, res) => {
@@ -297,10 +362,8 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'Server is running', timestamp: new Date().toISOString() });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Start the server at the end of the file
+startServer();
 
 // Global error handler for uncaught exceptions
 process.on('uncaughtException', (err) => {

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useSafety } from '../contexts/SafetyContext';
 import SafetyHub from '../components/safety/SafetyHub';
+import DeviceConnection from '../components/safety/DeviceConnection';
 import { Shield, Clipboard, Lock } from 'lucide-react';
 import TierContentManager from '../components/subscription/TierContentManager';
 
@@ -178,6 +179,11 @@ const SafetyFeaturesPage = () => {
       
       {/* Main Safety Hub */}
       <SafetyHub exercise={selectedExercise} />
+      
+      {/* Device Connection Section */}
+      <div id="devices" className="mt-8">
+        <DeviceConnection />
+      </div>
       
       {/* Additional Safety Resources */}
       <div className="mt-12">

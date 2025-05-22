@@ -37,6 +37,7 @@ const ForceUpdateButton = ({ targetTier = 'premium', onSuccess }) => {
         setTimeout(() => {
           window.location.href = '/dashboard?refresh=' + Date.now();
         }, 2000);
+      } else {
         setError(data.error || 'Update failed');
       }
     } catch (err) {

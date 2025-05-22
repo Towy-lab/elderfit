@@ -36,8 +36,17 @@ const auth = (req, res, next) => {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       
-      // Add user to request
-      req.user = { id: decoded.userId };
+      // Add user to request - handle both formats (user.id and userId)
+      req.user = { 
+        id: decoded.user?.id || decoded.userId 
+      };
+      
+      if (!req.user.id) {
+        console.error('No user ID found in token:', decoded);
+        return res.status(401).json({ error: 'Invalid token format' });
+      }
+      
+      console.log(`Auth successful for user ${req.user.id} accessing ${req.originalUrl}`);
       next();
     } catch (jwtError) {
       console.error(`JWT verification failed for ${req.originalUrl}:`, jwtError.message);

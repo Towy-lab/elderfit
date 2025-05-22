@@ -1,7 +1,7 @@
-// src/components/admin/TierContentAdmin.js
+// src/components/subscription/admin/TierContentAdmin.js
 import React, { useState, useEffect } from 'react';
 import { PlusIcon, XIcon, Edit2Icon, EyeIcon, SaveIcon } from 'lucide-react';
-import tierConfig from '../../config/tierConfig';
+import tierConfig from '../../../config/tierConfig';
 
 /**
  * TierContentAdmin - A component for administrators to manage tier-specific content
@@ -82,26 +82,41 @@ const TierContentAdmin = () => {
   };
   
   // Save changes
-  const saveChanges = () => {
-    // Create a deep copy of the current config
-    const updatedConfig = JSON.parse(JSON.stringify(editedConfig));
-    
-    // Update the features for the current category and tier
-    if (updatedConfig[activeCategory] && updatedConfig[activeCategory][activeTier]) {
-      updatedConfig[activeCategory][activeTier].features = [...editedFeatures];
+  const saveChanges = async () => {
+    try {
+      // Create a deep copy of the current config
+      const updatedConfig = JSON.parse(JSON.stringify(editedConfig));
+      
+      // Update the features for the current category and tier
+      if (updatedConfig[activeCategory] && updatedConfig[activeCategory][activeTier]) {
+        updatedConfig[activeCategory][activeTier].features = [...editedFeatures];
+      }
+      
+      // Update the state
+      setEditedConfig(updatedConfig);
+      setIsEditing(false);
+      
+      // Save to backend
+      const response = await fetch('/api/admin/tier-content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedConfig),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save changes');
+      }
+
+      // Show success message
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus(null), 3000);
+    } catch (error) {
+      console.error('Error saving tier content:', error);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus(null), 3000);
     }
-    
-    // Update the state
-    setEditedConfig(updatedConfig);
-    setIsEditing(false);
-    
-    // Show save status (this would typically be an API call)
-    setSaveStatus('success');
-    setTimeout(() => setSaveStatus(null), 3000);
-    
-    // In a real application, you would save this to your backend
-    console.log('Saving updated tier config:', updatedConfig);
-    // API call would go here
   };
   
   return (
@@ -113,6 +128,12 @@ const TierContentAdmin = () => {
         <div className="mb-4 bg-green-100 text-green-700 p-3 rounded flex items-center">
           <SaveIcon size={18} className="mr-2" />
           Changes saved successfully
+        </div>
+      )}
+      {saveStatus === 'error' && (
+        <div className="mb-4 bg-red-100 text-red-700 p-3 rounded flex items-center">
+          <XIcon size={18} className="mr-2" />
+          Failed to save changes. Please try again.
         </div>
       )}
       

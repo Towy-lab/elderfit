@@ -94,6 +94,18 @@ const UserSchema = new mongoose.Schema({
         contentId: String
       },
       default: new Map()
+    },
+    isFree: {
+      type: Boolean,
+      default: true
+    },
+    startDate: {
+      type: Date,
+      default: Date.now
+    },
+    currentPeriodEnd: {
+      type: Date,
+      default: new Date(2099, 11, 31)
     }
   },
   // User's emergency contacts
@@ -138,7 +150,14 @@ const UserSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
-  }
+  },
+  devices: [{
+    id: String,
+    name: String,
+    type: String,
+    status: String,
+    connectedAt: Date
+  }]
 });
 
 // Method to validate password

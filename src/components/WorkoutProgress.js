@@ -3,7 +3,7 @@ import { useProgress } from '../contexts/ProgressContext';
 
 const WorkoutProgress = () => {
   // Get all the values from your ProgressContext
-  const { workouts = [], streak = 0, lastWorkout = null, isLoading = false } = useProgress() || {};
+  const { workouts = [], streak = 0, isLoading = false } = useProgress() || {};
 
   // Calculate some additional stats
   const completedWorkouts = workouts.length;

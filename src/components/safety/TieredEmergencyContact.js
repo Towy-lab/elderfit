@@ -7,7 +7,7 @@ import TierContentManager from '../subscription/TierContentManager';
 
 export const TieredEmergencyContact = () => {
   const { hasTierAccess } = useSubscription();
-  const { contacts, addContact, removeContact, updateContact } = useSafety();
+  const { contacts, addContact, removeContact } = useSafety();
   const [isAdding, setIsAdding] = useState(false);
   const [newContact, setNewContact] = useState({
     name: '',
@@ -130,6 +130,7 @@ export const TieredEmergencyContact = () => {
                 <a 
                   href="/subscription/plans" 
                   className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
+                  aria-label="View subscription upgrade options"
                 >
                   View upgrade options →
                 </a>

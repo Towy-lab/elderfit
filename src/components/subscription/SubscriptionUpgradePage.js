@@ -1,28 +1,20 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { SubscriptionContext } from '../../context/SubscriptionContext.js';
+import { useSubscription } from '../../contexts/SubscriptionContext';
 import PricingPlans from './PricingPlans';
 
 const SubscriptionUpgradePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { subscriptionStatus, subscriptionDetails } = useContext(SubscriptionContext);
+  const { subscription, formatTierName } = useSubscription();
   
   // Get the required level and redirect path from location state
-  const requiredLevel = location.state?.requiredLevel || 'basic';
+  const requiredLevel = location.state?.requiredTier || 'basic';
   const redirectPath = location.state?.from || '/dashboard';
   
-  // Map subscription levels to readable names
-  const subscriptionLevelNames = {
-    'none': 'No Subscription',
-    'basic': 'Basic',
-    'premium': 'Premium',
-    'elite': 'Elite'
-  };
-  
   // Get current subscription info
-  const currentPlan = subscriptionLevelNames[subscriptionStatus] || 'No Subscription';
-  const requiredPlan = subscriptionLevelNames[requiredLevel] || 'Basic';
+  const currentPlan = formatTierName(subscription?.tier || 'basic');
+  const requiredPlan = formatTierName(requiredLevel);
   
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
@@ -44,19 +36,19 @@ const SubscriptionUpgradePage = () => {
               </span>
             </div>
             <p className="text-sm text-amber-700">
-              {subscriptionStatus === 'none' 
+              {!subscription?.hasSubscription 
                 ? `You need a ${requiredPlan} subscription to access this content.` 
                 : `Your current ${currentPlan} plan doesn't include access to ${requiredPlan} features.`}
             </p>
           </div>
         </div>
         
-        {subscriptionDetails && subscriptionDetails.status === 'active' && (
+        {subscription?.hasSubscription && (
           <div className="mt-6 text-gray-600">
             <p>
               Current subscription: <span className="font-semibold">{currentPlan}</span>
-              {subscriptionDetails.currentPeriodEnd && (
-                <span> (renews on {new Date(subscriptionDetails.currentPeriodEnd).toLocaleDateString()})</span>
+              {subscription.currentPeriodEnd && (
+                <span> (renews on {new Date(subscription.currentPeriodEnd).toLocaleDateString()})</span>
               )}
             </p>
           </div>

@@ -1,5 +1,5 @@
 {
-  "name": "elderfitsecrets",
+  "name": "elderfit-clean",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -31,7 +31,7 @@
     "web-vitals": "^2.1.4"
   },
   "devDependencies": {
-    "concurrently": "^8.2.0",
+    "concurrently": "^8.2.2",
     "nodemon": "^2.0.22"
   },
   "scripts": {

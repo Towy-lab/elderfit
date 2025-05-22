@@ -4,36 +4,53 @@ import * as posenet from '@tensorflow-models/posenet';
 let poseNetModel = null;
 
 // Load PoseNet model
-const loadPoseNet = async () => {
+export const loadPoseNet = async () => {
   if (poseNetModel) return poseNetModel;
   
   try {
     console.log('Initializing TensorFlow.js...');
-    // Initialize TensorFlow.js
+    // Initialize TensorFlow.js with explicit backend
+    await tf.setBackend('webgl');
     await tf.ready();
-    console.log('TensorFlow.js initialized');
+    console.log('TensorFlow.js initialized with backend:', tf.getBackend());
     
     console.log('Loading PoseNet model...');
-    // Load PoseNet model
+    // Load PoseNet model with more specific configuration
     poseNetModel = await posenet.load({
       architecture: 'MobileNetV1',
       outputStride: 16,
       inputResolution: { width: 640, height: 480 },
-      multiplier: 0.75
+      multiplier: 0.75,
+      quantBytes: 2
     });
-    console.log('PoseNet model loaded');
+    console.log('PoseNet model loaded successfully');
     
     return poseNetModel;
   } catch (error) {
     console.error('Error loading PoseNet model:', error);
-    throw error;
+    // Provide more specific error messages
+    if (error.message.includes('WebGL')) {
+      throw new Error('WebGL is not supported in your browser. Please try using Chrome or Firefox.');
+    } else if (error.message.includes('model')) {
+      throw new Error('Failed to load the pose detection model. Please check your internet connection and try again.');
+    } else {
+      throw new Error('Failed to initialize pose detection. Please try refreshing the page.');
+    }
   }
 };
 
-// Convert video stream to image data
+// Convert video stream to image data with better error handling
 const getImageData = async (videoElement) => {
-  if (!videoElement || !videoElement.srcObject) {
-    throw new Error('Invalid video element or missing stream');
+  if (!videoElement) {
+    throw new Error('Video element not found');
+  }
+  
+  if (!videoElement.srcObject) {
+    throw new Error('No video stream available');
+  }
+
+  if (videoElement.readyState !== 4) {
+    throw new Error('Video is not ready');
   }
 
   return new Promise((resolve, reject) => {
@@ -42,11 +59,16 @@ const getImageData = async (videoElement) => {
       canvas.width = videoElement.videoWidth || 640;
       canvas.height = videoElement.videoHeight || 480;
       const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        throw new Error('Failed to get canvas context');
+      }
+      
       ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
       resolve(canvas);
     } catch (error) {
       console.error('Error drawing video to canvas:', error);
-      reject(error);
+      reject(new Error('Failed to process video frame. Please try again.'));
     }
   });
 };

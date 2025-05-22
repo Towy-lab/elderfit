@@ -1,5 +1,6 @@
 import React from 'react';
 import { useSubscription } from '../../contexts/SubscriptionContext';
+import { Link } from 'react-router-dom';
 
 const SafetyFeatures = () => {
   const { subscription } = useSubscription();
@@ -43,9 +44,12 @@ const SafetyFeatures = () => {
           <p className="text-gray-600 mb-4">
             Connect and manage your wearable devices.
           </p>
-          <button className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+          <Link 
+            to="/safety/devices" 
+            className="block w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 text-center"
+          >
             Connect Device
-          </button>
+          </Link>
         </div>
       </div>
     </div>

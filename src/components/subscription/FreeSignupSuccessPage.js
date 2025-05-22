@@ -1,6 +1,6 @@
 import React, { useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SubscriptionContext } from '../../context/SubscriptionContext.js';
+import { SubscriptionContext } from '../../contexts/SubscriptionContext';
 
 const FreeSignupSuccessPage = () => {
   const navigate = useNavigate();

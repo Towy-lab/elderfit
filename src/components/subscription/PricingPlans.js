@@ -26,47 +26,6 @@ const PricingPlans = ({ isHomePage = false }) => {
   const [processingTier, setProcessingTier] = useState(null);
   const [error, setError] = useState(null);
   
-  // Simple checkout test function
-  const handleSimpleCheckout = async () => {
-    try {
-      console.log('Attempting simple test checkout...');
-      setProcessingTier('test');
-      
-      const response = await fetch('http://localhost:31415/api/stripe/simple-checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({})
-      });
-      
-      const data = await response.json();
-      console.log('Simple checkout response:', data);
-      
-      // Redirect to Stripe Checkout
-      if (data.url) {
-        window.location.href = data.url;
-      } else if (data.sessionId) {
-        // If Stripe.js is loaded
-        if (window.Stripe) {
-          const stripe = window.Stripe('pk_test_51R40QxGCjT8uHlI9WQdabIoRw4icN3pWYm7uzGh7BEOiXdbpCIEFrgOBqjrrPHQxJcUwScTYUWwe6dujC9lBoNi300saDYDTse');
-          stripe.redirectToCheckout({ sessionId: data.sessionId });
-        } else {
-          // Fallback direct URL construction
-          window.location.href = `https://checkout.stripe.com/pay/${data.sessionId}`;
-        }
-      } else {
-        setError('Could not create checkout session');
-      }
-    } catch (error) {
-      console.error('Simple checkout error:', error);
-      setError('Failed to connect to the server');
-    } finally {
-      setProcessingTier(null);
-    }
-  };
-  
   // Handle subscription selection - IMPROVED VERSION
   const handleSelectPlan = async (tier) => {
     try {

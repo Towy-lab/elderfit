@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { SubscriptionContext } from '../context/SubscriptionContext';
+import { SubscriptionContext } from '../contexts/SubscriptionContext';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -13,11 +13,13 @@ const Navbar = () => {
     : null;
   
   // Get subscription info from context
-  const { subscriptionStatus, isLoading } = useContext(SubscriptionContext);
+  const { subscription, loading } = useContext(SubscriptionContext);
   
   // Map subscription status to badge color and text
   const getSubscriptionBadge = () => {
-    switch (subscriptionStatus) {
+    if (!subscription) return { color: 'bg-gray-100 text-gray-800', text: 'Free' };
+    
+    switch (subscription.tier) {
       case 'elite':
         return { color: 'bg-purple-100 text-purple-800', text: 'Elite' };
       case 'premium':
@@ -63,7 +65,7 @@ const Navbar = () => {
               >
                 Plans
               </Link>
-              {subscriptionStatus !== 'none' && (
+              {subscription?.tier !== 'none' && (
                 <>
                   <Link
                     to="/dashboard/basic"
@@ -71,7 +73,7 @@ const Navbar = () => {
                   >
                     Workouts
                   </Link>
-                  {(subscriptionStatus === 'premium' || subscriptionStatus === 'elite') && (
+                  {(subscription?.tier === 'premium' || subscription?.tier === 'elite') && (
                     <Link
                       to="/dashboard/premium"
                       className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
@@ -79,7 +81,7 @@ const Navbar = () => {
                       Nutrition
                     </Link>
                   )}
-                  {subscriptionStatus === 'elite' && (
+                  {subscription?.tier === 'elite' && (
                     <Link
                       to="/dashboard/elite"
                       className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
@@ -95,7 +97,7 @@ const Navbar = () => {
             {user ? (
               <>
                 {/* Subscription badge */}
-                {!isLoading && (
+                {!loading && (
                   <span 
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${subscriptionBadge.color} mr-4`}
                   >
@@ -232,7 +234,7 @@ const Navbar = () => {
             >
               Plans
             </Link>
-            {subscriptionStatus !== 'none' && (
+            {subscription?.tier !== 'none' && (
               <>
                 <Link
                   to="/dashboard/basic"
@@ -241,7 +243,7 @@ const Navbar = () => {
                 >
                   Workouts
                 </Link>
-                {(subscriptionStatus === 'premium' || subscriptionStatus === 'elite') && (
+                {(subscription?.tier === 'premium' || subscription?.tier === 'elite') && (
                   <Link
                     to="/dashboard/premium"
                     className="text-gray-500 hover:bg-gray-50 hover:text-gray-700 block px-3 py-2 rounded-md text-base font-medium"
@@ -250,7 +252,7 @@ const Navbar = () => {
                     Nutrition
                   </Link>
                 )}
-                {subscriptionStatus === 'elite' && (
+                {subscription?.tier === 'elite' && (
                   <Link
                     to="/dashboard/elite"
                     className="text-gray-500 hover:bg-gray-50 hover:text-gray-700 block px-3 py-2 rounded-md text-base font-medium"
@@ -275,7 +277,7 @@ const Navbar = () => {
                   <div className="text-base font-medium text-gray-800">{user.name}</div>
                   <div className="text-sm font-medium text-gray-500">{user.email}</div>
                 </div>
-                {!isLoading && (
+                {!loading && (
                   <span 
                     className={`ml-auto inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${subscriptionBadge.color}`}
                   >

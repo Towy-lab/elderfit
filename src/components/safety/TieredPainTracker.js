@@ -190,6 +190,7 @@ export const TieredPainTracker = ({ exerciseId }) => {
                 <a 
                   href="/subscription/plans" 
                   className="text-sm font-medium text-purple-600 hover:text-purple-800"
+                  aria-label="Upgrade to Elite subscription for advanced pain management"
                 >
                   Upgrade to Elite →
                 </a>

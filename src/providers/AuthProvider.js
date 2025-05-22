@@ -36,8 +36,14 @@ export const AuthProvider = ({ children }) => {
       if (savedUser) {
         try {
           const parsedUser = JSON.parse(savedUser);
-          setUser(parsedUser);
-          setIsAuthenticated(true);
+          // Ensure user ID is present
+          if (parsedUser._id) {
+            console.log('Found saved user data with ID:', parsedUser._id);
+            setUser(parsedUser);
+            setIsAuthenticated(true);
+          } else {
+            console.log('Saved user data missing ID, will verify with server');
+          }
         } catch (err) {
           console.error('Error parsing saved user data:', err);
         }
@@ -49,14 +55,20 @@ export const AuthProvider = ({ children }) => {
         const userData = await getCurrentUser();
         console.log('User authenticated:', userData);
         
-        // Ensure profile object exists
+        // Ensure profile object exists and user ID is present
         const userWithProfile = {
           ...userData,
-          profile: userData.profile || {}
+          profile: userData.profile || {},
+          _id: userData._id || userData.id // Try both _id and id
         };
         
+        if (!userWithProfile._id) {
+          console.error('Auth check failed: No user ID in response');
+          throw new Error('Invalid user data received');
+        }
+        
+        // Set user data first
         setUser(userWithProfile);
-        setIsAuthenticated(true);
         
         // Update saved user data
         const currentUser = {
@@ -64,6 +76,14 @@ export const AuthProvider = ({ children }) => {
           token: token
         };
         localStorage.setItem('user', JSON.stringify(currentUser));
+        
+        // Set authenticated state after user data is set
+        setIsAuthenticated(true);
+        
+        console.log('Auth check successful, user data set:', { 
+          userId: userWithProfile._id,
+          userData: userWithProfile 
+        });
       } catch (err) {
         console.error('Token verification failed:', err);
         // Only remove token if it's an authentication error
@@ -113,15 +133,23 @@ export const AuthProvider = ({ children }) => {
       // Save token to localStorage
       localStorage.setItem('token', data.token);
       
-      // Ensure profile object exists
+      // Ensure profile object exists and user ID is present
       const userWithProfile = {
         ...data.user,
-        profile: data.user.profile || {}
+        profile: data.user.profile || {},
+        _id: data.user._id || data.user.id, // Try both _id and id
+        firstName: data.user.firstName || data.user.profile?.firstName || data.user.name?.split(' ')[0] || null,
+        lastName: data.user.lastName || data.user.profile?.lastName || data.user.name?.split(' ').slice(1).join(' ') || null
       };
       
-      // Set user data
+      if (!userWithProfile._id) {
+        console.error('Login failed: No user ID in response');
+        setError('Login failed: Invalid user data received');
+        return { success: false, error: 'Login failed: Invalid user data received' };
+      }
+      
+      // Set user data first
       setUser(userWithProfile);
-      setIsAuthenticated(true);
       
       // Save complete user data to localStorage
       const currentUser = {
@@ -130,7 +158,15 @@ export const AuthProvider = ({ children }) => {
       };
       localStorage.setItem('user', JSON.stringify(currentUser));
       
-      console.log('Login successful, user data set');
+      // Set authenticated state after user data is set
+      setIsAuthenticated(true);
+      
+      console.log('Login successful, user data set:', { 
+        userId: userWithProfile._id,
+        firstName: userWithProfile.firstName,
+        lastName: userWithProfile.lastName,
+        userData: userWithProfile 
+      });
       
       // Return success, but don't navigate (let the calling component handle navigation)
       return { success: true };

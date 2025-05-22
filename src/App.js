@@ -1,9 +1,10 @@
 // src/App.js
 import React, { useEffect } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 // Import existing components
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
+import LoadingSpinner from './components/common/LoadingSpinner';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/auth/Login';
@@ -25,6 +26,8 @@ import EliteContent from './pages/subscription/EliteContent';
 import SafetyFeaturesPage from './pages/SafetyFeaturesPage';
 // Import auth context
 import { useAuth } from './contexts/AuthContext';
+// Import subscription context
+import { useSubscription } from './contexts/SubscriptionContext';
 // Import the new WorkoutsPage component
 import WorkoutsPage from './pages/WorkoutsPage';
 import SafetyGuidelines from './pages/safety/Guidelines';
@@ -32,33 +35,46 @@ import FAQ from './pages/FAQ';
 import Help from './pages/Help';
 // Import the new AITrainingDashboard component
 import AITrainingDashboard from './components/training/AITrainingDashboard';
-import Settings from './pages/Settings';
+// Import HealthHub component
+import HealthHub from './pages/health/HealthHub';
 
 // Import AppProviders as named import
 import { AppProviders } from './providers/AppProviders';
 
-// Protected Route component for React Router v6
-const ProtectedRoute = ({ children }) => {
+// Protected route component
+const ProtectedRoute = ({ children, requiredTier }) => {
   const { isAuthenticated, loading } = useAuth();
+  const { hasTierAccess, subscription } = useSubscription();
   const location = useLocation();
-  
-  // Add logging
+  const navigate = useNavigate();
+
   console.log('ProtectedRoute rendering for path:', location.pathname);
   console.log('Auth state:', { isAuthenticated, loading });
-  
-  // If still loading auth state, show loading indicator
+  console.log('Subscription state:', { subscription, requiredTier });
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      console.log('Not authenticated, redirecting to login');
+      navigate('/login', { state: { from: location } });
+    } else if (!loading && isAuthenticated && requiredTier && !hasTierAccess(requiredTier)) {
+      console.log('Insufficient subscription tier, redirecting to upgrade');
+      navigate('/upgrade', { state: { from: location } });
+    }
+  }, [isAuthenticated, loading, location, navigate, requiredTier, hasTierAccess]);
+
   if (loading) {
-    return <div>Loading...</div>;
+    return <LoadingSpinner />;
   }
-  
-  // If not authenticated, redirect to login
+
   if (!isAuthenticated) {
-    console.log('Not authenticated, redirecting to login');
-    return <Navigate to="/login" replace />;
+    return null;
   }
-  
-  // If authenticated, render the protected component
-  console.log('Authenticated, rendering protected content');
+
+  if (requiredTier && !hasTierAccess(requiredTier)) {
+    return null;
+  }
+
+  console.log('Authenticated and has required tier, rendering protected content');
   return children;
 };
 
@@ -158,7 +174,7 @@ function App() {
             <Route 
               path="/content/premium" 
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredTier="premium">
                   <PremiumContent />
                 </ProtectedRoute>
               } 
@@ -166,7 +182,7 @@ function App() {
             <Route 
               path="/content/elite" 
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredTier="elite">
                   <EliteContent />
                 </ProtectedRoute>
               } 
@@ -175,6 +191,16 @@ function App() {
             {/* Safety Features Page */}
             <Route 
               path="/safety" 
+              element={
+                <ProtectedRoute>
+                  <SafetyFeaturesPage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Device Connection Page */}
+            <Route 
+              path="/safety/devices" 
               element={
                 <ProtectedRoute>
                   <SafetyFeaturesPage />
@@ -195,18 +221,18 @@ function App() {
             <Route 
               path="/elite/ai-training" 
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredTier="elite">
                   <AITrainingDashboard />
                 </ProtectedRoute>
               } 
             />
             
-            {/* Settings Page - Redirect to profile */}
+            {/* Health Hub Page */}
             <Route 
-              path="/settings" 
+              path="/elite/health-hub" 
               element={
-                <ProtectedRoute>
-                  <Navigate to="/profile" replace />
+                <ProtectedRoute requiredTier="elite">
+                  <HealthHub />
                 </ProtectedRoute>
               } 
             />

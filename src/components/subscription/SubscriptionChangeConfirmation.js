@@ -28,30 +28,54 @@ const SubscriptionChangeConfirmation = ({
   };
   
   // Get pricing information when the component mounts
-  // In SubscriptionChangeConfirmation.js - Update the useEffect
-useEffect(() => {
-  const getProrationDetails = async () => {
-    // Special case for any downgrade - use simplified display without API call
-    if (
-      (currentTier === 'elite' && (newTier === 'premium' || newTier === 'basic')) ||
-      (currentTier === 'premium' && newTier === 'basic')
-    ) {
-      console.log(`Special case: ${currentTier} to ${newTier} downgrade`);
-      setPriceInfo({
-        loading: false,
-        immediate: 0,
-        next: newTier === 'premium' ? 9.99 : 0, // Use the appropriate price
-        currency: 'usd',
-        isDowngrade: true
-      });
-      return;
-    }
+  useEffect(() => {
+    const getProrationDetails = async () => {
+      try {
+        // Special case for any downgrade - use simplified display without API call
+        if (
+          (currentTier === 'elite' && (newTier === 'premium' || newTier === 'basic')) ||
+          (currentTier === 'premium' && newTier === 'basic')
+        ) {
+          console.log(`Special case: ${currentTier} to ${newTier} downgrade`);
+          setPriceInfo({
+            loading: false,
+            immediate: 0,
+            next: newTier === 'premium' ? 9.99 : 0, // Use the appropriate price
+            currency: 'usd',
+            isDowngrade: true
+          });
+          return;
+        }
+        
+        // Get proration details from API
+        const result = await calculateProration(newTier, interval);
+        if (result.success) {
+          setPriceInfo({
+            loading: false,
+            immediate: result.prorationDetails.immediateCharge,
+            next: result.prorationDetails.nextBillingAmount,
+            currency: result.prorationDetails.currency,
+            isDowngrade: result.prorationDetails.isDowngrade || false
+          });
+        } else {
+          setPriceInfo(prev => ({
+            ...prev,
+            loading: false,
+            error: result.error || 'Failed to calculate price changes'
+          }));
+        }
+      } catch (error) {
+        console.error('Error calculating proration:', error);
+        setPriceInfo(prev => ({
+          ...prev,
+          loading: false,
+          error: 'Failed to calculate price changes'
+        }));
+      }
+    };
     
-    // Rest of your existing code...
-  };
-  
-  getProrationDetails();
-}, [newTier, currentTier, interval, calculateProration]);
+    getProrationDetails();
+  }, [newTier, currentTier, interval, calculateProration]);
   
   // Handle form submission
   const handleSubmit = (e) => {

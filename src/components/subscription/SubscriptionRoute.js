@@ -18,8 +18,8 @@ const SubscriptionRoute = ({
   requiredTier = 'basic',
   redirectTo = '/subscription'
 }) => {
-  const { currentUser, loading: authLoading } = useAuth();
-  const { userSubscription, isLoading: subscriptionLoading } = useSubscription();
+  const { user, loading: authLoading } = useAuth();
+  const { subscription, loading: subscriptionLoading } = useSubscription();
   const location = useLocation();
 
   // Order of tiers for comparison (higher index = higher tier)
@@ -34,12 +34,12 @@ const SubscriptionRoute = ({
   }
 
   // If not logged in, redirect to login
-  if (!currentUser) {
+  if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // Check if user has required subscription level
-  const userTierIndex = tierOrder.indexOf(userSubscription);
+  const userTierIndex = tierOrder.indexOf(subscription?.tier || 'basic');
   const requiredTierIndex = tierOrder.indexOf(requiredTier);
 
   // Allow access if user's tier is equal to or higher than required tier

@@ -24,6 +24,7 @@ const Dashboard = () => {
   const firstName = user?.firstName || // If firstName exists directly
                    (user?.name ? user.name.split(' ')[0] : null) || // If we need to split full name
                    user?.first_name || // If it's stored as first_name
+                   (user?.profile?.firstName) || // Check profile object
                    'Friend'; // Default fallback
   
   // Get valid upgrade options

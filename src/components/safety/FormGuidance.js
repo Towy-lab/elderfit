@@ -4,7 +4,7 @@ import { useSafety } from '../../contexts/SafetyContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import { formAnalysisService } from '../../services/ai/formAnalysis';
 import { safetyMonitoringService } from '../../services/ai/safetyMonitoring';
-import { detectPosture, analyzeMovementPattern, calculateJointAngles } from '../../utils/motionAnalysis';
+import { detectPosture, analyzeMovementPattern, calculateJointAngles, loadPoseNet } from '../../utils/motionAnalysis';
 import { CameraSetupGuide } from './CameraSetupGuide';
 import { FormFeedback } from './FormFeedback';
 import { SafetyAlerts } from './SafetyAlerts';
@@ -18,58 +18,117 @@ const FormGuidance = ({ exercise }) => {
   const [showSetupGuide, setShowSetupGuide] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const [analysisError, setAnalysisError] = useState(null);
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [isStreamActive, setIsStreamActive] = useState(false);
   const [videoStream, setVideoStream] = useState(null);
   const [timeRemaining, setTimeRemaining] = useState(30);
   const videoRef = useRef(null);
   const analysisInterval = useRef(null);
   const analysisTimeout = useRef(null);
   const countdownInterval = useRef(null);
+  const videoStreamRef = useRef(null);
+  const cleanupInProgress = useRef(false);
 
   // Cleanup function
   const cleanupFunction = () => {
-    if (analysisInterval.current) {
-      clearInterval(analysisInterval.current);
-      analysisInterval.current = null;
+    if (cleanupInProgress.current) return;
+    cleanupInProgress.current = true;
+
+    try {
+      if (analysisInterval.current) {
+        clearInterval(analysisInterval.current);
+        analysisInterval.current = null;
+      }
+      if (analysisTimeout.current) {
+        clearTimeout(analysisTimeout.current);
+        analysisTimeout.current = null;
+      }
+      if (countdownInterval.current) {
+        clearInterval(countdownInterval.current);
+        countdownInterval.current = null;
+      }
+      if (videoStreamRef.current) {
+        console.log('Stopping video stream...');
+        videoStreamRef.current.getTracks().forEach(track => {
+          console.log('Stopping track:', track.kind, track.label);
+          track.stop();
+        });
+        videoStreamRef.current = null;
+      }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+      setIsAnalyzing(false);
+      setIsInitializing(false);
+      setIsStreamActive(false);
+      setTimeRemaining(30);
+      setAnalysisError(null);
+    } finally {
+      cleanupInProgress.current = false;
     }
-    if (analysisTimeout.current) {
-      clearTimeout(analysisTimeout.current);
-      analysisTimeout.current = null;
-    }
-    if (countdownInterval.current) {
-      clearInterval(countdownInterval.current);
-      countdownInterval.current = null;
-    }
-    if (videoStream) {
-      videoStream.getTracks().forEach(track => track.stop());
-      setVideoStream(null);
-    }
-    setIsAnalyzing(false);
-    setTimeRemaining(30);
-    setAnalysisError(null);
   };
 
+  // Effect to handle component unmount
   useEffect(() => {
-    return cleanupFunction;
-  }, [videoStream]);
+    return () => {
+      cleanupFunction();
+    };
+  }, []);
 
   const startFormAnalysis = async () => {
-    if (isAnalyzing) return;
+    if (isAnalyzing || isInitializing || isStreamActive) return;
     
     try {
+      setIsInitializing(true);
       setCameraError(null);
       setAnalysisError(null);
       setTimeRemaining(30);
+      
+      // First, try to initialize TensorFlow.js and PoseNet
+      console.log('Initializing AI models...');
+      try {
+        await loadPoseNet();
+        console.log('AI models initialized successfully');
+      } catch (error) {
+        console.error('Failed to initialize AI models:', error);
+        setAnalysisError(error.message);
+        return;
+      }
+      
+      // Clean up any existing stream first
+      if (videoStreamRef.current) {
+        console.log('Cleaning up existing stream...');
+        videoStreamRef.current.getTracks().forEach(track => track.stop());
+        videoStreamRef.current = null;
+      }
       
       console.log('Requesting camera access...');
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: 640 },
           height: { ideal: 480 },
-          facingMode: 'user'
-        }
+          facingMode: 'user',
+          frameRate: { ideal: 30 },
+          deviceId: undefined
+        },
+        audio: false
       });
       
       console.log('Camera access granted:', stream);
+      videoStreamRef.current = stream;
+      
+      // Check if we actually got video tracks
+      const videoTracks = stream.getVideoTracks();
+      if (videoTracks.length === 0) {
+        throw new Error('No video tracks found in the stream');
+      }
+      
+      console.log('Video track details:', {
+        label: videoTracks[0].label,
+        enabled: videoTracks[0].enabled,
+        readyState: videoTracks[0].readyState,
+        settings: videoTracks[0].getSettings()
+      });
       
       if (!videoRef.current) {
         throw new Error('Video element not found');
@@ -77,83 +136,129 @@ const FormGuidance = ({ exercise }) => {
       
       console.log('Setting video stream to video element');
       videoRef.current.srcObject = stream;
-      setVideoStream(stream);
       
       // Wait for video to be ready
-      await new Promise((resolve) => {
-        if (videoRef.current.readyState >= 2) {
-          resolve();
-        } else {
-          videoRef.current.onloadedmetadata = () => {
-            console.log('Video metadata loaded');
-            videoRef.current.play().then(() => {
-              console.log('Video playback started');
-              resolve();
-            });
-          };
-        }
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Timeout waiting for video to be ready'));
+        }, 5000);
+
+        const checkReady = () => {
+          if (videoRef.current.readyState >= 2) {
+            clearTimeout(timeout);
+            resolve();
+          }
+        };
+
+        videoRef.current.onloadedmetadata = () => {
+          console.log('Video metadata loaded');
+          checkReady();
+        };
+
+        videoRef.current.oncanplay = () => {
+          console.log('Video can play');
+          checkReady();
+        };
+
+        videoRef.current.onerror = (error) => {
+          clearTimeout(timeout);
+          reject(new Error('Video element error: ' + error.message));
+        };
+
+        // Check if already ready
+        checkReady();
       });
-      
-      setIsAnalyzing(true);
-      
-      // Set up countdown timer
-      countdownInterval.current = setInterval(() => {
-        setTimeRemaining(prev => {
-          if (prev <= 1) {
-            clearInterval(countdownInterval.current);
-            stopAnalysis(); // Stop analysis when timer reaches 0
-            return 0;
-          }
-          return prev - 1;
+
+      // Add comprehensive video state debugging
+      videoRef.current.onloadeddata = () => {
+        console.log('Video data loaded:', {
+          width: videoRef.current.videoWidth,
+          height: videoRef.current.videoHeight,
+          readyState: videoRef.current.readyState,
+          srcObject: !!videoRef.current.srcObject,
+          stream: !!stream,
+          streamActive: stream.active,
+          tracks: stream.getTracks().map(track => ({
+            kind: track.kind,
+            enabled: track.enabled,
+            readyState: track.readyState,
+            settings: track.getSettings()
+          }))
         });
-      }, 1000);
-      
-      // Set up analysis interval
-      analysisInterval.current = setInterval(async () => {
-        try {
-          if (!videoRef.current || !videoRef.current.srcObject) {
-            throw new Error('Video element not found or no stream');
+      };
+
+      // Force a play attempt with error handling
+      try {
+        console.log('Attempting to play video...');
+        await videoRef.current.play();
+        console.log('Video playback started successfully');
+        setIsStreamActive(true);
+        setIsAnalyzing(true);
+        
+        // Set up countdown timer
+        countdownInterval.current = setInterval(() => {
+          setTimeRemaining(prev => {
+            if (prev <= 1) {
+              clearInterval(countdownInterval.current);
+              stopAnalysis();
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+
+        // Set up analysis interval
+        analysisInterval.current = setInterval(async () => {
+          try {
+            if (!videoRef.current || !videoRef.current.srcObject) {
+              throw new Error('Video element not found or no stream');
+            }
+
+            const realTimeData = {
+              postureData: await detectPosture(videoRef.current),
+              movementData: await analyzeMovementPattern(videoRef.current),
+              jointAngles: await calculateJointAngles(videoRef.current)
+            };
+
+            const feedback = await formAnalysisService.analyzeForm(exercise.id, realTimeData);
+            setFormAnalysis(feedback);
+
+            // Monitor safety
+            const safety = await safetyMonitoringService.monitorWorkout({
+              exerciseId: exercise.id,
+              formAnalysis: feedback
+            });
+            setSafetyData(safety);
+
+            // Log form check
+            logFormCheck({
+              exerciseId: exercise.id,
+              timestamp: new Date(),
+              passed: feedback.immediate.length === 0,
+              feedback: feedback
+            });
+          } catch (error) {
+            console.error('Error during form analysis:', error);
+            setAnalysisError(error.message || 'Error analyzing form. Please try again.');
+            stopAnalysis();
           }
+        }, 1000);
 
-          const realTimeData = {
-            postureData: await detectPosture(videoRef.current),
-            movementData: await analyzeMovementPattern(videoRef.current),
-            jointAngles: await calculateJointAngles(videoRef.current)
-          };
-
-          const feedback = await formAnalysisService.analyzeForm(exercise.id, realTimeData);
-          setFormAnalysis(feedback);
-
-          // Monitor safety
-          const safety = await safetyMonitoringService.monitorWorkout({
-            exerciseId: exercise.id,
-            formAnalysis: feedback
-          });
-          setSafetyData(safety);
-
-          // Log form check
-          logFormCheck({
-            exerciseId: exercise.id,
-            timestamp: new Date(),
-            passed: feedback.immediate.length === 0,
-            feedback: feedback
-          });
-        } catch (error) {
-          console.error('Error during form analysis:', error);
-          setAnalysisError('Error analyzing form. Please try again.');
+        // Set timeout to stop analysis after 30 seconds
+        analysisTimeout.current = setTimeout(() => {
           stopAnalysis();
-        }
-      }, 1000);
+        }, 30000);
 
-      // Set timeout to stop analysis after 30 seconds
-      analysisTimeout.current = setTimeout(() => {
-        stopAnalysis();
-      }, 30000);
-
+      } catch (error) {
+        console.error('Error playing video:', error);
+        throw new Error('Failed to start video playback: ' + error.message);
+      }
     } catch (error) {
       console.error('Error starting form analysis:', error);
-      setCameraError('Failed to access camera. Please ensure camera permissions are granted.');
-      setIsAnalyzing(false);
+      setCameraError(error.message || 'Failed to access camera. Please ensure camera permissions are granted.');
+      cleanupFunction();
+    } finally {
+      setIsInitializing(false);
     }
   };
 
@@ -244,21 +349,21 @@ const FormGuidance = ({ exercise }) => {
       )}
 
       {/* Video Preview */}
-      <div className="relative">
+      <div className="relative w-full aspect-video bg-gray-100 rounded-lg overflow-hidden">
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
-          className="w-full rounded-lg"
-          style={{ display: videoStream ? 'block' : 'none' }}
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ display: isStreamActive ? 'block' : 'none' }}
         />
-        {!videoStream && (
-          <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
+        {!isStreamActive && (
+          <div className="absolute inset-0 flex items-center justify-center">
             <p className="text-gray-500">Camera preview will appear here</p>
           </div>
         )}
-        {isAnalyzing && videoStream && (
+        {isAnalyzing && isStreamActive && (
           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
             <div className="text-white text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
@@ -276,7 +381,7 @@ const FormGuidance = ({ exercise }) => {
       </div>
 
       {/* Ready to Start? */}
-      {!isAnalyzing && !videoStream && (
+      {!isAnalyzing && !isStreamActive && (
         <div className="mb-6">
           <h4 className="font-semibold mb-2">Ready to Start?</h4>
           <ol className="list-decimal list-inside text-gray-600 space-y-2">

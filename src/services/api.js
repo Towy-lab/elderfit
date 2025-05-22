@@ -1,19 +1,16 @@
 // src/services/api.js
 import axios from 'axios';
 
-// Create an axios instance with default config
-const axiosInstance = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:31415/api',
+// Create and export a default axios instance
+const defaultInstance = axios.create({
+  baseURL: 'http://localhost:31415',
   headers: {
     'Content-Type': 'application/json'
-  },
-  // Add timeout to prevent long-hanging requests
-  timeout: 10000, // 10 second timeout
-  timeoutErrorMessage: 'Request timed out - server might be unavailable'
+  }
 });
 
 // Add token to requests if available
-axiosInstance.interceptors.request.use(
+defaultInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -25,23 +22,14 @@ axiosInstance.interceptors.request.use(
 );
 
 // Add response interceptor for common error handling
-axiosInstance.interceptors.response.use(
+defaultInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Handle common errors
     if (!error.response) {
       console.error('Network Error:', error.message);
-      // Log additional details for debugging
-      if (error.request) {
-        console.error('Request details:', {
-          url: error.config?.url,
-          method: error.config?.method
-        });
-      }
     } else if (error.response.status === 401) {
       console.error('Authentication error - token may be invalid or expired');
     }
-    
     return Promise.reject(error);
   }
 );
@@ -50,15 +38,14 @@ axiosInstance.interceptors.response.use(
 export const loginUser = async (email, password) => {
   console.log('Sending login request with:', { email, password: '***' });
   
-  // Create a proper object for the request body
   const requestData = { 
     email, 
     password 
   };
   
   try {
-    console.log('Making request to /auth/login with data:', requestData);
-    const response = await axiosInstance.post('/auth/login', requestData);
+    console.log('Making request to /api/auth/login with data:', requestData);
+    const response = await defaultInstance.post('/api/auth/login', requestData);
     console.log('Login response:', response.data);
     
     if (!response.data || !response.data.token) {
@@ -78,14 +65,13 @@ export const loginUser = async (email, password) => {
         data: error.config?.data
       }
     });
-    // Rethrow to be handled by the component
     throw error;
   }
 };
 
 export const getCurrentUser = async () => {
   try {
-    const response = await axiosInstance.get('/auth/me');
+    const response = await defaultInstance.get('/api/auth/me');
     return response.data;
   } catch (error) {
     console.error('Error fetching current user:', error.message);
@@ -96,10 +82,9 @@ export const getCurrentUser = async () => {
 export const registerUser = async (userData) => {
   console.log('Sending registration data:', { ...userData, password: '***' });
   
-  // Ensure all required fields are included
   const requestData = {
-    firstName: userData.firstName || userData.name || 'Default', // Fallback
-    lastName: userData.lastName || userData.name || 'User',     // Fallback
+    firstName: userData.firstName || userData.name || 'Default',
+    lastName: userData.lastName || userData.name || 'User',
     email: userData.email,
     password: userData.password
   };
@@ -107,7 +92,7 @@ export const registerUser = async (userData) => {
   console.log('Sending formatted data:', { ...requestData, password: '***' });
   
   try {
-    const response = await axiosInstance.post('/auth/register', requestData);
+    const response = await defaultInstance.post('/api/auth/register', requestData);
     return response.data;
   } catch (error) {
     console.error('Registration error:', error.message);
@@ -118,18 +103,17 @@ export const registerUser = async (userData) => {
 // Exercise and workout-related API functions
 export const getExercises = async () => {
   try {
-    const response = await axiosInstance.get('/exercises');
+    const response = await defaultInstance.get('/api/exercises');
     return response.data;
   } catch (error) {
     console.error('Error fetching exercises:', error.message);
-    // Return empty array as fallback to prevent UI errors
     return [];
   }
 };
 
 export const getExerciseDetail = async (id) => {
   try {
-    const response = await axiosInstance.get(`/exercises/${id}`);
+    const response = await defaultInstance.get(`/api/exercises/${id}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching exercise ${id}:`, error.message);
@@ -139,7 +123,7 @@ export const getExerciseDetail = async (id) => {
 
 export const getWorkoutDetail = async (id) => {
   try {
-    const response = await axiosInstance.get(`/workouts/${id}`);
+    const response = await defaultInstance.get(`/api/workouts/${id}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching workout ${id}:`, error.message);
@@ -149,7 +133,7 @@ export const getWorkoutDetail = async (id) => {
 
 export const saveWorkoutProgress = async (workoutId, progressData) => {
   try {
-    const response = await axiosInstance.post(`/workouts/${workoutId}/progress`, progressData);
+    const response = await defaultInstance.post(`/api/workouts/${workoutId}/progress`, progressData);
     return response.data;
   } catch (error) {
     console.error('Error saving workout progress:', error.message);
@@ -159,7 +143,7 @@ export const saveWorkoutProgress = async (workoutId, progressData) => {
 
 export const toggleFavoriteExercise = async (exerciseId) => {
   try {
-    const response = await axiosInstance.post(`/exercises/${exerciseId}/favorite`);
+    const response = await defaultInstance.post(`/api/exercises/${exerciseId}/favorite`);
     return response.data;
   } catch (error) {
     console.error('Error toggling favorite exercise:', error.message);
@@ -169,11 +153,10 @@ export const toggleFavoriteExercise = async (exerciseId) => {
 
 export const fetchRecommendedWorkouts = async () => {
   try {
-    const response = await axiosInstance.get('/workouts/recommended');
+    const response = await defaultInstance.get('/api/workouts/recommended');
     return response.data;
   } catch (error) {
     console.error('Error fetching recommended workouts:', error.message);
-    // Return empty array as fallback
     return [];
   }
 };
@@ -181,7 +164,7 @@ export const fetchRecommendedWorkouts = async () => {
 // Subscription-related API functions with improved error handling
 export const getSubscription = async () => {
   try {
-    const response = await axiosInstance.get('/stripe/subscription');
+    const response = await defaultInstance.get('/api/stripe/subscription');
     return response.data;
   } catch (error) {
     console.error('Error fetching subscription:', error.message);
@@ -216,7 +199,7 @@ export const getSubscription = async () => {
 export const createCheckoutSession = async (data) => {
   try {
     const { tier, interval = 'month' } = data;
-    const response = await axiosInstance.post('/stripe/create-checkout-session', { tier, interval });
+    const response = await defaultInstance.post('/api/stripe/create-checkout-session', { tier, interval });
     return response.data;
   } catch (error) {
     console.error('Error creating checkout session:', error.message);
@@ -237,7 +220,7 @@ export const createCheckoutSession = async (data) => {
 export const upgradeSubscription = async (data) => {
   try {
     const { tier, interval = 'month', prorationBehavior = 'create_prorations' } = data;
-    const response = await axiosInstance.post('/stripe/upgrade-subscription', { 
+    const response = await defaultInstance.post('/api/stripe/upgrade-subscription', { 
       tier, 
       interval, 
       prorationBehavior 
@@ -257,7 +240,7 @@ export const upgradeSubscription = async (data) => {
 export const upgradeFromBasic = async (data) => {
   try {
     const { tier, interval = 'month' } = data;
-    const response = await axiosInstance.post('/stripe/upgrade-from-basic', { tier, interval });
+    const response = await defaultInstance.post('/api/stripe/upgrade-from-basic', { tier, interval });
     return response.data;
   } catch (error) {
     console.error('Error upgrading from basic tier:', error.message);
@@ -272,7 +255,7 @@ export const upgradeFromBasic = async (data) => {
 
 export const downgradeToBasic = async () => {
   try {
-    const response = await axiosInstance.post('/stripe/downgrade-to-basic');
+    const response = await defaultInstance.post('/api/stripe/downgrade-to-basic');
     return response.data;
   } catch (error) {
     console.error('Error downgrading to basic tier:', error.message);
@@ -282,7 +265,7 @@ export const downgradeToBasic = async () => {
 
 export const immediateDowngradeToBasic = async () => {
   try {
-    const response = await axiosInstance.post('/stripe/immediate-downgrade-to-basic');
+    const response = await defaultInstance.post('/api/stripe/immediate-downgrade-to-basic');
     return response.data;
   } catch (error) {
     console.error('Error immediately downgrading to basic tier:', error.message);
@@ -292,7 +275,7 @@ export const immediateDowngradeToBasic = async () => {
 
 export const downgradeToPremium = async (interval = 'month') => {
   try {
-    const response = await axiosInstance.post('/stripe/downgrade-to-premium', { interval });
+    const response = await defaultInstance.post('/api/stripe/downgrade-to-premium', { interval });
     return response.data;
   } catch (error) {
     console.error('Error downgrading to premium tier:', error.message);
@@ -302,7 +285,7 @@ export const downgradeToPremium = async (interval = 'month') => {
 
 export const reactivateSubscription = async () => {
   try {
-    const response = await axiosInstance.post('/stripe/reactivate-subscription');
+    const response = await defaultInstance.post('/api/stripe/reactivate-subscription');
     return response.data;
   } catch (error) {
     console.error('Error reactivating subscription:', error.message);
@@ -312,7 +295,7 @@ export const reactivateSubscription = async () => {
 
 export const cancelSubscription = async () => {
   try {
-    const response = await axiosInstance.post('/stripe/cancel-subscription');
+    const response = await defaultInstance.post('/api/stripe/cancel-subscription');
     return response.data;
   } catch (error) {
     console.error('Error canceling subscription:', error.message);
@@ -322,7 +305,7 @@ export const cancelSubscription = async () => {
 
 export const cancelSubscriptionImmediately = async () => {
   try {
-    const response = await axiosInstance.post('/stripe/cancel-subscription-immediately');
+    const response = await defaultInstance.post('/api/stripe/cancel-subscription-immediately');
     return response.data;
   } catch (error) {
     console.error('Error canceling subscription immediately:', error.message);
@@ -332,7 +315,7 @@ export const cancelSubscriptionImmediately = async () => {
 
 export const signupBasic = async () => {
   try {
-    const response = await axiosInstance.post('/stripe/signup-basic');
+    const response = await defaultInstance.post('/api/stripe/signup-basic');
     return response.data;
   } catch (error) {
     console.error('Error signing up for basic tier:', error.message);
@@ -343,7 +326,7 @@ export const signupBasic = async () => {
 export const calculateProration = async (data) => {
   try {
     const { tier, interval = 'month' } = data;
-    const response = await axiosInstance.post('/stripe/calculate-proration', { tier, interval });
+    const response = await defaultInstance.post('/api/stripe/calculate-proration', { tier, interval });
     return response.data;
   } catch (error) {
     console.error('Error calculating proration:', error.message);
@@ -353,7 +336,7 @@ export const calculateProration = async (data) => {
 
 export const changeBillingCycle = async (interval) => {
   try {
-    const response = await axiosInstance.post('/stripe/change-billing-cycle', { interval });
+    const response = await defaultInstance.post('/api/stripe/change-billing-cycle', { interval });
     return response.data;
   } catch (error) {
     console.error('Error changing billing cycle:', error.message);
@@ -374,7 +357,7 @@ export const updateUserProfile = async (profileData) => {
     }
 
     // Use the correct endpoint that matches our server
-    const response = await axiosInstance.put('/users/me/profile', profileData);
+    const response = await defaultInstance.put('/api/users/me/profile', profileData);
     console.log('Profile update response:', response.data);
     return response.data;
   } catch (error) {
@@ -394,7 +377,7 @@ export const updateUserProfile = async (profileData) => {
 
 export const updateUserPreferences = async (preferences) => {
   try {
-    const response = await axiosInstance.put('/users/preferences', preferences);
+    const response = await defaultInstance.put('/api/users/preferences', preferences);
     return response.data;
   } catch (error) {
     console.error('Error updating user preferences:', error.message);
@@ -404,7 +387,7 @@ export const updateUserPreferences = async (preferences) => {
 
 export const getUserActivityHistory = async () => {
   try {
-    const response = await axiosInstance.get('/users/activity-history');
+    const response = await defaultInstance.get('/api/users/activity-history');
     return response.data;
   } catch (error) {
     console.error('Error fetching user activity history:', error.message);
@@ -416,7 +399,7 @@ export const getUserActivityHistory = async () => {
 // Payment-related API functions
 export const getPaymentMethods = async () => {
   try {
-    const response = await axiosInstance.get('/stripe/payment-methods');
+    const response = await defaultInstance.get('/api/stripe/payment-methods');
     return response.data;
   } catch (error) {
     console.error('Error fetching payment methods:', error.message);
@@ -427,7 +410,7 @@ export const getPaymentMethods = async () => {
 
 export const addPaymentMethod = async (paymentMethodId) => {
   try {
-    const response = await axiosInstance.post('/stripe/payment-methods', { paymentMethodId });
+    const response = await defaultInstance.post('/api/stripe/payment-methods', { paymentMethodId });
     return response.data;
   } catch (error) {
     console.error('Error adding payment method:', error.message);
@@ -437,7 +420,7 @@ export const addPaymentMethod = async (paymentMethodId) => {
 
 export const updateDefaultPaymentMethod = async (paymentMethodId) => {
   try {
-    const response = await axiosInstance.put('/stripe/default-payment-method', { paymentMethodId });
+    const response = await defaultInstance.put('/api/stripe/default-payment-method', { paymentMethodId });
     return response.data;
   } catch (error) {
     console.error('Error updating default payment method:', error.message);
@@ -447,7 +430,7 @@ export const updateDefaultPaymentMethod = async (paymentMethodId) => {
 
 export const removePaymentMethod = async (paymentMethodId) => {
   try {
-    const response = await axiosInstance.delete(`/stripe/payment-methods/${paymentMethodId}`);
+    const response = await defaultInstance.delete(`/api/stripe/payment-methods/${paymentMethodId}`);
     return response.data;
   } catch (error) {
     console.error('Error removing payment method:', error.message);
@@ -457,7 +440,7 @@ export const removePaymentMethod = async (paymentMethodId) => {
 
 export const getInvoices = async () => {
   try {
-    const response = await axiosInstance.get('/stripe/invoices');
+    const response = await defaultInstance.get('/api/stripe/invoices');
     return response.data;
   } catch (error) {
     console.error('Error fetching invoices:', error.message);
@@ -469,7 +452,7 @@ export const getInvoices = async () => {
 // Webhook verification - for debugging
 export const checkWebhookStatus = async () => {
   try {
-    const response = await axiosInstance.get('/stripe/test-webhook');
+    const response = await defaultInstance.get('/api/stripe/test-webhook');
     return response.data;
   } catch (error) {
     console.error('Error checking webhook status:', error.message);
@@ -480,7 +463,7 @@ export const checkWebhookStatus = async () => {
 // Server health check
 export const checkServerHealth = async () => {
   try {
-    const response = await axiosInstance.get('/health');
+    const response = await defaultInstance.get('/api/health');
     return response.data;
   } catch (error) {
     console.error('Error checking server health:', error.message);
@@ -488,5 +471,46 @@ export const checkServerHealth = async () => {
   }
 };
 
-// Export the axiosInstance for direct use
-export const api = axiosInstance;
+// Device-related API functions
+export const getDevices = async () => {
+  try {
+    const response = await defaultInstance.get('/api/devices');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching devices:', error.message);
+    return [];
+  }
+};
+
+export const scanForDevices = async () => {
+  try {
+    const response = await defaultInstance.post('/api/devices/scan');
+    return response.data;
+  } catch (error) {
+    console.error('Error scanning for devices:', error.message);
+    throw error;
+  }
+};
+
+export const connectDevice = async (deviceId) => {
+  try {
+    const response = await defaultInstance.post(`/api/devices/${deviceId}/connect`);
+    return response.data;
+  } catch (error) {
+    console.error('Error connecting device:', error.message);
+    throw error;
+  }
+};
+
+export const disconnectDevice = async (deviceId) => {
+  try {
+    const response = await defaultInstance.post(`/api/devices/${deviceId}/disconnect`);
+    return response.data;
+  } catch (error) {
+    console.error('Error disconnecting device:', error.message);
+    throw error;
+  }
+};
+
+// Export the axios instance for direct use
+export { defaultInstance as api };

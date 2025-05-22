@@ -14,7 +14,6 @@ const SubscriptionManagement = () => {
     formatDate,
     upgradeSubscription,
     downgradeToBasic,
-    immediateDowngradeToBasic,
     downgradeToPremium,
     reactivateSubscription,
     cancelSubscription,
@@ -24,17 +23,6 @@ const SubscriptionManagement = () => {
   } = useSubscription();
   
   const navigate = useNavigate();
-  
-  // After successful upgrade/downgrade
-  const handleSubscriptionChange = async () => {
-    // API calls to change subscription...
-    
-    // Then refresh user experience
-    await refreshSubscription(); // Refresh user data from server
-    
-    // Navigate to the appropriate content page
-    navigate('/content');
-  };
   
   const [actionState, setActionState] = useState({
     isChanging: false,
@@ -52,7 +40,18 @@ const SubscriptionManagement = () => {
     if (subscription && !loading) {
       refreshSubscription();
     }
-  }, []);
+  }, [subscription, loading, refreshSubscription]);
+  
+  // After successful upgrade/downgrade
+  const handleSubscriptionChange = async () => {
+    // API calls to change subscription...
+    
+    // Then refresh user experience
+    await refreshSubscription(); // Refresh user data from server
+    
+    // Navigate to the appropriate content page
+    navigate('/content');
+  };
   
   // Handle plan change initiation
   const handleChangePlan = (tier, changeType) => {
