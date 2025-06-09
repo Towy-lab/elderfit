@@ -21,15 +21,13 @@ const SubscriptionContext = createContext();
 
 // Create provider component
 export const SubscriptionProvider = ({ children }) => {
-  const auth = useAuth();
-  const isAuthenticated = auth?.isAuthenticated || false;
-  const user = auth?.user || null;
+  const { user, loading: authLoading } = useAuth();
   
   const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastFetchTime, setLastFetchTime] = useState(null);
-  const [lastRequestTime, setLastRequestTime] = useState(0); // Add this for debouncing
+  const [lastRequestTime, setLastRequestTime] = useState(0);
   const MIN_REFRESH_INTERVAL = 3000; // 3 seconds between refreshes
 
   // Fetch subscription data with improved logging, caching, and force refresh option
@@ -45,50 +43,37 @@ export const SubscriptionProvider = ({ children }) => {
       now - lastFetchTime < minTimeBetweenFetches && 
       subscription !== null
     ) {
-      console.log('Skipping subscription fetch - too soon since last fetch');
       return subscription;
     }
     
-    if (!isAuthenticated || !user?._id) {
-      console.log('Not authenticated or no user ID, skipping subscription fetch');
+    if (!user?._id) {
       return null;
     }
 
     try {
       setLoading(true);
       setError(null);
-      console.log('Fetching subscription data from API for user:', user._id);
       
       const data = await getSubscription();
-      console.log('Subscription data received:', data);
       
       if (!data) {
-        console.error('No subscription data received from API');
         setError('Failed to load subscription information');
         return null;
       }
       
       // Ensure we have the correct tier information
       if (data.tier && data.hasSubscription) {
-        console.log('Setting subscription data:', data);
         setSubscription(data);
         setLastFetchTime(new Date());
         return data;
       } else {
-        console.error('Invalid subscription data received:', data);
         setError('Invalid subscription data received');
         return null;
       }
     } catch (err) {
-      console.error('Error fetching subscription data:', err);
-      
       // Check if it's an authentication error
       if (err.response && err.response.status === 401) {
-        console.log('Authentication error fetching subscription, clearing data');
         setSubscription(null);
-      } else {
-        // For other errors, keep existing subscription data but log the error
-        console.log('API error, keeping existing subscription data');
       }
       
       setError('Failed to load subscription information');
@@ -102,58 +87,43 @@ export const SubscriptionProvider = ({ children }) => {
   const forceRefreshSubscription = async (bypassThrottle = false) => {
     const now = Date.now();
     if (!bypassThrottle && now - lastRequestTime < MIN_REFRESH_INTERVAL) {
-      console.log('Throttling subscription refresh - too many requests');
       return subscription;
     }
     
-    console.log('Forcing subscription refresh from API');
-    setLastRequestTime(now); // Use state setter for lastRequestTime
+    setLastRequestTime(now);
     return await fetchSubscription(true);
   };
 
   // Fetch subscription when user changes
   useEffect(() => {
-    console.log('Auth state changed:', { isAuthenticated, userId: user?._id });
-    
-    if (isAuthenticated && user?._id) {
-      console.log('User authenticated, fetching subscription data for user:', user._id);
-      // Force refresh subscription data when auth state changes
+    if (user?._id) {
+      // Force refresh subscription data when user changes
       fetchSubscription(true);
-    } else if (!isAuthenticated) {
-      console.log('User not authenticated, clearing subscription data');
+    } else {
       setSubscription(null);
       setLoading(false);
-    } else if (!user?._id) {
-      console.log('No user ID available, waiting for auth to complete');
-      // Don't clear subscription data here, as it might be a temporary state
-      // while auth is still initializing
     }
-  }, [isAuthenticated, user?._id]);
+  }, [user?._id]);
 
   // Check if user has access to a specific tier
-  const hasTierAccess = (requiredTier) => {
-    // Log the current state
-    console.log('Checking tier access:', {
-      requiredTier,
-      currentSubscription: subscription,
-      isAuthenticated
-    });
-
-    // If not authenticated, deny access to all tiers
-    if (!isAuthenticated) {
-      console.log('User not authenticated, denying access');
+  const hasAccess = (requiredTier) => {
+    // If still loading, deny access to prevent premature content display
+    if (loading || authLoading) {
       return false;
     }
 
-    // If no subscription data yet, deny access to premium/elite
+    // If not authenticated, deny access to all tiers
+    if (!user) {
+      return false;
+    }
+
+    // If no subscription data yet, only allow basic access
     if (!subscription) {
-      console.log('No subscription data available, denying access to premium/elite');
       return requiredTier === 'basic';
     }
 
     // If subscription exists but hasSubscription is false, check the tier directly
     if (!subscription.hasSubscription) {
-      console.log('No active subscription, checking tier directly:', subscription.tier);
       return subscription.tier === requiredTier;
     }
 
@@ -166,17 +136,7 @@ export const SubscriptionProvider = ({ children }) => {
     const userTierLevel = tierLevels[subscription.tier] || 0;
     const requiredTierLevel = tierLevels[requiredTier] || 0;
 
-    const hasAccess = userTierLevel >= requiredTierLevel;
-    
-    console.log('Tier access check result:', {
-      userTier: subscription.tier,
-      userTierLevel,
-      requiredTier,
-      requiredTierLevel,
-      hasAccess
-    });
-
-    return hasAccess;
+    return userTierLevel >= requiredTierLevel;
   };
   
   // Calculate proration for changing subscription
@@ -580,7 +540,7 @@ export const SubscriptionProvider = ({ children }) => {
     subscription,
     loading,
     error,
-    hasTierAccess,
+    hasAccess,
     calculateProration,
     upgradeSubscription,
     downgradeToBasic,

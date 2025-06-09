@@ -7,7 +7,7 @@ import { Activity, Award, BookOpen, Calendar } from 'lucide-react';
 
 // Basic Tier Content Page
 const BasicContent = () => {
-  const { formatTierName, hasTierAccess } = useSubscription();
+  const { formatTierName, hasAccess } = useSubscription();
   
   // Sample user data for the basic tier
   const userData = {
@@ -105,7 +105,7 @@ const BasicContent = () => {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {basicExercises.map(exercise => (
             <div key={exercise.id} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
               <div className="h-40 bg-gray-200 relative">
@@ -160,44 +160,31 @@ const BasicContent = () => {
                   duration: 30,
                   image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"
                 }
-              ].map((item, index) => (
+              ].map((workout, index) => (
                 <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
-                  <div className="h-40 bg-gray-300 relative">
+                  <div className="h-40 bg-gray-200 relative">
                     <img 
-                      src={item.image} 
-                      alt={item.name} 
-                      className="w-full h-full object-cover opacity-50"
+                      src={workout.image} 
+                      alt={workout.name} 
+                      className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="bg-gray-800 bg-opacity-75 text-white px-3 py-1 rounded-md">Premium</span>
-                    </div>
                   </div>
                   <div className="p-4">
-                    <h3 className="font-medium text-lg mb-1">{item.name}</h3>
-                    <p className="text-gray-600 text-sm">{item.duration} minutes • {item.level}</p>
+                    <h3 className="font-medium text-lg mb-1">{workout.name}</h3>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">
+                        {workout.duration} minutes
+                      </span>
+                      <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">
+                        {workout.level}
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           }
-        >
-          <div className="bg-white rounded-lg shadow-md p-6 border border-indigo-100">
-            <h3 className="text-xl font-medium text-indigo-800 mb-3">Premium Workouts</h3>
-            <p className="text-gray-700 mb-4">
-              Access our extensive library of over 30 premium workouts designed specifically for seniors at all fitness levels.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-3 border border-indigo-200 rounded-lg">
-                <h4 className="font-medium text-indigo-700">Personalized Recommendations</h4>
-                <p className="text-sm text-gray-600">Get workout suggestions based on your preferences and goals</p>
-              </div>
-              <div className="p-3 border border-indigo-200 rounded-lg">
-                <h4 className="font-medium text-indigo-700">HD Video Instructions</h4>
-                <p className="text-sm text-gray-600">Follow along with clear, professional video guidance</p>
-              </div>
-            </div>
-          </div>
-        </TierContentManager>
+        />
       </section>
       
       {/* Progress Tracking Section */}

@@ -1,4 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { getProgressData } from '../services/progressService';
+import { hasValidWorkoutData } from '../utils/workoutUtils';
 
 const AchievementContext = createContext();
 
@@ -42,171 +45,170 @@ const BADGES = {
 };
 
 export const AchievementProvider = ({ children }) => {
+  const { user, isAuthenticated } = useAuth();
+  
   // Achievement state
-  const [achievements, setAchievements] = useState(() => {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEYS.ACHIEVEMENTS);
-    return saved ? JSON.parse(saved) : {
+  const [achievements, setAchievements] = useState({
+    earnedBadges: [],
+    totalWorkouts: 0,
+    uniqueExercises: new Set(),
+    weeklyGoalsStreak: 0
+  });
+
+  // Streak state
+  const [streaks, setStreaks] = useState({
+    currentStreak: 0,
+    bestStreak: 0,
+    lastWorkout: null,
+    workoutDates: []
+  });
+
+  // Goals state
+  const [goals, setGoals] = useState({
+    weekly: [],
+    lastReset: new Date().toISOString()
+  });
+
+  // Reset all data
+  const resetData = () => {
+    setAchievements({
       earnedBadges: [],
       totalWorkouts: 0,
       uniqueExercises: new Set(),
       weeklyGoalsStreak: 0
-    };
-  });
-
-  // Streak state
-  const [streaks, setStreaks] = useState(() => {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEYS.STREAKS);
-    return saved ? JSON.parse(saved) : {
+    });
+    setStreaks({
       currentStreak: 0,
       bestStreak: 0,
       lastWorkout: null,
       workoutDates: []
-    };
-  });
-
-  // Goals state
-  const [goals, setGoals] = useState(() => {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEYS.GOALS);
-    return saved ? JSON.parse(saved) : {
-      weekly: [
-        {
-          id: 'workouts',
-          name: 'Weekly Workouts',
-          target: 3,
-          current: 0,
-          unit: 'workouts'
-        },
-        {
-          id: 'minutes',
-          name: 'Exercise Minutes',
-          target: 90,
-          current: 0,
-          unit: 'minutes'
-        },
-        {
-          id: 'strength',
-          name: 'Strength Exercises',
-          target: 2,
-          current: 0,
-          unit: 'sessions'
-        }
-      ],
+    });
+    setGoals({
+      weekly: [],
       lastReset: new Date().toISOString()
+    });
+  };
+
+  // Load data from server when auth changes
+  useEffect(() => {
+    const loadData = async () => {
+      if (!isAuthenticated || !user) {
+        resetData();
+        return;
+      }
+
+      try {
+        const progressData = await getProgressData();
+        
+        if (!progressData || !hasValidWorkoutData(progressData)) {
+          resetData();
+          return;
+        }
+
+        // Update achievements
+        setAchievements(prev => ({
+          ...prev,
+          totalWorkouts: progressData.totalWorkouts || 0,
+          earnedBadges: progressData.achievements?.filter(a => a.earnedAt) || []
+        }));
+
+        // Update streaks
+        setStreaks(prev => ({
+          ...prev,
+          currentStreak: progressData.streak || 0,
+          lastWorkout: progressData.lastWorkout || null
+        }));
+
+        // Update goals
+        if (progressData.workoutHistory?.length > 0) {
+          const weeklyGoals = calculateWeeklyGoals(progressData.workoutHistory);
+          setGoals(prev => ({
+            ...prev,
+            weekly: weeklyGoals
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading achievement data:', error);
+        resetData();
+      }
     };
-  });
 
-  // Persist state changes
-  useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEYS.ACHIEVEMENTS, JSON.stringify(achievements));
-  }, [achievements]);
+    loadData();
+  }, [isAuthenticated, user]);
 
-  useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEYS.STREAKS, JSON.stringify(streaks));
-  }, [streaks]);
-
-  useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEYS.GOALS, JSON.stringify(goals));
-  }, [goals]);
-
-  // Check and update streaks
-  const updateStreak = () => {
-    const today = new Date();
-    const lastWorkout = streaks.lastWorkout ? new Date(streaks.lastWorkout) : null;
+  // Helper function to calculate weekly goals from workout history
+  const calculateWeeklyGoals = (workoutHistory) => {
+    const now = new Date();
+    const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
     
-    if (!lastWorkout) {
-      setStreaks(prev => ({
-        ...prev,
-        currentStreak: 1,
-        bestStreak: 1,
-        lastWorkout: today.toISOString(),
-        workoutDates: [today.toISOString()]
-      }));
-      return;
-    }
-
-    const daysSinceLastWorkout = Math.floor(
-      (today - lastWorkout) / (1000 * 60 * 60 * 24)
+    const thisWeekWorkouts = workoutHistory.filter(w => 
+      new Date(w.completedAt) >= weekStart
     );
 
-    if (daysSinceLastWorkout <= 1) {
-      // Maintain or increment streak
-      const newCurrentStreak = daysSinceLastWorkout === 0 
-        ? streaks.currentStreak 
-        : streaks.currentStreak + 1;
+    const totalMinutes = thisWeekWorkouts.reduce((sum, w) => sum + (w.duration || 0), 0);
+    const strengthWorkouts = thisWeekWorkouts.filter(w => 
+      w.exercisesCompleted?.some(e => e.type === 'strength')
+    ).length;
 
-      setStreaks(prev => ({
-        ...prev,
-        currentStreak: newCurrentStreak,
-        bestStreak: Math.max(newCurrentStreak, prev.bestStreak),
-        lastWorkout: today.toISOString(),
-        workoutDates: [...prev.workoutDates, today.toISOString()]
-      }));
-    } else {
-      // Break streak
-      setStreaks(prev => ({
-        ...prev,
-        currentStreak: 1,
-        lastWorkout: today.toISOString(),
-        workoutDates: [today.toISOString()]
-      }));
-    }
+    return [
+      {
+        id: 'workouts',
+        name: 'Weekly Workouts',
+        target: 3,
+        current: thisWeekWorkouts.length,
+        unit: 'workouts'
+      },
+      {
+        id: 'minutes',
+        name: 'Exercise Minutes',
+        target: 90,
+        current: Math.floor(totalMinutes / 60),
+        unit: 'minutes'
+      },
+      {
+        id: 'strength',
+        name: 'Strength Exercises',
+        target: 2,
+        current: strengthWorkouts,
+        unit: 'sessions'
+      }
+    ];
   };
 
   // Log a completed workout
-  const logWorkout = (workout) => {
-    updateStreak();
-    
-    // Update total workouts
-    setAchievements(prev => ({
-      ...prev,
-      totalWorkouts: prev.totalWorkouts + 1,
-      uniqueExercises: new Set([...prev.uniqueExercises, ...workout.exercises.map(e => e.id)])
-    }));
+  const logWorkout = async (workout) => {
+    if (!isAuthenticated) return;
 
-    // Update weekly goals
-    setGoals(prev => ({
-      ...prev,
-      weekly: prev.weekly.map(goal => {
-        if (goal.id === 'workouts') {
-          return { ...goal, current: goal.current + 1 };
-        }
-        if (goal.id === 'minutes') {
-          return { ...goal, current: goal.current + workout.duration };
-        }
-        if (goal.id === 'strength' && workout.type === 'strength') {
-          return { ...goal, current: goal.current + 1 };
-        }
-        return goal;
-      })
-    }));
+    try {
+      const progressData = await getProgressData();
+      if (!progressData || !hasValidWorkoutData(progressData)) {
+        return;
+      }
 
-    checkForNewAchievements();
-  };
-
-  // Check for new achievements
-  const checkForNewAchievements = () => {
-    const newBadges = [];
-
-    // Check First Workout
-    if (achievements.totalWorkouts === 1 && !achievements.earnedBadges.includes(BADGES.FIRST_WORKOUT.id)) {
-      newBadges.push(BADGES.FIRST_WORKOUT.id);
-    }
-
-    // Check Week Streak
-    if (streaks.currentStreak >= 7 && !achievements.earnedBadges.includes(BADGES.WEEK_STREAK.id)) {
-      newBadges.push(BADGES.WEEK_STREAK.id);
-    }
-
-    // Check Variety Master
-    if (achievements.uniqueExercises.size >= 5 && !achievements.earnedBadges.includes(BADGES.VARIETY_MASTER.id)) {
-      newBadges.push(BADGES.VARIETY_MASTER.id);
-    }
-
-    if (newBadges.length > 0) {
+      // Update achievements
       setAchievements(prev => ({
         ...prev,
-        earnedBadges: [...prev.earnedBadges, ...newBadges]
+        totalWorkouts: progressData.totalWorkouts || 0,
+        uniqueExercises: new Set([...prev.uniqueExercises, ...workout.exercises.map(e => e.id)])
       }));
+
+      // Update streaks
+      setStreaks(prev => ({
+        ...prev,
+        currentStreak: progressData.streak || 0,
+        lastWorkout: progressData.lastWorkout || null
+      }));
+
+      // Update goals
+      if (progressData.workoutHistory?.length > 0) {
+        const weeklyGoals = calculateWeeklyGoals(progressData.workoutHistory);
+        setGoals(prev => ({
+          ...prev,
+          weekly: weeklyGoals
+        }));
+      }
+    } catch (error) {
+      console.error('Error updating achievement data:', error);
     }
   };
 

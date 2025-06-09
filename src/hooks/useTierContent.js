@@ -9,7 +9,7 @@ import tierConfig, { getTierFeatures, checkTierAccess } from '../config/tierConf
  * by providing convenient methods to check access, get content, etc.
  */
 const useTierContent = () => {
-  const { subscription, hasTierAccess, formatTierName } = useSubscription();
+  const { subscription, hasAccess, formatTierName } = useSubscription();
   const currentTier = subscription?.tier || 'basic';
   
   /**
@@ -29,7 +29,7 @@ const useTierContent = () => {
    * @return {boolean} Whether the user has access
    */
   const userHasAccess = (requiredTier) => {
-    return hasTierAccess(requiredTier);
+    return hasAccess(requiredTier);
   };
   
   /**

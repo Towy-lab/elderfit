@@ -13,12 +13,9 @@ import { useSubscription } from '../contexts/SubscriptionContext';
  * @returns {JSX.Element} - React component
  */
 const ProtectedRoute = ({ children, requiredTier = 'basic' }) => {
-  const { currentUser, loading: authLoading } = useAuth();
-  const { userSubscription, hasAccess, isLoading: subscriptionLoading } = useSubscription();
+  const { user, loading: authLoading } = useAuth();
+  const { hasAccess, loading: subscriptionLoading } = useSubscription();
   const location = useLocation();
-
-  console.log('ProtectedRoute - Auth State:', { currentUser, authLoading });
-  console.log('ProtectedRoute - Subscription State:', { userSubscription, subscriptionLoading });
 
   // Show loading state while checking auth or subscription
   const isLoading = authLoading || subscriptionLoading;
@@ -31,16 +28,12 @@ const ProtectedRoute = ({ children, requiredTier = 'basic' }) => {
   }
   
   // Check if user is logged in
-  if (!currentUser) {
-    console.log('User not authenticated, redirecting to login');
-    // Redirect to login page, but save the location they were trying to go to
+  if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
   
-  // Check if user has the required subscription level (if specified)
-  if (requiredTier !== 'basic' && !hasAccess(requiredTier)) {
-    console.log(`User doesn't have required subscription tier: ${requiredTier}`);
-    // If user doesn't have required subscription, redirect to upgrade page
+  // Check if user has the required subscription level
+  if (!hasAccess(requiredTier)) {
     return <Navigate to="/subscription/upgrade" state={{ 
       requiredTier: requiredTier,
       from: location.pathname 
@@ -48,7 +41,6 @@ const ProtectedRoute = ({ children, requiredTier = 'basic' }) => {
   }
   
   // User is authenticated and has required subscription level, render the children
-  console.log('User authenticated and has required subscription, rendering protected content');
   return children;
 };
 

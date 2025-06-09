@@ -35,7 +35,8 @@ const UserSchema = new mongoose.Schema({
     healthConditions: [String],
     equipment: [String],
     height: Number,
-    weight: Number
+    weight: Number,
+    age: Number
   },
   dateOfBirth: {
     type: Date
@@ -126,6 +127,45 @@ const UserSchema = new mongoose.Schema({
     medications: [String],
     healthGoals: [String]
   },
+  // Progress tracking
+  workouts: [{
+    id: String,
+    completedAt: Date,
+    exercisesCompleted: [{
+      id: String,
+      name: String,
+      sets: Number,
+      reps: Number,
+      duration: Number
+    }],
+    duration: Number
+  }],
+  streak: {
+    type: Number
+  },
+  lastWorkout: Date,
+  totalWorkouts: {
+    type: Number
+  },
+  workoutHistory: [{
+    id: String,
+    completedAt: Date,
+    exercisesCompleted: [{
+      id: String,
+      name: String,
+      sets: Number,
+      reps: Number,
+      duration: Number
+    }],
+    duration: Number
+  }],
+  achievements: [{
+    id: String,
+    name: String,
+    description: String,
+    earnedAt: Date,
+    category: String
+  }],
   // User preferences
   preferences: {
     emailNotifications: {

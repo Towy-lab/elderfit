@@ -36,9 +36,9 @@ const auth = (req, res, next) => {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       
-      // Add user to request - handle both formats (user.id and userId)
+      // Add user to request - use consistent id format
       req.user = { 
-        id: decoded.user?.id || decoded.userId 
+        id: decoded.id
       };
       
       if (!req.user.id) {

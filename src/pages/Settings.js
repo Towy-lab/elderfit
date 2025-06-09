@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
@@ -11,7 +11,7 @@ const inchesToCm = inches => (inches * 2.54).toFixed(1);
 
 const Settings = () => {
   const navigate = useNavigate();
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, refreshUser } = useAuth();
   const { tier } = useSubscription();
   
   const [units, setUnits] = useState({
@@ -20,15 +20,31 @@ const Settings = () => {
   });
   
   const [formData, setFormData] = useState({
-    fullName: user?.fullName || user?.name || '',
-    email: user?.email || '',
-    age: user?.age || '',
-    height: user?.height || '',
-    weight: user?.weight || '',
-    fitnessLevel: user?.fitnessLevel || 'beginner',
-    healthConditions: user?.healthConditions || [],
-    goals: user?.goals || []
+    fullName: '',
+    email: '',
+    age: '',
+    height: '',
+    weight: '',
+    fitnessLevel: 'beginner',
+    healthConditions: [],
+    goals: []
   });
+
+  // Initialize form data when user data is available
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        email: user.email || '',
+        age: user.profile?.age?.toString() || '',
+        height: user.profile?.height?.toString() || '',
+        weight: user.profile?.weight?.toString() || '',
+        fitnessLevel: user.profile?.fitnessLevel || 'beginner',
+        goals: user.profile?.goals || [],
+        healthConditions: user.profile?.healthConditions || []
+      });
+    }
+  }, [user]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -88,16 +104,16 @@ const Settings = () => {
         // Convert whole number lbs to kg with 1 decimal
         processedValue = lbsToKg(Math.round(numValue));
       } else {
-        // Keep kg to 1 decimal place
-        processedValue = numValue.toFixed(1);
+        // Allow whole numbers for kg
+        processedValue = numValue.toString();
       }
     } else if (name === 'height') {
       if (units.height === 'in') {
         // Convert whole number inches to cm with 1 decimal
         processedValue = inchesToCm(Math.round(numValue));
       } else {
-        // Keep cm to 1 decimal place
-        processedValue = numValue.toFixed(1);
+        // Allow whole numbers for cm
+        processedValue = numValue.toString();
       }
     }
 
@@ -115,14 +131,14 @@ const Settings = () => {
       if (units.weight === 'lbs') {
         return Math.round(kgToLbs(value));
       }
-      return parseFloat(value).toFixed(1);
+      return value;
     }
     
     if (name === 'height') {
       if (units.height === 'in') {
         return Math.round(cmToInches(value));
       }
-      return parseFloat(value).toFixed(1);
+      return value;
     }
     
     return value;
@@ -164,26 +180,63 @@ const Settings = () => {
     setMessage({ type: '', text: '' });
 
     try {
-      await updateProfile({
-        ...formData,
-        name: formData.fullName
-      });
+      // Split the name into first and last name
+      const [firstName, ...lastNameParts] = formData.fullName.split(' ');
+      const lastName = lastNameParts.join(' ');
+
+      // Format the profile data
+      const profileData = {
+        firstName,
+        lastName,
+        email: formData.email,
+        profile: {
+          age: formData.age ? parseInt(formData.age, 10) : undefined,
+          height: formData.height ? parseFloat(formData.height) : undefined,
+          weight: formData.weight ? parseFloat(formData.weight) : undefined,
+          fitnessLevel: formData.fitnessLevel || 'beginner',
+          goals: formData.goals || [],
+          healthConditions: formData.healthConditions || []
+        }
+      };
+
+      console.log('Sending profile data:', profileData);
       
+      // Update the profile
+      const response = await updateProfile(profileData);
+      console.log('Received updated user data:', response.user);
+
+      // Refresh user data to ensure we have the latest
+      await refreshUser();
+
+      // Update local form data with the response
+      setFormData(prevData => ({
+        ...prevData,
+        fullName: `${response.user.firstName} ${response.user.lastName}`.trim(),
+        email: response.user.email,
+        age: response.user.profile?.age?.toString() || '',
+        height: response.user.profile?.height?.toString() || '',
+        weight: response.user.profile?.weight?.toString() || '',
+        fitnessLevel: response.user.profile?.fitnessLevel || 'beginner',
+        goals: response.user.profile?.goals || [],
+        healthConditions: response.user.profile?.healthConditions || []
+      }));
+
       setMessage({
         type: 'success',
         text: 'Profile updated successfully!'
       });
-
-      // Show success message briefly before redirecting
+      
+      // Wait 2 seconds before redirecting
       setTimeout(() => {
-        navigate('/dashboard'); // Redirect to dashboard
-      }, 1000); // Wait 1 second to show the success message
-
-    } catch (error) {
+        navigate('/dashboard');
+      }, 2000);
+    } catch (err) {
+      console.error('Profile update error:', err);
       setMessage({
         type: 'error',
-        text: error.message || 'Failed to update profile. Please try again.'
+        text: err.message || 'Failed to update profile'
       });
+    } finally {
       setIsLoading(false);
     }
   };

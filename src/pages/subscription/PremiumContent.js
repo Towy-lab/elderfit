@@ -8,7 +8,7 @@ import { TieredPainTracker } from '../../components/safety/TieredPainTracker';
 import { Activity, Video, Calendar, Users, BookOpen, Award } from 'lucide-react';
 
 const PremiumContent = () => {
-  const { subscription, formatTierName, hasTierAccess } = useSubscription();
+  const { subscription, formatTierName, hasAccess } = useSubscription();
   const currentTier = subscription?.tier || 'basic';
   
   // Sample workout data
@@ -457,7 +457,7 @@ const PremiumContent = () => {
         </section>
         
         {/* Elite Upgrade Prompt */}
-        {!hasTierAccess('elite') && (
+        {!hasAccess('elite') && (
           <section className="mb-8">
             <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100 rounded-lg p-6">
               <div className="md:flex items-center justify-between">

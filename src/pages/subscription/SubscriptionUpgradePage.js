@@ -6,7 +6,7 @@ import UpgradeSubscriptionForm from '../../components/subscription/UpgradeSubscr
 
 const SubscriptionUpgradePage = () => {
   const navigate = useNavigate();
-  const { subscription } = useSubscription();
+  const { hasTierAccess } = useSubscription();
   
   // Handle successful upgrade
   const handleUpgradeSuccess = () => {

@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Profile from './pages/account/ProfilePage';
+import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 // Import subscription-related components
 import PaymentSuccessPage from './pages/subscription/PaymentSuccessPage';
@@ -25,9 +26,11 @@ import EliteContent from './pages/subscription/EliteContent';
 // Import safety-related pages
 import SafetyFeaturesPage from './pages/SafetyFeaturesPage';
 // Import auth context
-import { useAuth } from './contexts/AuthContext';
+import { useAuth, AuthProvider } from './contexts/AuthContext';
 // Import subscription context
-import { useSubscription } from './contexts/SubscriptionContext';
+import { useSubscription, SubscriptionProvider } from './contexts/SubscriptionContext';
+// Import safety context
+import { SafetyProvider } from './contexts/SafetyContext';
 // Import the new WorkoutsPage component
 import WorkoutsPage from './pages/WorkoutsPage';
 import SafetyGuidelines from './pages/safety/Guidelines';
@@ -37,46 +40,12 @@ import Help from './pages/Help';
 import AITrainingDashboard from './components/training/AITrainingDashboard';
 // Import HealthHub component
 import HealthHub from './pages/health/HealthHub';
+// Import HealthProvider
+import { HealthProvider } from './contexts/HealthContext';
 
 // Import AppProviders as named import
 import { AppProviders } from './providers/AppProviders';
-
-// Protected route component
-const ProtectedRoute = ({ children, requiredTier }) => {
-  const { isAuthenticated, loading } = useAuth();
-  const { hasTierAccess, subscription } = useSubscription();
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  console.log('ProtectedRoute rendering for path:', location.pathname);
-  console.log('Auth state:', { isAuthenticated, loading });
-  console.log('Subscription state:', { subscription, requiredTier });
-
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      console.log('Not authenticated, redirecting to login');
-      navigate('/login', { state: { from: location } });
-    } else if (!loading && isAuthenticated && requiredTier && !hasTierAccess(requiredTier)) {
-      console.log('Insufficient subscription tier, redirecting to upgrade');
-      navigate('/upgrade', { state: { from: location } });
-    }
-  }, [isAuthenticated, loading, location, navigate, requiredTier, hasTierAccess]);
-
-  if (loading) {
-    return <LoadingSpinner />;
-  }
-
-  if (!isAuthenticated) {
-    return null;
-  }
-
-  if (requiredTier && !hasTierAccess(requiredTier)) {
-    return null;
-  }
-
-  console.log('Authenticated and has required tier, rendering protected content');
-  return children;
-};
+import ProtectedRoute from './components/ProtectedRoute';
 
 // Main App component with debugging
 function App() {
@@ -99,150 +68,162 @@ function App() {
 
   return (
     <AppProviders>
-      <div className="App">
-        <Navbar />
-        <main className="main-content">
-          <Routes>
-            {/* Explicitly define home route with highest priority */}
-            <Route index element={<Home />} />
-            <Route exact path="/" element={<Home />} />
-            
-            {/* Public routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/subscription/plans" element={<PricingPlans />} />
-            <Route path="/subscription/success" element={<PaymentSuccessPage />} />
-            <Route path="/subscription/cancel" element={<PaymentCancelPage />} />
-            <Route path="/subscription/basic-success" element={<BasicSuccessPage />} />
-            
-            {/* Redirect old pricing page to new subscription plans page */}
-            <Route path="/pricing" element={<Navigate to="/subscription/plans" replace />} />
-            
-            {/* Protected routes with explicit checks */}
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } 
-            />
-            
-            <Route 
-              path="/workouts" 
-              element={
-                <ProtectedRoute>
-                  <WorkoutsPage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            <Route 
-              path="/subscription/manage" 
-              element={
-                <ProtectedRoute>
-                  <SubscriptionManagement />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/subscription/upgrade" 
-              element={
-                <ProtectedRoute>
-                  <SubscriptionUpgradePage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/profile" 
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Tier-specific content routes */}
-            <Route 
-              path="/content/basic" 
-              element={
-                <ProtectedRoute>
-                  <BasicContent />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/content/premium" 
-              element={
-                <ProtectedRoute requiredTier="premium">
-                  <PremiumContent />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/content/elite" 
-              element={
-                <ProtectedRoute requiredTier="elite">
-                  <EliteContent />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Safety Features Page */}
-            <Route 
-              path="/safety" 
-              element={
-                <ProtectedRoute>
-                  <SafetyFeaturesPage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Device Connection Page */}
-            <Route 
-              path="/safety/devices" 
-              element={
-                <ProtectedRoute>
-                  <SafetyFeaturesPage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Safety Guidelines Page (public) */}
-            <Route path="/safety/guidelines" element={<SafetyGuidelines />} />
-            
-            {/* FAQ Page (public) */}
-            <Route path="/faq" element={<FAQ />} />
-            
-            {/* Help Page (public) */}
-            <Route path="/help" element={<Help />} />
-            
-            {/* AI Training Page */}
-            <Route 
-              path="/elite/ai-training" 
-              element={
-                <ProtectedRoute requiredTier="elite">
-                  <AITrainingDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Health Hub Page */}
-            <Route 
-              path="/elite/health-hub" 
-              element={
-                <ProtectedRoute requiredTier="elite">
-                  <HealthHub />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Catch-all for 404 */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
+      <HealthProvider>
+        <div className="App">
+          <Navbar />
+          <main className="main-content">
+            <Routes>
+              {/* Explicitly define home route with highest priority */}
+              <Route index element={<Home />} />
+              <Route exact path="/" element={<Home />} />
+              
+              {/* Public routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/subscription/plans" element={<PricingPlans />} />
+              <Route path="/subscription/success" element={<PaymentSuccessPage />} />
+              <Route path="/subscription/cancel" element={<PaymentCancelPage />} />
+              <Route path="/subscription/basic-success" element={<BasicSuccessPage />} />
+              
+              {/* Redirect old pricing page to new subscription plans page */}
+              <Route path="/pricing" element={<Navigate to="/subscription/plans" replace />} />
+              
+              {/* Protected routes with explicit checks */}
+              <Route 
+                path="/dashboard" 
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              <Route 
+                path="/workouts" 
+                element={
+                  <ProtectedRoute>
+                    <WorkoutsPage />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              <Route 
+                path="/subscription/manage" 
+                element={
+                  <ProtectedRoute>
+                    <SubscriptionManagement />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/subscription/upgrade" 
+                element={
+                  <ProtectedRoute>
+                    <SubscriptionUpgradePage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/profile" 
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Settings Page */}
+              <Route 
+                path="/settings" 
+                element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Tier-specific content routes */}
+              <Route 
+                path="/content/basic" 
+                element={
+                  <ProtectedRoute>
+                    <BasicContent />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/content/premium" 
+                element={
+                  <ProtectedRoute requiredTier="premium">
+                    <PremiumContent />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/content/elite" 
+                element={
+                  <ProtectedRoute requiredTier="elite">
+                    <EliteContent />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Safety Features Page */}
+              <Route 
+                path="/safety" 
+                element={
+                  <ProtectedRoute>
+                    <SafetyFeaturesPage />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Device Connection Page */}
+              <Route 
+                path="/safety/devices" 
+                element={
+                  <ProtectedRoute>
+                    <SafetyFeaturesPage />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Safety Guidelines Page (public) */}
+              <Route path="/safety/guidelines" element={<SafetyGuidelines />} />
+              
+              {/* FAQ Page (public) */}
+              <Route path="/faq" element={<FAQ />} />
+              
+              {/* Help Page (public) */}
+              <Route path="/help" element={<Help />} />
+              
+              {/* AI Training Page */}
+              <Route 
+                path="/elite/ai-training" 
+                element={
+                  <ProtectedRoute requiredTier="elite">
+                    <AITrainingDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Health Hub Page */}
+              <Route 
+                path="/elite/health-hub" 
+                element={
+                  <ProtectedRoute requiredTier="elite">
+                    <HealthHub />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Catch-all route for 404 */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </main>
+          <Footer />
+        </div>
+      </HealthProvider>
     </AppProviders>
   );
 }

@@ -310,14 +310,6 @@ export const getRecommendation = async (userProfile, workoutHistory) => {
       hasLimitations: (userProfile.healthConditions || []).length > 0
     };
 
-    // Simple history analysis
-    const historyFactors = {
-      completionRate: 0,
-      averageIntensity: INTENSITY_MULTIPLIERS.MEDIUM,
-      preferredExercises: [],
-      challengingExercises: []
-    };
-
     // Create a simple workout based on user's fitness level and goals
     const workout = {
       name: 'Personalized Workout',
@@ -354,28 +346,11 @@ export const getRecommendation = async (userProfile, workoutHistory) => {
       selectedExercises.push(flexibilityExercises[0]);
     }
 
-    // Set the exercises
+    // Update workout with selected exercises
     workout.exercises = selectedExercises;
     workout.focusAreas = [...new Set(selectedExercises.flatMap(ex => ex.focusAreas))];
 
-    // Generate basic safety recommendations
-    const recommendations = [
-      'Remember to warm up before starting',
-      'Stay hydrated throughout your workout',
-      'Stop if you experience any sharp pain'
-    ];
-
-    if (userFactors.hasLimitations) {
-      recommendations.push('Modify exercises as needed for your comfort');
-    }
-
-    // Return the complete recommendation
-    return {
-      ...workout,
-      recommendations,
-      userFactors,
-      historyFactors
-    };
+    return workout;
   } catch (error) {
     console.error('Error generating workout recommendation:', error);
     throw error;

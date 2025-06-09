@@ -28,7 +28,12 @@ defaultInstance.interceptors.response.use(
     if (!error.response) {
       console.error('Network Error:', error.message);
     } else if (error.response.status === 401) {
-      console.error('Authentication error - token may be invalid or expired');
+      // Only clear token if it's an authentication error
+      if (error.response.data?.error === 'Token expired' || 
+          error.response.data?.error === 'Invalid token') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
     }
     return Promise.reject(error);
   }
@@ -36,35 +41,34 @@ defaultInstance.interceptors.response.use(
 
 // Authentication API functions
 export const loginUser = async (email, password) => {
-  console.log('Sending login request with:', { email, password: '***' });
-  
   const requestData = { 
-    email, 
-    password 
+    email: email?.trim().toLowerCase(),
+    password: password
   };
   
+  if (!requestData.email) {
+    throw new Error('Email is required');
+  }
+  
+  if (!requestData.password) {
+    throw new Error('Password is required');
+  }
+  
   try {
-    console.log('Making request to /api/auth/login with data:', requestData);
     const response = await defaultInstance.post('/api/auth/login', requestData);
-    console.log('Login response:', response.data);
     
     if (!response.data || !response.data.token) {
-      console.error('Login response missing token:', response.data);
       throw new Error('Invalid response from server - no token received');
     }
     
     return response.data;
   } catch (error) {
-    console.error('Login error:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-      config: {
-        url: error.config?.url,
-        method: error.config?.method,
-        data: error.config?.data
-      }
-    });
+    if (error.response?.data?.error) {
+      throw new Error(error.response.data.error);
+    } else if (error.response?.data?.errors) {
+      const errorMessages = error.response.data.errors.map(err => err.msg).join(', ');
+      throw new Error(errorMessages);
+    }
     throw error;
   }
 };
@@ -72,9 +76,27 @@ export const loginUser = async (email, password) => {
 export const getCurrentUser = async () => {
   try {
     const response = await defaultInstance.get('/api/auth/me');
-    return response.data;
+    
+    if (!response.data || !response.data._id) {
+      throw new Error('Invalid user data received');
+    }
+    
+    const userData = {
+      ...response.data,
+      _id: response.data._id || response.data.id,
+      profile: response.data.profile || {},
+      subscription: response.data.subscription || {
+        tier: 'basic',
+        status: 'active',
+        isFree: true
+      }
+    };
+    
+    return userData;
   } catch (error) {
-    console.error('Error fetching current user:', error.message);
+    if (error.response?.status === 401) {
+      throw new Error('Authentication failed. Please login again.');
+    }
     throw error;
   }
 };
@@ -82,12 +104,26 @@ export const getCurrentUser = async () => {
 export const registerUser = async (userData) => {
   console.log('Sending registration data:', { ...userData, password: '***' });
   
+  // Ensure all required fields are present and properly formatted
   const requestData = {
-    firstName: userData.firstName || userData.name || 'Default',
-    lastName: userData.lastName || userData.name || 'User',
-    email: userData.email,
+    firstName: userData.firstName?.trim(),
+    lastName: userData.lastName?.trim(),
+    email: userData.email?.trim().toLowerCase(),
     password: userData.password
   };
+  
+  // Validate required fields
+  if (!requestData.firstName || !requestData.lastName) {
+    throw new Error('First name and last name are required');
+  }
+  
+  if (!requestData.email) {
+    throw new Error('Email is required');
+  }
+  
+  if (!requestData.password || requestData.password.length < 6) {
+    throw new Error('Password must be at least 6 characters long');
+  }
   
   console.log('Sending formatted data:', { ...requestData, password: '***' });
   
@@ -96,6 +132,9 @@ export const registerUser = async (userData) => {
     return response.data;
   } catch (error) {
     console.error('Registration error:', error.message);
+    if (error.response?.data?.error) {
+      throw new Error(error.response.data.error);
+    }
     throw error;
   }
 };
@@ -131,12 +170,22 @@ export const getWorkoutDetail = async (id) => {
   }
 };
 
-export const saveWorkoutProgress = async (workoutId, progressData) => {
+export const saveWorkoutProgress = async (workoutId, exercisesCompleted, duration) => {
   try {
-    const response = await defaultInstance.post(`/api/workouts/${workoutId}/progress`, progressData);
+    console.log('Saving workout progress:', { workoutId, exercisesCompleted, duration });
+    const response = await defaultInstance.post('/api/progress/workout', {
+      workoutId,
+      exercisesCompleted,
+      duration
+    });
+    console.log('Workout progress saved:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error saving workout progress:', error.message);
+    console.error('Error saving workout progress:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
     throw error;
   }
 };
@@ -357,7 +406,7 @@ export const updateUserProfile = async (profileData) => {
     }
 
     // Use the correct endpoint that matches our server
-    const response = await defaultInstance.put('/api/users/me/profile', profileData);
+    const response = await defaultInstance.put('/api/auth/me/profile', profileData);
     console.log('Profile update response:', response.data);
     return response.data;
   } catch (error) {
@@ -508,6 +557,143 @@ export const disconnectDevice = async (deviceId) => {
     return response.data;
   } catch (error) {
     console.error('Error disconnecting device:', error.message);
+    throw error;
+  }
+};
+
+// Progress-related API functions
+export const getProgressData = async () => {
+  try {
+    console.log('Fetching progress data...');
+    const response = await defaultInstance.get('/api/progress');
+    console.log('Progress data response:', response.data);
+    
+    // Validate the response data
+    if (!response.data || !hasValidWorkoutData(response.data)) {
+      console.log('No valid workout data received, returning empty state');
+      return {
+        workouts: [],
+        streak: 0,
+        lastWorkout: null,
+        totalWorkouts: 0,
+        workoutHistory: [],
+        achievements: []
+      };
+    }
+    
+    // Filter and validate the data
+    const validWorkouts = response.data.workouts?.filter(w => 
+      w.completedAt && w.exercisesCompleted?.length > 0
+    ) || [];
+    
+    const validHistory = response.data.workoutHistory?.filter(w => 
+      w.completedAt && w.exercisesCompleted?.length > 0
+    ) || [];
+    
+    return {
+      workouts: validWorkouts,
+      streak: response.data.streak > 0 && response.data.lastWorkout ? response.data.streak : 0,
+      lastWorkout: response.data.lastWorkout || null,
+      totalWorkouts: validHistory.length,
+      workoutHistory: validHistory,
+      achievements: response.data.achievements || []
+    };
+  } catch (error) {
+    console.error('Error fetching progress data:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    // Return empty state on error
+    return {
+      workouts: [],
+      streak: 0,
+      lastWorkout: null,
+      totalWorkouts: 0,
+      workoutHistory: [],
+      achievements: []
+    };
+  }
+};
+
+export const getWorkoutHistory = async () => {
+  try {
+    console.log('Fetching workout history...');
+    const response = await defaultInstance.get('/api/progress/history');
+    console.log('Workout history response:', response.data);
+    
+    // Validate the response data
+    if (!response.data || !response.data.history || !Array.isArray(response.data.history)) {
+      console.log('No valid workout history received, returning empty state');
+      return {
+        history: [],
+        totalWorkouts: 0
+      };
+    }
+    
+    // Filter and validate the history
+    const validHistory = response.data.history.filter(w => 
+      w.completedAt && w.exercisesCompleted?.length > 0
+    );
+    
+    return {
+      history: validHistory,
+      totalWorkouts: validHistory.length
+    };
+  } catch (error) {
+    console.error('Error fetching workout history:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    // Return empty state on error
+    return {
+      history: [],
+      totalWorkouts: 0
+    };
+  }
+};
+
+// Helper function to validate workout data
+const hasValidWorkoutData = (data) => {
+  if (!data) return false;
+  
+  // Check if workouts array has valid entries
+  const hasValidWorkouts = Array.isArray(data.workouts) && 
+    data.workouts.length > 0 &&
+    data.workouts.some(w => w.completedAt && w.exercisesCompleted?.length > 0);
+
+  // Check if workout history has valid entries
+  const hasValidHistory = Array.isArray(data.workoutHistory) && 
+    data.workoutHistory.length > 0 &&
+    data.workoutHistory.some(w => w.completedAt && w.exercisesCompleted?.length > 0);
+
+  // Check if streak and totalWorkouts are backed by real data
+  const hasValidStats = (
+    (data.streak > 0 && data.lastWorkout) ||
+    (data.totalWorkouts > 0 && hasValidHistory)
+  );
+
+  return hasValidWorkouts || hasValidHistory || hasValidStats;
+};
+
+export const getHealthData = async () => {
+  try {
+    const response = await fetch('/api/health/data', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch health data');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error in getHealthData:', error);
     throw error;
   }
 };

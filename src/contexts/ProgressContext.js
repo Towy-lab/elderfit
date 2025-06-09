@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import { useSubscription } from './SubscriptionContext';
+import { getProgressData, saveWorkoutProgress, getWorkoutHistory } from '../services/api';
 
 // Create the context
 const ProgressContext = createContext();
@@ -9,108 +11,171 @@ export const useProgress = () => {
   return useContext(ProgressContext);
 };
 
+// Helper function to validate workout data
+const hasValidWorkoutData = (data) => {
+  if (!data) return false;
+  
+  // Check if workouts array has valid entries
+  const hasValidWorkouts = Array.isArray(data.workouts) && 
+    data.workouts.length > 0 &&
+    data.workouts.some(w => 
+      w.completedAt && 
+      w.exercisesCompleted?.length > 0 &&
+      w.duration > 0
+    );
+
+  // Check if workout history has valid entries
+  const hasValidHistory = Array.isArray(data.workoutHistory) && 
+    data.workoutHistory.length > 0 &&
+    data.workoutHistory.some(w => 
+      w.completedAt && 
+      w.exercisesCompleted?.length > 0 &&
+      w.duration > 0
+    );
+
+  // Check if streak and totalWorkouts are backed by real data
+  const hasValidStats = (
+    (data.streak > 0 && data.lastWorkout && hasValidHistory) ||
+    (data.totalWorkouts > 0 && hasValidHistory)
+  );
+
+  return hasValidWorkouts || hasValidHistory || hasValidStats;
+};
+
 // Create the provider component
 export const ProgressProvider = ({ children }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const { subscription } = useSubscription();
   const [workouts, setWorkouts] = useState([]);
   const [streak, setStreak] = useState(0);
   const [lastWorkout, setLastWorkout] = useState(null);
+  const [totalWorkouts, setTotalWorkouts] = useState(0);
+  const [workoutHistory, setWorkoutHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Load progress data when the component mounts or auth changes
+  // Reset progress data
+  const resetProgress = () => {
+    console.log('Resetting progress data');
+    setWorkouts([]);
+    setStreak(0);
+    setLastWorkout(null);
+    setTotalWorkouts(0);
+    setWorkoutHistory([]);
+    setError(null);
+  };
+
+  // Load progress data when auth state or subscription changes
   useEffect(() => {
-    const loadProgressData = () => {
+    const loadProgressData = async () => {
+      if (!isAuthenticated || !user) {
+        resetProgress();
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        console.log("Loading progress data for user:", user?.id);
-        
-        if (isAuthenticated && user) {
-          // In a real app, this would fetch from an API
-          // For now, we'll use mock data or localStorage
-          const storedProgress = localStorage.getItem('userProgress');
-          
-          if (storedProgress) {
-            const progressData = JSON.parse(storedProgress);
-            console.log("Found progress data:", progressData);
-            
-            setWorkouts(progressData.workouts || []);
-            setStreak(progressData.streak || 0);
-            setLastWorkout(progressData.lastWorkout || null);
-          } else {
-            // No stored progress, initialize with defaults
-            console.log("No progress data found, initializing with defaults");
-            
-            // Mock default data
-            const defaultProgress = {
-              workouts: [],
-              streak: 0,
-              lastWorkout: null
-            };
-            
-            setWorkouts(defaultProgress.workouts);
-            setStreak(defaultProgress.streak);
-            setLastWorkout(defaultProgress.lastWorkout);
-            
-            // Store the defaults
-            localStorage.setItem('userProgress', JSON.stringify(defaultProgress));
-          }
-        } else {
-          // Reset progress for unauthenticated users
-          console.log("No authenticated user, resetting progress");
-          setWorkouts([]);
-          setStreak(0);
-          setLastWorkout(null);
+        setIsLoading(true);
+        setError(null);
+
+        // Get progress data from API
+        const progressData = await getProgressData();
+        console.log('Loaded progress data:', progressData);
+
+        // Validate the data
+        if (!hasValidWorkoutData(progressData)) {
+          console.log('Invalid progress data, resetting state');
+          resetProgress();
+          return;
         }
-      } catch (error) {
-        console.error('Error loading progress data:', error);
-        // Set to defaults on error
-        setWorkouts([]);
-        setStreak(0);
-        setLastWorkout(null);
+
+        // Update state with validated data
+        setWorkouts(progressData.workouts || []);
+        setStreak(progressData.streak || 0);
+        setLastWorkout(progressData.lastWorkout || null);
+        setTotalWorkouts(progressData.totalWorkouts || 0);
+
+        // Get and validate workout history
+        const historyData = await getWorkoutHistory();
+        if (historyData.history && Array.isArray(historyData.history)) {
+          const validHistory = historyData.history.filter(w => 
+            w.completedAt && 
+            w.exercisesCompleted?.length > 0 &&
+            w.duration > 0
+          );
+          setWorkoutHistory(validHistory);
+          setTotalWorkouts(validHistory.length);
+        } else {
+          setWorkoutHistory([]);
+          setTotalWorkouts(0);
+        }
+      } catch (err) {
+        console.error('Error loading progress data:', err);
+        setError(err.message);
+        resetProgress();
       } finally {
         setIsLoading(false);
       }
     };
     
     loadProgressData();
-  }, [isAuthenticated, user]);
+
+    // Cleanup function to reset progress when unmounting or auth changes
+    return () => {
+      if (!isAuthenticated) {
+        resetProgress();
+      }
+    };
+  }, [isAuthenticated, user, subscription?.tier]);
 
   // Track workout completion
-  const completeWorkout = (workoutId, exercisesCompleted) => {
+  const completeWorkout = async (workoutId, exercisesCompleted, duration) => {
     if (!isAuthenticated) return false;
     
     try {
-      const now = new Date();
-      const completionDate = now.toISOString();
+      setError(null);
       
-      // Create the workout completion record
-      const completedWorkout = {
-        id: workoutId,
-        completedAt: completionDate,
-        exercisesCompleted
-      };
+      // Validate workout data
+      if (!workoutId || !exercisesCompleted || !Array.isArray(exercisesCompleted) || exercisesCompleted.length === 0) {
+        throw new Error('Invalid workout data');
+      }
+
+      // Validate duration
+      if (!duration || duration <= 0) {
+        throw new Error('Invalid workout duration');
+      }
       
-      // Update workouts list
-      const updatedWorkouts = [...workouts, completedWorkout];
-      setWorkouts(updatedWorkouts);
+      // Save workout progress to API
+      const response = await saveWorkoutProgress(workoutId, exercisesCompleted, duration);
       
-      // Update last workout
-      setLastWorkout(completionDate);
+      // Validate the response data
+      if (!response.progress || !response.progress.lastWorkout) {
+        throw new Error('Invalid response from server');
+      }
       
-      // Calculate streak
-      // In a real app, this would have more complex logic
-      const newStreak = streak + 1;
-      setStreak(newStreak);
+      // Update local state with the response
+      setStreak(response.progress.streak > 0 ? response.progress.streak : 0);
+      setLastWorkout(response.progress.lastWorkout);
       
-      // Save to localStorage
-      localStorage.setItem('userProgress', JSON.stringify({
-        workouts: updatedWorkouts,
-        streak: newStreak,
-        lastWorkout: completionDate
-      }));
+      // Refresh workout history
+      const historyData = await getWorkoutHistory();
+      if (historyData.history && Array.isArray(historyData.history)) {
+        const validHistory = historyData.history.filter(w => 
+          w.completedAt && 
+          w.exercisesCompleted?.length > 0 &&
+          w.duration > 0
+        );
+        setWorkoutHistory(validHistory);
+        setTotalWorkouts(validHistory.length);
+      } else {
+        setWorkoutHistory([]);
+        setTotalWorkouts(0);
+      }
       
       return true;
     } catch (error) {
       console.error('Error completing workout:', error);
+      setError(error.message);
       return false;
     }
   };
@@ -120,15 +185,14 @@ export const ProgressProvider = ({ children }) => {
     workouts,
     streak,
     lastWorkout,
+    totalWorkouts,
+    workoutHistory,
     isLoading,
+    error,
     completeWorkout
   };
-  
-  return (
-    <ProgressContext.Provider value={value}>
-      {children}
-    </ProgressContext.Provider>
-  );
+
+  return <ProgressContext.Provider value={value}>{children}</ProgressContext.Provider>;
 };
 
 export default ProgressContext;

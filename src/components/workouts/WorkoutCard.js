@@ -4,8 +4,8 @@ import { useSubscription } from '../../contexts/SubscriptionContext';
 import { Clock, BarChart2, Target } from 'lucide-react';
 
 const WorkoutCard = ({ workout }) => {
-  const { hasTierAccess, formatTierName } = useSubscription();
-  const userHasAccess = hasTierAccess(workout.tier);
+  const { hasAccess, formatTierName } = useSubscription();
+  const userHasAccess = hasAccess(workout.tier);
   
   // Function to get button color based on workout level
   const getLevelButtonColor = (level) => {

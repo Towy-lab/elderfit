@@ -10,11 +10,11 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import EmptyState from '../components/EmptyState';
 import UpgradeCard from '../components/subscription/UpgradeCard';
 import DashboardGuide from './DashboardGuide';
-import { Shield } from 'lucide-react';
+import { Shield, Activity, Award, BookOpen, Calendar } from 'lucide-react';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const { subscription, hasTierAccess, formatTierName, getValidUpgradeTiers } = useSubscription();
+  const { subscription, hasAccess, formatTierName, getValidUpgradeTiers } = useSubscription();
   const [recommendedWorkouts, setRecommendedWorkouts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
@@ -265,6 +265,22 @@ const Dashboard = () => {
             </div>
           </div>
         </section>
+      )}
+      
+      {/* Show upgrade prompts based on current tier */}
+      {!hasAccess('premium') && (
+        <div className="mt-8 bg-indigo-50 border border-indigo-200 rounded-lg p-6">
+          <h3 className="text-xl font-semibold text-indigo-800 mb-3">Upgrade to Premium</h3>
+          <p className="text-indigo-700 mb-4">
+            Get access to all premium features and more with our Premium plan.
+          </p>
+          <Link
+            to="/subscription/plans"
+            className="inline-block bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700"
+          >
+            View Premium Plans
+          </Link>
+        </div>
       )}
     </div>
   );

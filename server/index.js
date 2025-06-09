@@ -76,6 +76,7 @@ const subscriptionRoutes = require('./routes/subscription');
 const stripeRoutes = require('./routes/stripe');
 const contentRoutes = require('./routes/content');
 const devicesRoutes = require('./routes/devices');
+const progressRoutes = require('./routes/progress');
 
 // Connect to MongoDB with retry logic
 const connectWithRetry = async (retries = 5, delay = 5000) => {
@@ -134,6 +135,7 @@ app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/devices', devicesRoutes);
+app.use('/api/progress', progressRoutes);
 
 // Debug routes for Stripe redirects
 app.get('/subscription/success', (req, res) => {

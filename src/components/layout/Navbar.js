@@ -64,7 +64,7 @@ const Navbar = () => {
                 
                 {/* Subscription-specific links */}
                 {subscription?.tier === 'basic' && (
-                  <Link to="/basic" className="hover:text-blue-200 transition-colors">Basic Content</Link>
+                  <Link to="/content/basic" className="hover:text-blue-200 transition-colors">Basic Content</Link>
                 )}
                 
                 {subscription?.tier === 'premium' && (
@@ -148,7 +148,7 @@ const Navbar = () => {
                   
                   {/* Subscription-specific links */}
                   {subscription?.tier === 'basic' && (
-                    <Link to="/basic" className="hover:bg-blue-700 px-3 py-2 rounded" onClick={closeMenu}>Basic Content</Link>
+                    <Link to="/content/basic" className="hover:bg-blue-700 px-3 py-2 rounded" onClick={closeMenu}>Basic Content</Link>
                   )}
                   
                   {subscription?.tier === 'premium' && (

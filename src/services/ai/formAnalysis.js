@@ -1,9 +1,6 @@
-import { calculateJointAngles, detectPosture, analyzeMovementPattern } from '../../utils/motionAnalysis';
-
 class FormAnalysisService {
   constructor() {
     this.formHistory = new Map();
-    this.realTimeFeedback = new Map();
   }
 
   async analyzeForm(exerciseId, realTimeData) {

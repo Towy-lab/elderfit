@@ -23,56 +23,55 @@ const TierContentManager = ({
   featureName = "feature",
   previewContent = null
 }) => {
-  const { hasTierAccess, formatTierName } = useSubscription();
+  const { hasAccess, formatTierName } = useSubscription();
   
-  const hasAccess = hasTierAccess(requiredTier);
-  
-  // If user has access, show the content
-  if (hasAccess) {
-    return <>{children}</>;
-  }
-  
-  // If preview mode is enabled, show a preview with upgrade prompt
-  if (preview && previewContent) {
+  // If preview mode is enabled, show preview content
+  if (preview) {
     return (
-      <div className="relative">
-        <div className="filter blur-sm pointer-events-none">
-          {previewContent}
-        </div>
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 bg-opacity-50 rounded-lg p-6 text-center">
-          <LockIcon size={32} className="text-white mb-2" />
-          <h3 className="text-xl font-semibold text-white mb-2">
-            Upgrade to {formatTierName(requiredTier)}
+      <div className="mt-8">
+        <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+          <h3 className="text-xl font-medium text-gray-800 mb-3">
+            {formatTierName(requiredTier)} Content Preview
           </h3>
-          <p className="text-white mb-4">
-            Unlock {featureName} and many more {requiredTier === 'elite' ? 'elite' : 'premium'} features!
+          <p className="text-gray-700 mb-4">
+            Upgrade to {formatTierName(requiredTier)} to access {featureName}.
           </p>
-          <Link 
-            to="/subscription/plans" 
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-          >
-            View Plans
-          </Link>
+          {previewContent}
+          <div className="mt-4">
+            <Link
+              to="/subscription/plans"
+              className="inline-block bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
+            >
+              Upgrade to {formatTierName(requiredTier)}
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
   
-  // Default locked content message
-  return (
-    <div className="bg-gray-50 rounded-lg p-6 text-center border border-gray-200">
-      <LockIcon size={24} className="text-gray-400 mx-auto mb-2" />
-      <p className="text-gray-600 mb-3">
-        {fallbackMessage || `This ${featureName} is available with the ${formatTierName(requiredTier)} plan.`}
-      </p>
-      <Link 
-        to="/subscription/plans" 
-        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 inline-block"
-      >
-        Upgrade Now
-      </Link>
-    </div>
-  );
+  // Check if user has access to the required tier
+  if (!hasAccess(requiredTier)) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+        <h3 className="text-xl font-medium text-gray-800 mb-3">
+          {formatTierName(requiredTier)} Access Required
+        </h3>
+        <p className="text-gray-700 mb-4">
+          You need a {formatTierName(requiredTier)} subscription to access {featureName}.
+        </p>
+        <Link
+          to="/subscription/plans"
+          className="inline-block bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
+        >
+          Upgrade to {formatTierName(requiredTier)}
+        </Link>
+      </div>
+    );
+  }
+  
+  // If user has access, render the children
+  return children;
 };
 
 export default TierContentManager;
