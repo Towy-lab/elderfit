@@ -6,6 +6,7 @@ import TierContentManager from '../../components/subscription/TierContentManager
 import { TieredEmergencyContact } from '../../components/safety/TieredEmergencyContact';
 import { TieredPainTracker } from '../../components/safety/TieredPainTracker';
 import { Activity, Video, Calendar, Users, BookOpen, Award } from 'lucide-react';
+import { useProgress } from '../../contexts/ProgressContext';
 
 const PremiumContent = () => {
   const { subscription, formatTierName, hasAccess } = useSubscription();
@@ -97,6 +98,31 @@ const PremiumContent = () => {
     };
     return imageMap[workout.focusArea] || 'https://images.unsplash.com/photo-1520080816484-0e41b8536b2f?auto=format&fit=crop&w=500&q=60';
   };
+
+  const { 
+    workoutHistory = [], 
+    streak = 0, 
+    lastWorkout = null,
+    isLoading = false,
+    error = null
+  } = useProgress() || {};
+
+  // Calculate total minutes exercised
+  const totalMinutes = workoutHistory.reduce((total, workout) => total + (workout.duration || 0), 0);
+  
+  // Format date for display
+  const formatDate = (date) => {
+    if (!date) return 'N/A';
+    return new Date(date).toLocaleDateString();
+  };
+
+  // Check if we have real progress data
+  const hasRealProgress = workoutHistory.length > 0 && 
+    workoutHistory.some(w => 
+      w.completedAt && 
+      w.exercisesCompleted?.length > 0 &&
+      w.duration > 0
+    );
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -395,64 +421,45 @@ const PremiumContent = () => {
           </div>
           
           <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <div className="bg-indigo-50 rounded-lg p-4 text-center">
-                <p className="text-sm font-medium text-indigo-800 mb-1">Total Workouts</p>
-                <p className="text-3xl font-bold text-indigo-900">42</p>
+            {isLoading ? (
+              <div className="flex justify-center p-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
               </div>
-              
-              <div className="bg-indigo-50 rounded-lg p-4 text-center">
-                <p className="text-sm font-medium text-indigo-800 mb-1">Minutes Active</p>
-                <p className="text-3xl font-bold text-indigo-900">860</p>
+            ) : error ? (
+              <div className="text-red-500 text-center p-4">
+                {error}
               </div>
-              
-              <div className="bg-indigo-50 rounded-lg p-4 text-center">
-                <p className="text-sm font-medium text-indigo-800 mb-1">Current Streak</p>
-                <p className="text-3xl font-bold text-indigo-900">7 days</p>
+            ) : !hasRealProgress ? (
+              <div className="text-center p-4">
+                <p className="text-gray-500">Complete your first workout to start tracking your progress!</p>
               </div>
-            </div>
-            
-            <div className="mb-6">
-              <h3 className="font-medium mb-3">Monthly Activity</h3>
-              <div className="h-64 border rounded-lg p-4 bg-gray-50 flex items-center justify-center">
-                <div className="text-gray-400">Activity Chart Visualization</div>
-              </div>
-            </div>
-            
-            <div>
-              <h3 className="font-medium mb-3">Progress Towards Goals</h3>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm font-medium">Weekly Workouts (3/4)</span>
-                    <span className="text-sm text-gray-600">75%</span>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                  <div className="bg-indigo-50 rounded-lg p-4 text-center">
+                    <p className="text-sm font-medium text-indigo-800 mb-1">Total Workouts</p>
+                    <p className="text-3xl font-bold text-indigo-900">{workoutHistory.length}</p>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
-                    <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '75%' }}></div>
+                  
+                  <div className="bg-indigo-50 rounded-lg p-4 text-center">
+                    <p className="text-sm font-medium text-indigo-800 mb-1">Minutes Active</p>
+                    <p className="text-3xl font-bold text-indigo-900">{totalMinutes}</p>
+                  </div>
+                  
+                  <div className="bg-indigo-50 rounded-lg p-4 text-center">
+                    <p className="text-sm font-medium text-indigo-800 mb-1">Current Streak</p>
+                    <p className="text-3xl font-bold text-indigo-900">{streak} days</p>
                   </div>
                 </div>
                 
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm font-medium">Monthly Active Minutes (120/150)</span>
-                    <span className="text-sm text-gray-600">80%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
-                    <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '80%' }}></div>
+                <div className="mb-6">
+                  <h3 className="font-medium mb-3">Monthly Activity</h3>
+                  <div className="h-64 border rounded-lg p-4 bg-gray-50 flex items-center justify-center">
+                    <div className="text-gray-400">Activity Chart Visualization</div>
                   </div>
                 </div>
-                
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm font-medium">Strength Sessions (2/3)</span>
-                    <span className="text-sm text-gray-600">67%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
-                    <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '67%' }}></div>
-                  </div>
-                </div>
-              </div>
-            </div>
+              </>
+            )}
           </div>
         </section>
         

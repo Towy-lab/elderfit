@@ -14,7 +14,7 @@ const painLevels = [
 
 export const TieredPainTracker = ({ exerciseId }) => {
   const { logPainLevel, getPainHistory, generatePainInsights, hasEliteAccess } = useSafety();
-  const { hasTierAccess } = useSubscription();
+  const { hasAccess } = useSubscription();
   const [currentPain, setCurrentPain] = useState(0);
   const [notes, setNotes] = useState('');
   
@@ -178,7 +178,7 @@ export const TieredPainTracker = ({ exerciseId }) => {
         )}
 
         {/* Elite Upgrade Promo */}
-        {!hasTierAccess('elite') && (
+        {!hasAccess('elite') && (
           <div className="mt-6 bg-purple-50 border border-purple-100 rounded-lg p-4">
             <div className="flex items-start gap-3">
               <Lock className="text-purple-600 flex-shrink-0 mt-1" />
@@ -200,7 +200,7 @@ export const TieredPainTracker = ({ exerciseId }) => {
         )}
         
         {/* Elite Pain Analysis */}
-        {hasEliteAccess() && painHistory.length > 0 && (
+        {hasAccess('elite') && (
           <div className="mt-6 bg-purple-50 border border-purple-200 rounded-lg p-4">
             <h3 className="font-medium text-purple-800 mb-3">Elite Pain Analysis</h3>
             

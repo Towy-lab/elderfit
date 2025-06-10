@@ -11,7 +11,7 @@ import { useSubscription } from '../../contexts/SubscriptionContext';
  * @param {React.ReactNode} props.fallback - Optional custom fallback content if user doesn't have access
  */
 const FeatureGate = ({ requiredTier, children, fallback }) => {
-  const { hasTierAccess, subscription, loading, formatTierName } = useSubscription();
+  const { hasAccess, subscription, loading, formatTierName } = useSubscription();
   
   // If still loading subscription data, show loading state
   if (loading) {
@@ -19,7 +19,7 @@ const FeatureGate = ({ requiredTier, children, fallback }) => {
   }
   
   // If user has access, render the children
-  if (hasTierAccess(requiredTier)) {
+  if (hasAccess(requiredTier)) {
     return children;
   }
   

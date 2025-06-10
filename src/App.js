@@ -36,6 +36,7 @@ import WorkoutsPage from './pages/WorkoutsPage';
 import SafetyGuidelines from './pages/safety/Guidelines';
 import FAQ from './pages/FAQ';
 import Help from './pages/Help';
+import Contact from './pages/Contact';
 // Import the new AITrainingDashboard component
 import AITrainingDashboard from './components/training/AITrainingDashboard';
 // Import HealthHub component
@@ -196,6 +197,9 @@ function App() {
               
               {/* Help Page (public) */}
               <Route path="/help" element={<Help />} />
+              
+              {/* Contact Page (public) */}
+              <Route path="/contact" element={<Contact />} />
               
               {/* AI Training Page */}
               <Route 

@@ -1,283 +1,125 @@
 // src/components/safety/TieredEmergencyContact.js
 import React, { useState } from 'react';
-import { Phone, Heart, Save, Trash, Edit2, Lock } from 'lucide-react';
+import { Phone, Mail, User, Plus, Trash2, Edit2, Lock } from 'lucide-react';
 import { useSafety } from '../../contexts/SafetyContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import TierContentManager from '../subscription/TierContentManager';
 
 export const TieredEmergencyContact = () => {
-  const { hasTierAccess } = useSubscription();
-  const { contacts, addContact, removeContact } = useSafety();
+  const { contacts, addContact, removeContact, updateContact } = useSafety();
+  const { hasAccess } = useSubscription();
   const [isAdding, setIsAdding] = useState(false);
-  const [newContact, setNewContact] = useState({
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [formData, setFormData] = useState({
     name: '',
     relationship: '',
     phone: '',
-    notes: ''
+    email: ''
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    addContact(newContact);
-    setNewContact({ name: '', relationship: '', phone: '', notes: '' });
+    if (editingIndex !== null) {
+      updateContact(editingIndex, formData);
+      setEditingIndex(null);
+    } else {
+      addContact(formData);
+    }
+    setFormData({ name: '', relationship: '', phone: '', email: '' });
     setIsAdding(false);
   };
 
-  // Get contacts with tier restriction
-  const visibleContacts = hasTierAccess('premium') 
-    ? contacts 
-    : contacts.slice(0, 1); // Basic tier only gets 1 contact
+  const handleEdit = (index) => {
+    setFormData(contacts[index]);
+    setEditingIndex(index);
+    setIsAdding(true);
+  };
 
-  // Basic tier preview content
-  const BasicContactPreview = () => (
-    <div className="space-y-4 mb-6">
-      {visibleContacts.map((contact, index) => (
-        <div 
-          key={index}
-          className="border rounded-lg p-4 bg-gray-50"
-        >
-          <div className="flex justify-between items-start">
+  const handleDelete = (index) => {
+    removeContact(index);
+  };
+
+  // Preview content for basic tier
+  const BasicEmergencyContactPreview = () => (
+    <div>
+      <p className="text-gray-600 mb-4">
+        Keep your emergency contacts up to date for your safety.
+      </p>
+      <div className="space-y-3 opacity-50">
+        <div className="p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center gap-3">
+            <User className="text-gray-400" size={20} />
             <div>
-              <h3 className="font-medium">{contact.name}</h3>
-              <p className="text-sm text-gray-600">{contact.relationship}</p>
-              <div className="flex items-center gap-2 mt-2">
-                <Phone size={16} className="text-blue-500" />
-                <a className="text-blue-500 hover:underline">{contact.phone}</a>
-              </div>
+              <p className="font-medium">John Doe</p>
+              <p className="text-sm text-gray-500">Spouse</p>
             </div>
           </div>
+          <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
+            <Phone size={16} />
+            <span>(555) 123-4567</span>
+          </div>
         </div>
-      ))}
-
-      {hasTierAccess('basic') && visibleContacts.length < 1 && (
-        <div className="border rounded-lg p-4 bg-gray-50 text-center">
-          <p className="text-gray-600">No emergency contacts added yet.</p>
-        </div>
-      )}
+      </div>
     </div>
   );
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-        <Heart className="text-red-500" />
+        <Phone className="text-red-500" />
         Emergency Contacts
       </h2>
 
-      {/* Basic Tier - Limited to 1 contact */}
-      <TierContentManager
-        requiredTier="basic"
-        featureName="emergency contact"
-      >
-        <div className="space-y-4 mb-6">
-          {visibleContacts.map((contact, index) => (
-            <div 
-              key={index}
-              className="border rounded-lg p-4 bg-gray-50"
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-medium">{contact.name}</h3>
-                  <p className="text-sm text-gray-600">{contact.relationship}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Phone size={16} className="text-blue-500" />
-                    <a 
-                      href={`tel:${contact.phone}`}
-                      className="text-blue-500 hover:underline"
-                    >
-                      {contact.phone}
-                    </a>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => removeContact(index)}
-                    className="p-2 text-red-500 hover:bg-red-50 rounded-full"
-                  >
-                    <Trash size={16} />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setNewContact(contact);
-                      setIsAdding(true);
-                    }}
-                    className="p-2 text-blue-500 hover:bg-blue-50 rounded-full"
-                  >
-                    <Edit2 size={16} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {hasTierAccess('basic') && visibleContacts.length < 1 && (
-            <div className="border rounded-lg p-4 bg-gray-50 text-center">
-              <p className="text-gray-600">No emergency contacts added yet.</p>
-            </div>
-          )}
-        </div>
-
-        {/* Premium upgrade prompt if Basic has 1 contact already */}
-        {visibleContacts.length >= 1 && !hasTierAccess('premium') && (
-          <div className="mb-4 bg-indigo-50 border border-indigo-100 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <Lock className="text-indigo-600 flex-shrink-0 mt-1" />
-              <div>
-                <p className="font-medium text-indigo-700">Premium Feature</p>
-                <p className="text-sm text-indigo-600 mb-2">
-                  Upgrade to Premium or Elite to add multiple emergency contacts.
-                </p>
-                <a 
-                  href="/subscription/plans" 
-                  className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
-                  aria-label="View subscription upgrade options"
-                >
-                  View upgrade options →
-                </a>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Add Contact Form - Basic tier */}
-        {visibleContacts.length < 1 ? (
-          isAdding ? (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  value={newContact.name}
-                  onChange={(e) => setNewContact(prev => ({
-                    ...prev,
-                    name: e.target.value
-                  }))}
-                  className="w-full p-2 border rounded-md"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Relationship
-                </label>
-                <input
-                  type="text"
-                  value={newContact.relationship}
-                  onChange={(e) => setNewContact(prev => ({
-                    ...prev,
-                    relationship: e.target.value
-                  }))}
-                  className="w-full p-2 border rounded-md"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  value={newContact.phone}
-                  onChange={(e) => setNewContact(prev => ({
-                    ...prev,
-                    phone: e.target.value
-                  }))}
-                  className="w-full p-2 border rounded-md"
-                  required
-                />
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAdding(false)}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                >
-                  <Save size={16} className="inline-block mr-2" />
-                  Save Contact
-                </button>
-              </div>
-            </form>
-          ) : (
-            <button
-              onClick={() => setIsAdding(true)}
-              className="w-full p-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-blue-500 hover:text-blue-500 transition-colors"
-            >
-              + Add Emergency Contact
-            </button>
-          )
-        ) : null}
-      </TierContentManager>
-
-      {/* Premium Tier - Multiple contacts with notes */}
       <TierContentManager
         requiredTier="premium"
-        featureName="advanced emergency contacts"
+        featureName="emergency contacts"
         preview={true}
-        previewContent={<BasicContactPreview />}
+        previewContent={<BasicEmergencyContactPreview />}
       >
-        <div className="space-y-4 mb-6">
+        {/* Contact List */}
+        <div className="space-y-3 mb-6">
           {contacts.map((contact, index) => (
-            <div 
-              key={index}
-              className="border rounded-lg p-4 bg-gray-50"
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-medium">{contact.name}</h3>
-                  <p className="text-sm text-gray-600">{contact.relationship}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Phone size={16} className="text-blue-500" />
-                    <a 
-                      href={`tel:${contact.phone}`}
-                      className="text-blue-500 hover:underline"
-                    >
-                      {contact.phone}
-                    </a>
+            <div key={index} className="p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <User className="text-gray-600" size={20} />
+                  <div>
+                    <p className="font-medium">{contact.name}</p>
+                    <p className="text-sm text-gray-500">{contact.relationship}</p>
                   </div>
-                  {contact.notes && (
-                    <p className="text-sm text-gray-600 mt-2">{contact.notes}</p>
-                  )}
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => removeContact(index)}
-                    className="p-2 text-red-500 hover:bg-red-50 rounded-full"
-                  >
-                    <Trash size={16} />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setNewContact(contact);
-                      setIsAdding(true);
-                    }}
-                    className="p-2 text-blue-500 hover:bg-blue-50 rounded-full"
+                    onClick={() => handleEdit(index)}
+                    className="p-1 text-gray-600 hover:text-blue-600"
                   >
                     <Edit2 size={16} />
                   </button>
+                  <button
+                    onClick={() => handleDelete(index)}
+                    className="p-1 text-gray-600 hover:text-red-600"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
+              </div>
+              <div className="mt-2 space-y-1">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Phone size={16} />
+                  <span>{contact.phone}</span>
+                </div>
+                {contact.email && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Mail size={16} />
+                    <span>{contact.email}</span>
+                  </div>
+                )}
               </div>
             </div>
           ))}
-
-          {contacts.length === 0 && (
-            <div className="border rounded-lg p-4 bg-gray-50 text-center">
-              <p className="text-gray-600">No emergency contacts added yet.</p>
-            </div>
-          )}
         </div>
 
-        {/* Add Contact Form - Premium tier */}
+        {/* Add/Edit Form */}
         {isAdding ? (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -286,88 +128,101 @@ export const TieredEmergencyContact = () => {
               </label>
               <input
                 type="text"
-                value={newContact.name}
-                onChange={(e) => setNewContact(prev => ({
-                  ...prev,
-                  name: e.target.value
-                }))}
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full p-2 border rounded-md"
                 required
               />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Relationship
               </label>
               <input
                 type="text"
-                value={newContact.relationship}
-                onChange={(e) => setNewContact(prev => ({
-                  ...prev,
-                  relationship: e.target.value
-                }))}
+                value={formData.relationship}
+                onChange={(e) => setFormData({ ...formData, relationship: e.target.value })}
                 className="w-full p-2 border rounded-md"
                 required
               />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number
+                Phone
               </label>
               <input
                 type="tel"
-                value={newContact.phone}
-                onChange={(e) => setNewContact(prev => ({
-                  ...prev,
-                  phone: e.target.value
-                }))}
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 className="w-full p-2 border rounded-md"
                 required
               />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Additional Notes
+                Email (Optional)
               </label>
-              <textarea
-                value={newContact.notes}
-                onChange={(e) => setNewContact(prev => ({
-                  ...prev,
-                  notes: e.target.value
-                }))}
-                className="w-full p-2 border rounded-md h-24 resize-none"
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full p-2 border rounded-md"
               />
             </div>
-
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setIsAdding(false)}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
-              >
-                Cancel
-              </button>
+            <div className="flex gap-2">
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                className="flex-1 p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
               >
-                <Save size={16} className="inline-block mr-2" />
-                Save Contact
+                {editingIndex !== null ? 'Update Contact' : 'Add Contact'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAdding(false);
+                  setEditingIndex(null);
+                  setFormData({ name: '', relationship: '', phone: '', email: '' });
+                }}
+                className="p-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
               </button>
             </div>
           </form>
         ) : (
           <button
             onClick={() => setIsAdding(true)}
-            className="w-full p-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-blue-500 hover:text-blue-500 transition-colors"
+            className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700 flex items-center justify-center gap-2"
           >
-            + Add Emergency Contact
+            <Plus size={20} />
+            Add Emergency Contact
           </button>
+        )}
+
+        {/* Elite Upgrade Promo */}
+        {!hasAccess('elite') && (
+          <div className="mt-6 bg-purple-50 border border-purple-100 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <Lock className="text-purple-600 flex-shrink-0 mt-1" />
+              <div>
+                <p className="font-medium text-purple-700">Elite Feature</p>
+                <p className="text-sm text-purple-600 mb-2">
+                  Upgrade to Elite for advanced emergency contact management and direct communication with healthcare providers.
+                </p>
+                <a 
+                  href="/subscription/plans" 
+                  className="text-sm font-medium text-purple-600 hover:text-purple-800"
+                  aria-label="Upgrade to Elite subscription for advanced emergency contact features"
+                >
+                  Upgrade to Elite →
+                </a>
+              </div>
+            </div>
+          </div>
         )}
       </TierContentManager>
     </div>
   );
 };
+
+export default TieredEmergencyContact;
