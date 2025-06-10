@@ -1,110 +1,166 @@
 import React, { useState } from 'react';
+import { useSafety } from '../../contexts/SafetyContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
-import { Shield, Bluetooth, Wifi, Smartphone } from 'lucide-react';
+import { Shield, Bluetooth, Wifi, Smartphone, Lock } from 'lucide-react';
 
-const DeviceConnection = () => {
-  const { hasTierAccess } = useSubscription();
+export const DeviceConnection = () => {
+  const { connectDevice, disconnectDevice, connectedDevice } = useSafety();
+  const { hasAccess } = useSubscription();
   const [isConnecting, setIsConnecting] = useState(false);
-  const [connectedDevices, setConnectedDevices] = useState([]);
 
-  const handleConnectDevice = async () => {
+  const handleConnect = async () => {
     setIsConnecting(true);
     try {
-      // Here you would implement the actual device connection logic
-      // For now, we'll just simulate a connection
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setConnectedDevices(prev => [...prev, {
-        id: Date.now(),
-        name: 'Sample Device',
-        type: 'wearable',
-        status: 'connected'
-      }]);
+      await connectDevice();
     } catch (error) {
-      console.error('Error connecting device:', error);
+      console.error('Failed to connect device:', error);
     } finally {
       setIsConnecting(false);
     }
   };
 
-  return (
-    <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-      <div className="flex items-center gap-3 mb-4">
-        <Shield className="text-blue-600" size={24} />
-        <h3 className="text-xl font-bold">Device Connection</h3>
-      </div>
+  const handleDisconnect = () => {
+    disconnectDevice();
+  };
 
-      <div className="mb-6">
-        <p className="text-gray-600 mb-4">
-          Connect your wearable devices to track your health metrics and exercise progress.
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
-            <Bluetooth className="text-blue-500" />
-            <span>Bluetooth Devices</span>
-          </div>
-          <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
-            <Wifi className="text-green-500" />
-            <span>Wi-Fi Devices</span>
-          </div>
-          <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
-            <Smartphone className="text-purple-500" />
-            <span>Mobile Apps</span>
-          </div>
+  // Preview content for basic tier
+  const BasicDevicePreview = () => (
+    <div>
+      <p className="text-gray-600 mb-4">
+        Connect your fitness devices to get real-time safety monitoring and form feedback.
+      </p>
+      <div className="grid grid-cols-2 gap-4 opacity-50">
+        <div className="p-4 bg-blue-50 text-blue-700 rounded-lg">
+          Heart Rate Monitor
         </div>
-
-        <button
-          onClick={handleConnectDevice}
-          disabled={isConnecting}
-          className={`w-full py-2 px-4 rounded-md text-white font-medium
-            ${isConnecting 
-              ? 'bg-gray-400 cursor-not-allowed' 
-              : 'bg-blue-600 hover:bg-blue-700'}`}
-        >
-          {isConnecting ? 'Connecting...' : 'Connect New Device'}
-        </button>
+        <div className="p-4 bg-blue-50 text-blue-700 rounded-lg">
+          Smart Watch
+        </div>
       </div>
+    </div>
+  );
 
-      {connectedDevices.length > 0 && (
+  // Preview content for premium tier
+  const PremiumDevicePreview = () => (
+    <div>
+      <p className="text-gray-600 mb-4">
+        Advanced device integration with real-time monitoring and alerts.
+      </p>
+      <div className="space-y-3 opacity-50">
+        <div className="p-4 bg-blue-50 text-blue-700 rounded-lg">
+          Multiple Device Support
+        </div>
+        <div className="p-4 bg-blue-50 text-blue-700 rounded-lg">
+          Custom Alerts
+        </div>
+        <div className="p-4 bg-blue-50 text-blue-700 rounded-lg">
+          Data Sync
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="bg-white rounded-lg shadow-md p-6">
+      <h2 className="text-xl font-semibold mb-4">Device Connection</h2>
+
+      {/* Basic Tier Content */}
+      {!hasAccess('premium') && (
         <div>
-          <h4 className="font-medium mb-3">Connected Devices</h4>
-          <div className="space-y-3">
-            {connectedDevices.map(device => (
-              <div 
-                key={device.id}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-              >
-                <div className="flex items-center gap-3">
-                  <Smartphone className="text-blue-500" />
-                  <div>
-                    <p className="font-medium">{device.name}</p>
-                    <p className="text-sm text-gray-500">{device.type}</p>
-                  </div>
-                </div>
-                <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-sm">
-                  {device.status}
-                </span>
+          <BasicDevicePreview />
+          <div className="mt-6 bg-purple-50 border border-purple-100 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <Lock className="text-purple-600 flex-shrink-0 mt-1" />
+              <div>
+                <p className="font-medium text-purple-700">Premium Feature</p>
+                <p className="text-sm text-purple-600 mb-2">
+                  Upgrade to Premium to connect your fitness devices and get real-time safety monitoring.
+                </p>
+                <a 
+                  href="/subscription/plans" 
+                  className="text-sm font-medium text-purple-600 hover:text-purple-800"
+                >
+                  Upgrade to Premium →
+                </a>
               </div>
-            ))}
+            </div>
           </div>
         </div>
       )}
 
-      {!hasTierAccess('premium') && (
-        <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-          <p className="text-yellow-800">
-            Upgrade to Premium to unlock advanced device features and health tracking.
-          </p>
-          <a 
-            href="/subscription/plans" 
-            className="inline-block mt-2 text-blue-600 hover:text-blue-800 font-medium"
-          >
-            View Premium Features →
-          </a>
+      {/* Premium Tier Content */}
+      {hasAccess('premium') && !hasAccess('elite') && (
+        <div>
+          <PremiumDevicePreview />
+          <div className="mt-6 bg-purple-50 border border-purple-100 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <Lock className="text-purple-600 flex-shrink-0 mt-1" />
+              <div>
+                <p className="font-medium text-purple-700">Elite Feature</p>
+                <p className="text-sm text-purple-600 mb-2">
+                  Upgrade to Elite for advanced device integration, custom alerts, and data synchronization.
+                </p>
+                <a 
+                  href="/subscription/plans" 
+                  className="text-sm font-medium text-purple-600 hover:text-purple-800"
+                >
+                  Upgrade to Elite →
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Elite Tier Content */}
+      {hasAccess('elite') && (
+        <div>
+          {connectedDevice ? (
+            <div className="space-y-4">
+              <div className="p-4 bg-green-50 text-green-700 rounded-lg">
+                <p className="font-medium">Connected Device</p>
+                <p className="text-sm">{connectedDevice.name}</p>
+              </div>
+              <button
+                onClick={handleDisconnect}
+                className="w-full py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Disconnect Device
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="p-4 bg-gray-50 text-gray-700 rounded-lg">
+                <p className="font-medium">No Device Connected</p>
+                <p className="text-sm">Connect a device to enable real-time monitoring</p>
+              </div>
+              <button
+                onClick={handleConnect}
+                disabled={isConnecting}
+                className="w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isConnecting ? 'Connecting...' : 'Connect Device'}
+              </button>
+            </div>
+          )}
+
+          {/* Connected Devices List */}
+          <div className="mt-6">
+            <h3 className="font-medium mb-3">Available Devices</h3>
+            <div className="space-y-2">
+              <div className="p-3 bg-blue-50 text-blue-700 rounded-lg">
+                Heart Rate Monitor
+              </div>
+              <div className="p-3 bg-blue-50 text-blue-700 rounded-lg">
+                Smart Watch
+              </div>
+              <div className="p-3 bg-blue-50 text-blue-700 rounded-lg">
+                Fitness Tracker
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
-};
-
-export default DeviceConnection; 
+}; 

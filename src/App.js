@@ -25,6 +25,9 @@ import PremiumContent from './pages/subscription/PremiumContent';
 import EliteContent from './pages/subscription/EliteContent';
 // Import safety-related pages
 import SafetyFeaturesPage from './pages/SafetyFeaturesPage';
+import SafetyGuidelines from './pages/safety/Guidelines';
+import EmergencyProcedures from './pages/EmergencyProcedures';
+import SafetyFAQ from './pages/SafetyFAQ';
 // Import auth context
 import { useAuth, AuthProvider } from './contexts/AuthContext';
 // Import subscription context
@@ -33,7 +36,6 @@ import { useSubscription, SubscriptionProvider } from './contexts/SubscriptionCo
 import { SafetyProvider } from './contexts/SafetyContext';
 // Import the new WorkoutsPage component
 import WorkoutsPage from './pages/WorkoutsPage';
-import SafetyGuidelines from './pages/safety/Guidelines';
 import FAQ from './pages/FAQ';
 import Help from './pages/Help';
 import Contact from './pages/Contact';
@@ -191,6 +193,12 @@ function App() {
               
               {/* Safety Guidelines Page (public) */}
               <Route path="/safety/guidelines" element={<SafetyGuidelines />} />
+              
+              {/* Emergency Procedures Page (public) */}
+              <Route path="/safety/emergency" element={<EmergencyProcedures />} />
+              
+              {/* Safety FAQ Page (public) */}
+              <Route path="/safety/faq" element={<SafetyFAQ />} />
               
               {/* FAQ Page (public) */}
               <Route path="/faq" element={<FAQ />} />

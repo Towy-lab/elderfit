@@ -1,6 +1,7 @@
 import React from "react";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, AlertTriangle, HelpCircle } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext"; // Adjust path if needed
+import { Link } from "react-router-dom";
 
 const SafetyGuidelines = () => {
   const { user } = useAuth();
@@ -71,6 +72,35 @@ const SafetyGuidelines = () => {
         <p className="text-green-800 font-semibold">
           Remember: Your safety comes first. ElderFit Secrets is here to support your fitness journey—move at your own pace and enjoy the process!
         </p>
+      </div>
+
+      {/* Additional Safety Resources */}
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Link 
+          to="/safety/emergency" 
+          className="block p-6 bg-red-50 rounded-lg border border-red-200 hover:border-red-400 transition-colors"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <AlertTriangle className="text-red-600" size={24} />
+            <h2 className="text-xl font-semibold text-red-800">Emergency Procedures</h2>
+          </div>
+          <p className="text-red-700">
+            Learn what to do in case of an exercise emergency, including warning signs and immediate actions to take.
+          </p>
+        </Link>
+
+        <Link 
+          to="/safety/faq" 
+          className="block p-6 bg-blue-50 rounded-lg border border-blue-200 hover:border-blue-400 transition-colors"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <HelpCircle className="text-blue-600" size={24} />
+            <h2 className="text-xl font-semibold text-blue-800">Safety FAQ</h2>
+          </div>
+          <p className="text-blue-700">
+            Find answers to common safety questions and learn more about exercising safely as a senior.
+          </p>
+        </Link>
       </div>
     </div>
   );

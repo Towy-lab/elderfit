@@ -8,7 +8,7 @@ import FormGuidance from './FormGuidance';
 export const TieredFormGuidance = ({ exercise }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const { logFormCheck } = useSafety();
-  const { hasTierAccess } = useSubscription();
+  const { hasAccess } = useSubscription();
 
   const formChecklist = [
     {
@@ -52,7 +52,7 @@ export const TieredFormGuidance = ({ exercise }) => {
     }
   };
 
-  if (!hasTierAccess('elite')) {
+  if (!hasAccess('elite')) {
     return (
       <div className="bg-purple-50 border border-purple-100 rounded-lg p-4">
         <div className="flex items-start gap-3">

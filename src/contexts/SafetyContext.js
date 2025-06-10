@@ -247,6 +247,44 @@ export const SafetyProvider = ({ children }) => {
     return recommendations;
   };
 
+  const getRestRecommendations = (exerciseId) => {
+    const lastWorkout = getLastWorkout(exerciseId);
+    const fatigueLevel = getFatigueLevel();
+    
+    const getReadiness = () => {
+      if (!lastWorkout) return 'ready';
+      
+      const hoursSinceLastWorkout = (Date.now() - new Date(lastWorkout).getTime()) / (1000 * 60 * 60);
+      const recommendedRest = getRestRecommendation();
+      
+      if (hoursSinceLastWorkout < recommendedRest * 0.5) return 'notReady';
+      if (hoursSinceLastWorkout < recommendedRest) return 'cautious';
+      return 'ready';
+    };
+
+    const getRestRecommendation = () => {
+      const baseRest = {
+        low: 24,
+        moderate: 48,
+        high: 72
+      }['moderate']; // Default to moderate intensity
+
+      // Adjust based on fatigue level
+      const fatigueMultiplier = 1 + (fatigueLevel / 10);
+      
+      return Math.round(baseRest * fatigueMultiplier);
+    };
+
+    return {
+      readiness: getReadiness(),
+      details: {
+        recommendedHours: getRestRecommendation(),
+        fatigueLevel,
+        lastWorkout
+      }
+    };
+  };
+
   const hasPremiumAccess = () => hasAccess('premium');
   
   const hasEliteAccess = () => hasAccess('elite');
@@ -269,6 +307,7 @@ export const SafetyProvider = ({ children }) => {
     getFatigueLevel,
     getSafetyScore,
     getSafetyRecommendations,
+    getRestRecommendations,
     hasPremiumAccess,
     hasEliteAccess
   };

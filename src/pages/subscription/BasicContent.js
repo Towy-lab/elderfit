@@ -2,21 +2,38 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useSubscription } from '../../contexts/SubscriptionContext';
+import { useProgress } from '../../contexts/ProgressContext';
 import TierContentManager from '../../components/subscription/TierContentManager';
 import { Activity, Award, BookOpen, Calendar } from 'lucide-react';
 
 // Basic Tier Content Page
 const BasicContent = () => {
   const { formatTierName, hasAccess } = useSubscription();
+  const { 
+    workoutHistory = [], 
+    streak = 0, 
+    lastWorkout = null,
+    isLoading = false,
+    error = null 
+  } = useProgress() || {};
+
+  // Calculate total minutes exercised
+  const totalMinutes = workoutHistory.reduce((total, workout) => total + (workout.duration || 0), 0);
   
-  // Sample user data for the basic tier
-  const userData = {
-    totalWorkouts: 8,
-    currentStreak: 2,
-    badges: ["first_workout"],
-    goalsCompleted: 3
+  // Format date for display
+  const formatDate = (date) => {
+    if (!date) return 'N/A';
+    return new Date(date).toLocaleDateString();
   };
-  
+
+  // Check if we have real progress data
+  const hasRealProgress = workoutHistory.length > 0 && 
+    workoutHistory.some(w => 
+      w.completedAt && 
+      w.exercisesCompleted?.length > 0 &&
+      w.duration > 0
+    );
+
   // Function to get exercise image based on type
   const getExerciseImage = (name) => {
     const imageMap = {
@@ -85,6 +102,86 @@ const BasicContent = () => {
         </p>
       </div>
       
+      {/* Progress Tracking Section */}
+      <section className="mb-10">
+        <div className="flex items-center mb-4">
+          <Activity size={24} className="text-green-600 mr-2" />
+          <h2 className="text-2xl font-semibold">Your Progress</h2>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+          {isLoading ? (
+            <div className="text-center py-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-600 mx-auto"></div>
+              <p className="mt-2 text-gray-600">Loading your progress...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-4 text-red-600">
+              <p>Unable to load progress data. Please try again later.</p>
+            </div>
+          ) : !hasRealProgress ? (
+            <div className="text-center py-4">
+              <p className="text-gray-600 mb-4">Complete your first workout to start tracking your progress!</p>
+              <Link to="/workouts" className="inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                Start Your First Workout
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="text-sm font-medium text-gray-600 mb-1">Total Workouts</h3>
+                  <p className="text-2xl font-bold text-gray-900">{workoutHistory.length}</p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="text-sm font-medium text-gray-600 mb-1">Minutes Active</h3>
+                  <p className="text-2xl font-bold text-gray-900">{totalMinutes}</p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="text-sm font-medium text-gray-600 mb-1">Current Streak</h3>
+                  <p className="text-2xl font-bold text-gray-900">{streak} days</p>
+                </div>
+              </div>
+              
+              <div className="border-t border-gray-200 pt-4">
+                <h3 className="font-medium mb-3">Recent Activity</h3>
+                <div className="space-y-3">
+                  {workoutHistory.slice(0, 3).map((workout, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-medium">{workout.name || 'Workout'}</p>
+                        <p className="text-sm text-gray-600">{workout.duration} minutes</p>
+                      </div>
+                      <span className="text-sm text-gray-500">{formatDate(workout.completedAt)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Premium Progress Preview */}
+        <div className="mt-6">
+          <TierContentManager
+            requiredTier="premium"
+            featureName="advanced progress tracking"
+            preview={true}
+            previewContent={
+              <div className="bg-white rounded-lg shadow-md p-6 border border-indigo-100 opacity-70">
+                <h3 className="text-xl font-medium text-indigo-800 mb-3">Advanced Progress Tracking</h3>
+                <p className="text-gray-700 mb-4">
+                  Premium members get detailed progress analytics, milestone tracking, and personalized insights.
+                </p>
+                <div className="h-48 bg-indigo-50 rounded-lg border border-indigo-100 flex items-center justify-center">
+                  <span className="text-indigo-500">Interactive Progress Charts</span>
+                </div>
+              </div>
+            }
+          />
+        </div>
+      </section>
+      
       {/* Basic Workouts Section */}
       <section className="mb-10">
         <div className="flex items-center mb-4">
@@ -105,7 +202,7 @@ const BasicContent = () => {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {basicExercises.map(exercise => (
             <div key={exercise.id} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
               <div className="h-40 bg-gray-200 relative">
@@ -133,8 +230,10 @@ const BasicContent = () => {
             </div>
           ))}
         </div>
-        
-        {/* Premium Tier Preview */}
+      </section>
+      
+      {/* Premium Tier Preview */}
+      <section className="mb-10">
         <TierContentManager
           requiredTier="premium"
           featureName="additional workouts"
@@ -161,7 +260,7 @@ const BasicContent = () => {
                   image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"
                 }
               ].map((workout, index) => (
-                <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
+                <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 opacity-70">
                   <div className="h-40 bg-gray-200 relative">
                     <img 
                       src={workout.image} 
@@ -185,71 +284,6 @@ const BasicContent = () => {
             </div>
           }
         />
-      </section>
-      
-      {/* Progress Tracking Section */}
-      <section className="mb-10">
-        <div className="flex items-center mb-4">
-          <Award size={24} className="text-green-600 mr-2" />
-          <h2 className="text-2xl font-semibold">Your Progress</h2>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-green-50 p-4 rounded-lg">
-              <p className="text-sm font-medium text-green-800 mb-1">Total Workouts</p>
-              <p className="text-3xl font-bold text-green-900">{userData.totalWorkouts}</p>
-            </div>
-            <div className="bg-green-50 p-4 rounded-lg">
-              <p className="text-sm font-medium text-green-800 mb-1">Current Streak</p>
-              <p className="text-3xl font-bold text-green-900">{userData.currentStreak} days</p>
-            </div>
-          </div>
-          
-          <div className="border-t border-gray-200 pt-4">
-            <h3 className="font-medium mb-3">Weekly Goals</h3>
-            
-            <div className="space-y-3">
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Complete 3 workouts</span>
-                  <span>2/3</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div className="bg-green-600 h-2.5 rounded-full" style={{ width: '66%' }}></div>
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Exercise 5 days this week</span>
-                  <span>3/5</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div className="bg-green-600 h-2.5 rounded-full" style={{ width: '60%' }}></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Premium Progress Preview */}
-        <div className="mt-6">
-          <TierContentManager
-            requiredTier="premium"
-            featureName="advanced progress tracking"
-          >
-            <div className="bg-white rounded-lg shadow-md p-6 border border-indigo-100">
-              <h3 className="text-xl font-medium text-indigo-800 mb-3">Advanced Progress Tracking</h3>
-              <p className="text-gray-700 mb-4">
-                Premium members get detailed progress analytics, milestone tracking, and personalized insights.
-              </p>
-              <div className="h-48 bg-indigo-50 rounded-lg border border-indigo-100 flex items-center justify-center">
-                <span className="text-indigo-500">Interactive Progress Charts</span>
-              </div>
-            </div>
-          </TierContentManager>
-        </div>
       </section>
       
       {/* Education Section */}

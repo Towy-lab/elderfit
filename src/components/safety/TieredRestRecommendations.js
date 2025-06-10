@@ -1,43 +1,23 @@
 // src/components/safety/TieredRestRecommendations.js
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Clock, Battery, AlertTriangle, CheckCircle, Calendar, Lock } from 'lucide-react';
 import { useSafety } from '../../contexts/SafetyContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import TierContentManager from '../subscription/TierContentManager';
 
 export const TieredRestRecommendations = ({ exerciseId, intensity }) => {
-  const { getLastWorkout, getFatigueLevel } = useSafety();
-  const { hasTierAccess } = useSubscription();
-  
-  const lastWorkout = getLastWorkout(exerciseId);
-  const fatigueLevel = getFatigueLevel();
-  
-  const getRestRecommendation = () => {
-    const baseRest = {
-      low: 24,
-      moderate: 48,
-      high: 72
-    }[intensity || 'moderate'];
+  const { getLastWorkout, getFatigueLevel, getRestRecommendations } = useSafety();
+  const { hasAccess } = useSubscription();
+  const [readiness, setReadiness] = useState('ready');
+  const [restDetails, setRestDetails] = useState(null);
 
-    // Adjust based on fatigue level
-    const fatigueMultiplier = 1 + (fatigueLevel / 10);
-    
-    return Math.round(baseRest * fatigueMultiplier);
-  };
-
-  const getReadiness = () => {
-    if (!lastWorkout) return 'ready';
-    
-    const hoursSinceLastWorkout = (Date.now() - new Date(lastWorkout).getTime()) / (1000 * 60 * 60);
-    const recommendedRest = getRestRecommendation();
-    
-    if (hoursSinceLastWorkout < recommendedRest * 0.5) return 'notReady';
-    if (hoursSinceLastWorkout < recommendedRest) return 'cautious';
-    return 'ready';
-  };
-
-  const readiness = getReadiness();
-  const recommendedHours = getRestRecommendation();
+  useEffect(() => {
+    if (exerciseId) {
+      const recommendations = getRestRecommendations(exerciseId);
+      setReadiness(recommendations.readiness);
+      setRestDetails(recommendations.details);
+    }
+  }, [exerciseId, getRestRecommendations]);
 
   // Basic Preview Content
   const BasicRestPreview = () => (
@@ -86,7 +66,7 @@ export const TieredRestRecommendations = ({ exerciseId, intensity }) => {
         <div>
           <p className="font-medium">Recommended Rest</p>
           <p className="text-sm text-gray-600">
-            {recommendedHours} hours between sessions
+            {restDetails?.recommendedHours || 48} hours between sessions
           </p>
         </div>
       </div>
@@ -204,7 +184,7 @@ export const TieredRestRecommendations = ({ exerciseId, intensity }) => {
             <div>
               <p className="font-medium">Recommended Rest</p>
               <p className="text-sm text-gray-600">
-                {recommendedHours} hours between sessions
+                {restDetails?.recommendedHours || 48} hours between sessions
               </p>
             </div>
           </div>
@@ -214,23 +194,23 @@ export const TieredRestRecommendations = ({ exerciseId, intensity }) => {
             <div>
               <p className="font-medium">Current Fatigue Level</p>
               <p className="text-sm text-gray-600">
-                {fatigueLevel}/10 - {
-                  fatigueLevel <= 3 ? 'Low'
-                  : fatigueLevel <= 6 ? 'Moderate'
+                {restDetails?.fatigueLevel || 0}/10 - {
+                  (restDetails?.fatigueLevel || 0) <= 3 ? 'Low'
+                  : (restDetails?.fatigueLevel || 0) <= 6 ? 'Moderate'
                   : 'High'
                 }
               </p>
             </div>
           </div>
 
-          {lastWorkout && (
+          {restDetails?.lastWorkout && (
             <div className="flex items-center gap-3">
               <Calendar className="text-gray-400" />
               <div>
                 <p className="font-medium">Last Workout</p>
                 <p className="text-sm text-gray-600">
-                  {new Date(lastWorkout).toLocaleDateString()} at{' '}
-                  {new Date(lastWorkout).toLocaleTimeString()}
+                  {new Date(restDetails.lastWorkout).toLocaleDateString()} at{' '}
+                  {new Date(restDetails.lastWorkout).toLocaleTimeString()}
                 </p>
               </div>
             </div>
@@ -261,7 +241,7 @@ export const TieredRestRecommendations = ({ exerciseId, intensity }) => {
         </div>
         
         {/* Elite Upgrade Promo */}
-        {!hasTierAccess('elite') && (
+        {!hasAccess('elite') && (
           <div className="mt-6 bg-purple-50 border border-purple-100 rounded-lg p-4">
             <div className="flex items-start gap-3">
               <Lock className="text-purple-600 flex-shrink-0 mt-1" />
@@ -327,7 +307,7 @@ export const TieredRestRecommendations = ({ exerciseId, intensity }) => {
             <div>
               <p className="font-medium">Personalized Rest Recommendation</p>
               <p className="text-sm text-gray-600">
-                {recommendedHours} hours between sessions
+                {restDetails?.recommendedHours || 48} hours between sessions
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 Customized based on your age, fitness level, and workout history
@@ -340,33 +320,33 @@ export const TieredRestRecommendations = ({ exerciseId, intensity }) => {
             <div>
               <p className="font-medium">Current Fatigue Level</p>
               <p className="text-sm text-gray-600">
-                {fatigueLevel}/10 - {
-                  fatigueLevel <= 3 ? 'Low'
-                  : fatigueLevel <= 6 ? 'Moderate'
+                {restDetails?.fatigueLevel || 0}/10 - {
+                  (restDetails?.fatigueLevel || 0) <= 3 ? 'Low'
+                  : (restDetails?.fatigueLevel || 0) <= 6 ? 'Moderate'
                   : 'High'
                 }
               </p>
               <div className="w-full bg-gray-200 h-2 rounded-full mt-1">
                 <div 
                   className={`h-2 rounded-full ${
-                    fatigueLevel <= 3 ? 'bg-green-500' 
-                    : fatigueLevel <= 6 ? 'bg-yellow-500' 
+                    (restDetails?.fatigueLevel || 0) <= 3 ? 'bg-green-500' 
+                    : (restDetails?.fatigueLevel || 0) <= 6 ? 'bg-yellow-500' 
                     : 'bg-red-500'
                   }`} 
-                  style={{ width: `${fatigueLevel * 10}%` }}
+                  style={{ width: `${(restDetails?.fatigueLevel || 0) * 10}%` }}
                 ></div>
               </div>
             </div>
           </div>
 
-          {lastWorkout && (
+          {restDetails?.lastWorkout && (
             <div className="flex items-center gap-3">
               <Calendar className="text-gray-400" />
               <div>
                 <p className="font-medium">Last Workout</p>
                 <p className="text-sm text-gray-600">
-                  {new Date(lastWorkout).toLocaleDateString()} at{' '}
-                  {new Date(lastWorkout).toLocaleTimeString()}
+                  {new Date(restDetails.lastWorkout).toLocaleDateString()} at{' '}
+                  {new Date(restDetails.lastWorkout).toLocaleTimeString()}
                 </p>
               </div>
             </div>

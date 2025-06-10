@@ -3,6 +3,7 @@ import React from 'react';
 import { Shield, Info } from 'lucide-react';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import useTierContent from '../../hooks/useTierContent';
+import { Link } from 'react-router-dom';
 
 // Import tiered safety components
 import { TieredEmergencyContact } from './TieredEmergencyContact';
@@ -156,33 +157,33 @@ const SafetyHub = ({ exercise = {} }) => {
           General Safety Resources
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <a 
-            href="/safety/guidelines" 
+          <Link 
+            to="/safety/guidelines" 
             className="block p-4 bg-white rounded-lg border border-green-200 hover:border-green-400"
           >
             <h3 className="font-medium text-green-800 mb-2">Safety Guidelines</h3>
             <p className="text-sm text-gray-600">
               Basic guidelines for safe exercise for seniors
             </p>
-          </a>
-          <a 
-            href="/safety/emergency" 
+          </Link>
+          <Link 
+            to="/safety/emergency" 
             className="block p-4 bg-white rounded-lg border border-green-200 hover:border-green-400"
           >
             <h3 className="font-medium text-green-800 mb-2">Emergency Procedures</h3>
             <p className="text-sm text-gray-600">
               What to do in case of an exercise emergency
             </p>
-          </a>
-          <a 
-            href="/safety/faq" 
+          </Link>
+          <Link 
+            to="/safety/faq" 
             className="block p-4 bg-white rounded-lg border border-green-200 hover:border-green-400"
           >
             <h3 className="font-medium text-green-800 mb-2">Safety FAQ</h3>
             <p className="text-sm text-gray-600">
               Answers to common safety questions
             </p>
-          </a>
+          </Link>
         </div>
       </div>
     </div>

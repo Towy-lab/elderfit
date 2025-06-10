@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useSafety } from '../contexts/SafetyContext';
 import SafetyHub from '../components/safety/SafetyHub';
-import DeviceConnection from '../components/safety/DeviceConnection';
+import { DeviceConnection } from '../components/safety/DeviceConnection';
 import { Shield, Clipboard, Lock, AlertTriangle, Phone, Heart, Activity } from 'lucide-react';
 import TierContentManager from '../components/subscription/TierContentManager';
 import { Link } from 'react-router-dom';
