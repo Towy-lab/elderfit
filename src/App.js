@@ -45,6 +45,7 @@ import AITrainingDashboard from './components/training/AITrainingDashboard';
 import HealthHub from './pages/health/HealthHub';
 // Import HealthProvider
 import { HealthProvider } from './contexts/HealthContext';
+import DeviceConnection from './pages/devices/DeviceConnection';
 
 // Import AppProviders as named import
 import { AppProviders } from './providers/AppProviders';
@@ -228,6 +229,9 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
+              
+              {/* Device Connection Page */}
+              <Route path="/devices/connect" element={<DeviceConnection />} />
               
               {/* Catch-all route for 404 */}
               <Route path="*" element={<Navigate to="/" replace />} />

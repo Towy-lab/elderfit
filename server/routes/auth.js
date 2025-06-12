@@ -84,69 +84,68 @@ router.post('/register', [
 // @route   POST /api/auth/login
 // @desc    Authenticate user & get token
 // @access  Public
-router.post('/login', [
-  check('email', 'Please include a valid email').isEmail(),
-  check('password', 'Password is required').exists()
-], async (req, res) => {
-  console.log('Login attempt for:', req.body.email);
-  console.log('Request body:', { ...req.body, password: '***' });
-  
-  // Validate request
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    console.log('Validation errors:', errors.array());
-    return res.status(400).json({ errors: errors.array() });
-  }
-
-  const { email, password } = req.body;
-  console.log('Login attempt with email:', email);
+router.post('/login', async (req, res) => {
+  console.log('Login attempt:', {
+    email: req.body.email,
+    timestamp: new Date().toISOString()
+  });
 
   try {
-    // Check if user exists
-    const user = await User.findOne({ email });
-    if (!user) {
-      console.log('User not found:', email);
-      return res.status(400).json({ error: 'Invalid credentials' });
-    }
-    console.log('User found in database:', {
-      id: user._id,
-      email: user.email,
-      hasPassword: !!user.password,
-      passwordLength: user.password?.length
-    });
-
-    // Check password
-    console.log('Comparing passwords...');
-    const isMatch = await bcrypt.compare(password, user.password);
-    console.log('Password comparison result:', isMatch);
+    const { email, password } = req.body;
     
-    if (!isMatch) {
-      console.log('Password incorrect for:', email);
-      return res.status(400).json({ error: 'Invalid credentials' });
+    if (!email || !password) {
+      console.log('Login failed - missing credentials');
+      return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // Create JWT token
+    const user = await User.findOne({ email });
+    
+    if (!user) {
+      console.log('Login failed - user not found:', { email });
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    
+    if (!isValidPassword) {
+      console.log('Login failed - invalid password:', { email });
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
     const token = jwt.sign(
-      { id: user._id },
+      { userId: user._id },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '24h' }
     );
 
-    console.log('Login successful for:', email);
+    console.log('Login successful:', { 
+      userId: user._id,
+      email: user.email,
+      timestamp: new Date().toISOString()
+    });
+
     res.json({
       token,
       user: {
-        _id: user._id,
+        id: user._id,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
         profile: user.profile || {},
-        subscription: user.subscription
+        subscription: user.subscription || {
+          tier: 'basic',
+          status: 'active',
+          isFree: true
+        }
       }
     });
-  } catch (err) {
-    console.error('Login error:', err.message);
-    res.status(500).json({ error: 'Server error during login' });
+  } catch (error) {
+    console.error('Login error:', {
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+    res.status(500).json({ error: 'An error occurred during login' });
   }
 });
 
@@ -161,7 +160,20 @@ router.get('/me', auth, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
     
-    res.json(user);
+    // Return formatted user object with consistent fields
+    res.json({
+      _id: user._id,
+      id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      profile: user.profile || {},
+      subscription: user.subscription || {
+        tier: 'basic',
+        status: 'active',
+        isFree: true
+      }
+    });
   } catch (err) {
     console.error('Get user error:', err.message);
     res.status(500).json({ error: 'Server error' });

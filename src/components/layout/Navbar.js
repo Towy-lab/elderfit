@@ -78,7 +78,10 @@ const Navbar = () => {
                     <Link to="/content/premium" className="hover:text-blue-200 transition-colors">Premium Content</Link>
                     <Link to="/content/elite" className="hover:text-blue-200 transition-colors">Elite Content</Link>
                     {hasEliteAccess && (
-                      <Link to="/elite/ai-training" className="hover:text-blue-200 transition-colors">AI Training</Link>
+                      <>
+                        <Link to="/elite/ai-training" className="hover:text-blue-200 transition-colors">AI Training</Link>
+                        <Link to="/devices/connect" className="hover:text-blue-200 transition-colors">Connect Devices</Link>
+                      </>
                     )}
                   </>
                 )}
@@ -160,7 +163,10 @@ const Navbar = () => {
                       <Link to="/content/premium" className="hover:bg-blue-700 px-3 py-2 rounded" onClick={closeMenu}>Premium Content</Link>
                       <Link to="/content/elite" className="hover:bg-blue-700 px-3 py-2 rounded" onClick={closeMenu}>Elite Content</Link>
                       {hasEliteAccess && (
-                        <Link to="/elite/ai-training" className="hover:bg-blue-700 px-3 py-2 rounded" onClick={closeMenu}>AI Training</Link>
+                        <>
+                          <Link to="/elite/ai-training" className="hover:bg-blue-700 px-3 py-2 rounded" onClick={closeMenu}>AI Training</Link>
+                          <Link to="/devices/connect" className="hover:bg-blue-700 px-3 py-2 rounded" onClick={closeMenu}>Connect Devices</Link>
+                        </>
                       )}
                     </>
                   )}

@@ -92,7 +92,23 @@ const UserSchema = new mongoose.Schema({
           default: false
         },
         releaseDate: Date,
-        contentId: String
+        contentId: String,
+        type: {
+          type: String,
+          enum: ['exercise', 'module', 'video'],
+          required: true
+        },
+        name: String,
+        videoUrl: String,
+        duration: Number,
+        thumbnailUrl: String,
+        description: String,
+        tags: [String],
+        lastWatched: Date,
+        watchCount: {
+          type: Number,
+          default: 0
+        }
       },
       default: new Map()
     },

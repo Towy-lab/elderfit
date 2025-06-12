@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Create and export a default axios instance
 const defaultInstance = axios.create({
-  baseURL: 'http://localhost:31415',
+  baseURL: 'https://localhost:31415',
   headers: {
     'Content-Type': 'application/json'
   }
@@ -220,7 +220,7 @@ export const getSubscription = async () => {
     
     // Check if server is running/reachable
     if (error.code === 'ERR_NETWORK') {
-      console.error('Network error - Check if your server is running at http://localhost:31415');
+      console.error('Network error - Check if your server is running at https://localhost:31415');
       // Return a default subscription to avoid breaking the UI
       return { 
         hasSubscription: true, 

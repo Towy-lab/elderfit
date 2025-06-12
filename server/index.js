@@ -5,7 +5,8 @@ const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
-const http = require('http');
+const https = require('https');
+const WebSocket = require('ws');
 
 // Enhanced debugging for environment variables
 const dotenvPath = path.resolve(__dirname, '../.env');
@@ -26,51 +27,87 @@ console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'exists' : 'MISSING');
 
 // Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 31415;
+let PORT = process.env.PORT || 31415;
+let server = null;
 
-// Create HTTP server
-const server = http.createServer(app);
+// Read SSL certificate files with error handling
+let credentials;
+try {
+  const privateKey = fs.readFileSync(path.join(__dirname, '../certs/private-key.pem'), 'utf8');
+  const certificate = fs.readFileSync(path.join(__dirname, '../certs/certificate.pem'), 'utf8');
+  credentials = { 
+    key: privateKey, 
+    cert: certificate
+  };
+  console.log('SSL certificates loaded successfully');
+} catch (error) {
+  console.error('Error loading SSL certificates:', error);
+  process.exit(1);
+}
 
-// Function to start server with retry logic
-const startServer = (retries = 3) => {
-  server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  }).on('error', (err) => {
-    if (err.code === 'EADDRINUSE' && retries > 0) {
-      console.log(`Port ${PORT} is busy, retrying with port ${PORT + 1}...`);
-      PORT++;
-      startServer(retries - 1);
-    } else {
-      console.error('Server error:', err);
-      process.exit(1);
+// Expanded CORS configuration
+app.use(cors({
+  origin: ['https://localhost:3000', 'http://localhost:3000'], // Allow both HTTP and HTTPS in development
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  maxAge: 86400, // 24 hours
+  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar']
+}));
+
+// Add security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  // Add CORS headers for preflight requests
+  if (req.method === 'OPTIONS') {
+    const origin = req.headers.origin;
+    if (origin && (origin.includes('localhost:3000'))) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Max-Age', '86400');
+      res.status(200).end();
+      return;
     }
-  });
-};
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received. Closing HTTP server...');
-  server.close(() => {
-    console.log('HTTP server closed');
-    mongoose.connection.close(false, () => {
-      console.log('MongoDB connection closed');
-      process.exit(0);
-    });
-  });
+  }
+  next();
 });
 
-process.on('SIGINT', () => {
-  console.log('SIGINT received. Closing HTTP server...');
-  server.close(() => {
-    console.log('HTTP server closed');
-    mongoose.connection.close(false, () => {
-      console.log('MongoDB connection closed');
-      process.exit(0);
-    });
+// Debug middleware to log all requests
+app.use((req, res, next) => {
+  console.log('Incoming request:', {
+    method: req.method,
+    url: req.url,
+    headers: req.headers,
+    body: req.body,
+    ip: req.ip,
+    timestamp: new Date().toISOString()
   });
+
+  // Log response
+  const originalSend = res.send;
+  res.send = function (body) {
+    console.log('Outgoing response:', {
+      method: req.method,
+      url: req.url,
+      statusCode: res.statusCode,
+      body: body,
+      timestamp: new Date().toISOString()
+    });
+    return originalSend.call(this, body);
+  };
+
+  next();
 });
 
-// Import routes
+// Regular middleware (after the webhook middleware)
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+// Use routes
 const authRoutes = require('./routes/auth');
 const subscriptionRoutes = require('./routes/subscription');
 const stripeRoutes = require('./routes/stripe');
@@ -80,25 +117,58 @@ const progressRoutes = require('./routes/progress');
 
 // Connect to MongoDB with retry logic
 const connectWithRetry = async (retries = 5, delay = 5000) => {
-  const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/elderfit';
-  console.log('Connecting to MongoDB with URI:', mongoUri);
+  const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/elderfit';
+  console.log('Attempting to connect to MongoDB...');
+  console.log('MongoDB URI:', mongoUri);
 
   try {
-    await mongoose.connect(mongoUri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
-    });
+    // Set strictQuery to false to prepare for Mongoose 7
+    mongoose.set('strictQuery', false);
+    
+    // Add connection options
+    const options = {
+      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+      socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+    };
+
+    await mongoose.connect(mongoUri, options);
     console.log('MongoDB Connected Successfully');
+    
+    // Log connection details
+    const db = mongoose.connection.db;
+    console.log('Connected to database:', db.databaseName);
+    console.log('MongoDB version:', await db.admin().serverInfo().then(info => info.version));
+    
   } catch (err) {
+    console.error('MongoDB Connection Error Details:', {
+      name: err.name,
+      message: err.message,
+      code: err.code,
+      stack: err.stack
+    });
+
     if (retries > 0) {
-      console.log(`MongoDB connection failed. Retrying in ${delay/1000} seconds...`);
+      console.log(`MongoDB connection failed. Retrying in ${delay/1000} seconds... (${retries} attempts remaining)`);
       setTimeout(() => connectWithRetry(retries - 1, delay), delay);
     } else {
-      console.error('MongoDB Connection Error:', err);
+      console.error('Failed to connect to MongoDB after multiple retries. Please ensure MongoDB is running.');
+      console.error('You can start MongoDB using:');
+      console.error('1. Windows: Start MongoDB service from Services');
+      console.error('2. Or run: mongod --dbpath="C:/data/db"');
       process.exit(1);
     }
   }
 };
+
+// Add MongoDB connection event handlers
+mongoose.connection.on('error', (err) => {
+  console.error('MongoDB connection error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('MongoDB disconnected. Attempting to reconnect...');
+  connectWithRetry();
+});
 
 // Start MongoDB connection
 connectWithRetry();
@@ -109,25 +179,6 @@ const User = require('./models/User');
 // Special middleware for Stripe webhooks - must come before express.json()
 // This must be defined before any other middleware that could consume the request body
 app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
-
-// Expanded CORS configuration
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-  maxAge: 86400 // 24 hours
-}));
-
-// Regular middleware (after the webhook middleware)
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-
-// Debug middleware to log all requests
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-  next();
-});
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -240,25 +291,48 @@ app.post('/api/auth/register', async (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
   try {
+    console.log('Login attempt received:', {
+      body: req.body,
+      headers: req.headers,
+      ip: req.ip
+    });
+
     const { email, password } = req.body;
-    console.log('Login attempt for:', email);
     
+    if (!email || !password) {
+      console.log('Login attempt failed: Missing credentials', { email: !!email, password: !!password });
+      return res.status(400).json({ 
+        error: 'Missing credentials',
+        details: {
+          email: !email ? 'Email is required' : null,
+          password: !password ? 'Password is required' : null
+        }
+      });
+    }
+
     // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
+      console.log('Login attempt failed: User not found', { email });
       return res.status(400).json({ error: 'Invalid credentials' });
     }
     
     // Check password using the method defined in the User model
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
+      console.log('Login attempt failed: Invalid password', { email });
       return res.status(400).json({ error: 'Invalid credentials' });
     }
     
     // Create JWT token
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
     
-    console.log('Login successful for:', email);
+    console.log('Login successful:', { 
+      userId: user._id,
+      email: user.email,
+      timestamp: new Date().toISOString()
+    });
+
     res.json({
       token,
       user: {
@@ -271,8 +345,15 @@ app.post('/api/auth/login', async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Login error:', {
+      error: err.message,
+      stack: err.stack,
+      timestamp: new Date().toISOString()
+    });
+    res.status(500).json({ 
+      error: 'Server error',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
@@ -364,6 +445,90 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'Server is running', timestamp: new Date().toISOString() });
 });
 
+// Function to start server with retry logic
+const startServer = (retries = 3) => {
+  // If there's an existing server, close it first
+  if (server) {
+    server.close();
+  }
+
+  // Create new HTTPS server
+  server = https.createServer(credentials, app);
+
+  // Create WebSocket server
+  const wss = new WebSocket.Server({ 
+    server,
+    path: '/ws'
+  });
+
+  // WebSocket connection handler
+  wss.on('connection', (ws, req) => {
+    console.log('WebSocket client connected from:', req.socket.remoteAddress);
+
+    ws.on('message', (message) => {
+      try {
+        const data = JSON.parse(message);
+        console.log('Received WebSocket message:', data);
+        // Handle the message here
+      } catch (error) {
+        console.error('Error processing WebSocket message:', error);
+      }
+    });
+
+    ws.on('close', () => {
+      console.log('WebSocket client disconnected');
+    });
+
+    ws.on('error', (error) => {
+      console.error('WebSocket error:', error);
+    });
+
+    // Send a welcome message
+    ws.send(JSON.stringify({ type: 'connection', status: 'connected' }));
+  });
+
+  server.listen(PORT, () => {
+    console.log(`HTTPS Server running on port ${PORT}`);
+    console.log(`WebSocket server available at wss://localhost:${PORT}/ws`);
+  }).on('error', (err) => {
+    if (err.code === 'EADDRINUSE' && retries > 0) {
+      console.log(`Port ${PORT} is busy, retrying with port ${PORT + 1}...`);
+      PORT++;
+      startServer(retries - 1);
+    } else {
+      console.error('Server error:', err);
+      process.exit(1);
+    }
+  });
+};
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received. Closing HTTPS server...');
+  if (server) {
+    server.close(() => {
+      console.log('HTTPS server closed');
+      mongoose.connection.close(false, () => {
+        console.log('MongoDB connection closed');
+        process.exit(0);
+      });
+    });
+  }
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received. Closing HTTPS server...');
+  if (server) {
+    server.close(() => {
+      console.log('HTTPS server closed');
+      mongoose.connection.close(false, () => {
+        console.log('MongoDB connection closed');
+        process.exit(0);
+      });
+    });
+  }
+});
+
 // Start the server at the end of the file
 startServer();
 
@@ -383,4 +548,20 @@ process.on('unhandledRejection', (err) => {
   console.error('Error message:', err.message);
   console.error('Stack trace:', err.stack);
   process.exit(1);
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Server error:', {
+    error: err.message,
+    stack: err.stack,
+    url: req.url,
+    method: req.method,
+    timestamp: new Date().toISOString()
+  });
+  
+  res.status(500).json({
+    error: 'Server error',
+    details: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
 });
