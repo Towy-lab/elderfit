@@ -1,0 +1,8 @@
+sk_test_
+sk_live_
+whsec_
+JWT_SECRET
+STRIPE_SECRET_KEY
+STRIPE_WEBHOOK_SECRET
+private-key.pem
+localhost+1-key.pem 
