@@ -1,8 +1,14 @@
 // src/components/subscription/UpgradeSubscriptionForm.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { useSubscription } from '../../contexts/SubscriptionContext';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card.js';
+import { Button } from '../ui/button.js';
+import { Input } from '../ui/input.js';
+import { Label } from '../ui/label.js';
+import { Badge } from '../ui/badge.js';
+import { CreditCard, Lock, CheckCircle, AlertTriangle } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext.js';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
 import { loadStripe } from '@stripe/stripe-js';
 
 // Use a mock Stripe key for development

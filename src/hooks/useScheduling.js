@@ -1,6 +1,6 @@
 // src/hooks/useScheduling.js
 import { useContext } from 'react';
-import { SchedulingContext } from '../providers/SchedulingProvider';
+import { SchedulingContext } from '../providers/SchedulingProvider.js';
 
 export const useScheduling = () => {
   const context = useContext(SchedulingContext);

@@ -1,8 +1,13 @@
 // src/contexts/HealthContext.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from './AuthContext';
-import { useSubscription } from './SubscriptionContext';
-import { getHealthData } from '../services/api';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card.js';
+import { Button } from '../components/ui/button.js';
+import { Badge } from '../components/ui/badge.js';
+import { Progress } from '../components/ui/progress.js';
+import { Heart, Activity, Brain, Shield, TrendingUp, Calendar, Clock, Target, Users, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { useSubscription } from './SubscriptionContext.js';
+import { useAuth } from './AuthContext.js';
+import { getHealthData } from '../services/api.js';
 
 const HealthContext = createContext();
 

@@ -1,4 +1,6 @@
-import { formAnalysisService } from './formAnalysis';
+import { formAnalysisService } from './formAnalysis.js';
+import { motionAnalysisService } from '../utils/motionAnalysis.js';
+import { aiService } from './aiService.js';
 
 class SafetyMonitoringService {
   constructor() {

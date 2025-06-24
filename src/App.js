@@ -2,58 +2,58 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 // Import existing components
-import Navbar from './components/layout/Navbar';
-import Footer from './components/layout/Footer';
-import LoadingSpinner from './components/common/LoadingSpinner';
-import Home from './pages/Home';
-import Dashboard from './pages/Dashboard';
-import Login from './pages/auth/Login';
-import Register from './pages/auth/Register';
-import Profile from './pages/account/ProfilePage';
-import Settings from './pages/Settings';
-import NotFound from './pages/NotFound';
+import Navbar from './components/layout/Navbar.js';
+import Footer from './components/layout/Footer.js';
+import LoadingSpinner from './components/common/LoadingSpinner.js';
+import Home from './pages/Home.js';
+import Dashboard from './pages/Dashboard.js';
+import Login from './pages/auth/Login.js';
+import Register from './pages/auth/Register.js';
+import Profile from './pages/account/ProfilePage.js';
+import Settings from './pages/Settings.js';
+import NotFound from './pages/NotFound.js';
 // Import subscription-related components
-import PaymentSuccessPage from './pages/subscription/PaymentSuccessPage';
-import PaymentCancelPage from './pages/subscription/PaymentCancelPage';
-import BasicSuccessPage from './pages/subscription/BasicSuccessPage';
-import SubscriptionUpgradePage from './pages/subscription/SubscriptionUpgradePage';
-import PricingPlans from './components/subscription/PricingPlans';
-import SubscriptionManagement from './components/subscription/SubscriptionManagement';
+import PaymentSuccessPage from './pages/subscription/PaymentSuccessPage.js';
+import PaymentCancelPage from './pages/subscription/PaymentCancelPage.js';
+import BasicSuccessPage from './pages/subscription/BasicSuccessPage.js';
+import SubscriptionUpgradePage from './pages/subscription/SubscriptionUpgradePage.js';
+import PricingPlans from './components/subscription/PricingPlans.js';
+import SubscriptionManagement from './components/subscription/SubscriptionManagement.js';
 // Import tier-specific content pages
-import BasicContent from './pages/subscription/BasicContent';
-import PremiumContent from './pages/subscription/PremiumContent';
-import EliteContent from './pages/subscription/EliteContent';
+import BasicContent from './pages/subscription/BasicContent.js';
+import PremiumContent from './pages/subscription/PremiumContent.js';
+import EliteContent from './pages/subscription/EliteContent.js';
 // Import safety-related pages
-import SafetyFeaturesPage from './pages/SafetyFeaturesPage';
-import SafetyGuidelines from './pages/safety/Guidelines';
-import EmergencyProcedures from './pages/EmergencyProcedures';
-import SafetyFAQ from './pages/SafetyFAQ';
+import SafetyFeaturesPage from './pages/SafetyFeaturesPage.js';
+import SafetyGuidelines from './pages/safety/Guidelines.js';
+import EmergencyProcedures from './pages/EmergencyProcedures.js';
+import SafetyFAQ from './pages/SafetyFAQ.js';
 // Import auth context
-import { useAuth, AuthProvider } from './contexts/AuthContext';
+import { useAuth, AuthProvider } from './contexts/AuthContext.js';
 // Import subscription context
-import { useSubscription, SubscriptionProvider } from './contexts/SubscriptionContext';
+import { useSubscription, SubscriptionProvider } from './contexts/SubscriptionContext.js';
 // Import safety context
-import { SafetyProvider } from './contexts/SafetyContext';
+import { SafetyProvider } from './contexts/SafetyContext.js';
 // Import the new WorkoutsPage component
-import WorkoutsPage from './pages/WorkoutsPage';
-import FAQ from './pages/FAQ';
-import Help from './pages/Help';
-import Contact from './pages/Contact';
+import WorkoutsPage from './pages/WorkoutsPage.js';
+import FAQ from './pages/FAQ.js';
+import Help from './pages/Help.js';
+import Contact from './pages/Contact.js';
 // Import the new AITrainingDashboard component
-import AITrainingDashboard from './components/training/AITrainingDashboard';
+import AITrainingDashboard from './components/training/AITrainingDashboard.js';
 // Import HealthHub component
-import HealthHub from './pages/health/HealthHub';
+import HealthHub from './pages/health/HealthHub.js';
 // Import HealthProvider
-import { HealthProvider } from './contexts/HealthContext';
-import DeviceConnection from './pages/devices/DeviceConnection';
-import EducationalContent from './pages/education/EducationalContent';
-import JointHealthArticle from './pages/education/JointHealthArticle';
-import SeniorNutritionArticle from './pages/education/SeniorNutritionArticle';
-import SleepRecoveryArticle from './pages/education/SleepRecoveryArticle';
+import { HealthProvider } from './contexts/HealthContext.js';
+import DeviceConnection from './pages/devices/DeviceConnection.js';
+import EducationalContent from './pages/education/EducationalContent.js';
+import JointHealthArticle from './pages/education/JointHealthArticle.js';
+import SeniorNutritionArticle from './pages/education/SeniorNutritionArticle.js';
+import SleepRecoveryArticle from './pages/education/SleepRecoveryArticle.js';
 
 // Import AppProviders as named import
-import { AppProviders } from './providers/AppProviders';
-import ProtectedRoute from './components/ProtectedRoute';
+import { AppProviders } from './providers/AppProviders.js';
+import ProtectedRoute from './components/ProtectedRoute.js';
 
 // Main App component with debugging
 function App() {

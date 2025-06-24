@@ -1,7 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useSubscription } from '../../contexts/SubscriptionContext';
-import { api } from '../../services/api';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card.js';
+import { Button } from '../../components/ui/button.js';
+import { Badge } from '../../components/ui/badge.js';
+import { Progress } from '../../components/ui/progress.js';
+import { CheckCircle, ArrowRight, Home, Activity, Crown, Shield, Heart, Brain, Target, TrendingUp, Zap, Star, Users, Calendar, Clock, Award, Play, Settings, Info, AlertTriangle, Check, X, RotateCcw, Pause, BookOpen, Video, Users as UsersIcon, Award as AwardIcon, Calendar as CalendarIcon } from 'lucide-react';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
+import { useAuth } from '../../contexts/AuthContext.js';
+import { api } from '../../services/api.js';
 
 const PaymentSuccessPage = () => {
   const navigate = useNavigate();

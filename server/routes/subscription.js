@@ -1,8 +1,9 @@
-const express = require('express');
+import express from 'express';
+import authMiddleware from '../middleware/auth.js';
+import User from '../models/User.js';
+import { sendSubscriptionWelcomeEmail } from '../services/email.js';
+
 const router = express.Router();
-const authMiddleware = require('../middleware/auth');
-const User = require('../models/User');
-const { sendWelcomeEmail } = require('../services/email');
 
 // Register user for free basic plan
 router.post('/register-free-plan', authMiddleware, async (req, res) => {
@@ -11,7 +12,7 @@ router.post('/register-free-plan', authMiddleware, async (req, res) => {
     const userId = req.user.id;
     
     // Get user from database
-    const user = User.findById(userId);
+    const user = await User.findById(userId);
     
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -36,13 +37,13 @@ router.post('/register-free-plan', authMiddleware, async (req, res) => {
       currentPeriodEnd: new Date(2099, 11, 31) 
     };
     
-    user.save();
+    await user.save();
     
     // Add user to email marketing list (commented out for simplicity)
     // await addUserToEmailList(user.email, {...});
     
     // Send welcome email (commented out for simplicity)
-    // await sendWelcomeEmail(user.email, {...});
+    // await sendSubscriptionWelcomeEmail(user.email, {...});
     
     // Return subscription details
     res.status(200).json({
@@ -67,7 +68,7 @@ router.get('/subscription-status', authMiddleware, async (req, res) => {
     const userId = req.user.id;
     
     // Get user from database
-    const user = User.findById(userId);
+    const user = await User.findById(userId);
     
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -107,4 +108,4 @@ router.get('/subscription-status', authMiddleware, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

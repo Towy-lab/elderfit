@@ -1,9 +1,10 @@
 // src/components/subscription/SubscriptionManagement.js
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSubscription } from '../../contexts/SubscriptionContext';
-import SubscriptionChangeConfirmation from './SubscriptionChangeConfirmation';
-import LoadingSpinner from '../common/LoadingSpinner';
+import { CreditCard, Calendar, Settings, AlertTriangle, CheckCircle, XCircle, ArrowRight, Crown, Shield, Heart } from 'lucide-react';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
+import SubscriptionChangeConfirmation from './SubscriptionChangeConfirmation.js';
+import LoadingSpinner from '../common/LoadingSpinner.js';
 
 const SubscriptionManagement = () => {
   const { 

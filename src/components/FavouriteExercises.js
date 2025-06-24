@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useSubscription } from '../contexts/SubscriptionContext';
-import LoadingSpinner from './LoadingSpinner';
-import EmptyState from './EmptyState';
+import { Heart, Clock, Target, TrendingUp } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext.js';
+import { useSubscription } from '../contexts/SubscriptionContext.js';
+import LoadingSpinner from './LoadingSpinner.js';
+import EmptyState from './EmptyState.js';
 
 const FavouriteExercises = ({ limit }) => {
   const [favourites, setFavourites] = useState([]);

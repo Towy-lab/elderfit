@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useSubscription } from '../../contexts/SubscriptionContext';
-import FormGuidance from '../safety/FormGuidance';
-import { CameraSetupGuide } from '../safety/CameraSetupGuide';
-import { generateWorkout } from '../../services/ai/workoutGeneration';
-import { AlertCircle, Play, Info } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Brain, Target, Zap, Clock, TrendingUp, Info, Settings, Play, Pause, RotateCcw, AlertCircle } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext.js';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
+import FormGuidance from '../safety/FormGuidance.js';
+import { CameraSetupGuide } from '../safety/CameraSetupGuide.js';
+import { generateWorkout } from '../../services/ai/workoutGeneration.js';
 
 const AITrainingDashboard = () => {
   const { user } = useAuth();

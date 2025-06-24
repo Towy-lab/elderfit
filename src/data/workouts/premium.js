@@ -4,22 +4,22 @@ const premiumWorkouts = [
     name: 'Advanced Strength & Mobility',
     exercises: [
       {
-        id: 'dumbbell-rows',
-        name: 'Dumbbell Rows',
-        description: 'Strengthen your back and improve posture',
-        sets: 3,
-        reps: 12,
+        id: 'bodyweight-squats',
+        name: 'Bodyweight Squats',
+        description: 'Full range of motion squats for leg strength',
+        sets: 4,
+        reps: 15,
         restSeconds: 60,
-        focusAreas: ['Back', 'Shoulders']
+        focusAreas: ['Legs', 'Core']
       },
       {
-        id: 'step-ups',
-        name: 'Step-ups',
-        description: 'Build leg strength and improve balance',
+        id: 'pushups',
+        name: 'Push-ups',
+        description: 'Standard push-ups for upper body strength',
         sets: 3,
         reps: 10,
-        restSeconds: 45,
-        focusAreas: ['Legs', 'Balance']
+        restSeconds: 60,
+        focusAreas: ['Chest', 'Arms']
       }
     ],
     focusAreas: ['Strength', 'Mobility'],
@@ -27,4 +27,4 @@ const premiumWorkouts = [
   }
 ];
 
-export default premiumWorkouts;
+export { premiumWorkouts };

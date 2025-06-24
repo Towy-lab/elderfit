@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
-import { useSubscription } from '../../contexts/SubscriptionContext';
+import { useAuth } from '../../hooks/useAuth.js';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
 
 const PricingPlans = ({ isHomePage = false }) => {
   const { isAuthenticated } = useAuth();

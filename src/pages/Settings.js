@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useSubscription } from '../contexts/SubscriptionContext';
+import { useAuth } from '../contexts/AuthContext.js';
+import { useSubscription } from '../contexts/SubscriptionContext.js';
 
 // Updated conversion functions
 const kgToLbs = kg => Math.round(kg * 2.20462);

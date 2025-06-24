@@ -1,6 +1,6 @@
 import React from 'react';
-import { useContentRelease } from '../../hooks/useContentRelease';
-import VideoContent from '../../components/video/VideoContent';
+import { useContentRelease } from '../../hooks/useContentRelease.js';
+import VideoContent from '../../components/video/VideoContent.js';
 import { Video, Filter } from 'lucide-react';
 
 const VideoLibrary = () => {

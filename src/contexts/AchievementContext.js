@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { getProgressData } from '../services/progressService';
+import { getProgressData } from '../services/progressService.js';
 import { hasValidWorkoutData } from '../utils/workoutUtils';
 
 const AchievementContext = createContext();

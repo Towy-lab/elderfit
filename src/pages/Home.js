@@ -1,8 +1,9 @@
 // src/pages/Home.js
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import PricingPlans from '../components/subscription/PricingPlans';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowRight, Check, Star, Users, Shield, Heart, Brain, Target, TrendingUp, Play, Crown, Zap } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext.js';
+import PricingPlans from '../components/subscription/PricingPlans.js';
 
 const Home = () => {
   const { isAuthenticated } = useAuth();

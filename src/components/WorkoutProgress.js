@@ -1,6 +1,8 @@
-import React from 'react';
-import { useProgress } from '../contexts/ProgressContext';
-import { useSubscription } from '../contexts/SubscriptionContext';
+import React, { useState, useEffect } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Calendar, TrendingUp, Target, Award } from 'lucide-react';
+import { useProgress } from '../contexts/ProgressContext.js';
+import { useSubscription } from '../contexts/SubscriptionContext.js';
 
 const WorkoutProgress = () => {
   const { subscription } = useSubscription();

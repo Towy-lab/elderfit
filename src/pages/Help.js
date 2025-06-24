@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useSubscription } from '../contexts/SubscriptionContext';
+import { HelpCircle, Search, BookOpen, Video, MessageCircle, Phone, Mail, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { useSubscription } from '../contexts/SubscriptionContext.js';
 
 const Help = () => {
   const { subscription } = useSubscription();

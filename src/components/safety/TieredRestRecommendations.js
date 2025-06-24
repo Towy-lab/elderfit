@@ -1,9 +1,9 @@
 // src/components/safety/TieredRestRecommendations.js
 import React, { useState, useEffect } from 'react';
 import { Clock, Battery, AlertTriangle, CheckCircle, Calendar, Lock } from 'lucide-react';
-import { useSafety } from '../../contexts/SafetyContext';
-import { useSubscription } from '../../contexts/SubscriptionContext';
-import TierContentManager from '../subscription/TierContentManager';
+import { useSafety } from '../../contexts/SafetyContext.js';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
+import TierContentManager from '../subscription/TierContentManager.js';
 
 export const TieredRestRecommendations = ({ exerciseId, intensity }) => {
   const { getLastWorkout, getFatigueLevel, getRestRecommendations } = useSafety();

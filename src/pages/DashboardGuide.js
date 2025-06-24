@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useSubscription } from '../contexts/SubscriptionContext';
+import { X, Check, ArrowRight, BookOpen, Target, TrendingUp, Shield, Heart, Crown } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext.js';
+import { useSubscription } from '../contexts/SubscriptionContext.js';
 
 const DashboardGuide = () => {
   const [dismissed, setDismissed] = useState(false);

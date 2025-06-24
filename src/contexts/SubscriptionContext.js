@@ -1,7 +1,8 @@
 // src/contexts/SubscriptionContext.js
-import React, { createContext, useState, useEffect, useContext } from 'react';
-import { useAuth } from '../hooks/useAuth';
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
+import { useAuth } from './AuthContext.js';
 import { 
+  api,
   getSubscription, 
   upgradeSubscription as apiUpgradeSubscription, 
   upgradeFromBasic as apiUpgradeFromBasic,
@@ -14,7 +15,12 @@ import {
   signupBasic as apiSignupBasic,
   calculateProration as apiCalculateProration,
   immediateDowngradeToBasic as apiImmediateDowngradeToBasic
-} from '../services/api';
+} from '../services/api.js';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card.js';
+import { Button } from '../components/ui/button.js';
+import { Badge } from '../components/ui/badge.js';
+import { Progress } from '../components/ui/progress.js';
+import { CreditCard, Lock, CheckCircle, AlertTriangle, Star, Crown, Zap, Shield, Heart, Activity, Brain, TrendingUp, Calendar, Clock, Target, Users, Info } from 'lucide-react';
 
 // Create context
 const SubscriptionContext = createContext();
@@ -31,17 +37,16 @@ export const SubscriptionProvider = ({ children }) => {
   const MIN_REFRESH_INTERVAL = 3000; // 3 seconds between refreshes
 
   // Fetch subscription data with improved logging, caching, and force refresh option
-  const fetchSubscription = async (forceRefresh = false) => {
+  const fetchSubscription = useCallback(async (forceRefresh = false) => {
     // Get current time to prevent excessive API calls
     const now = new Date();
-    const minTimeBetweenFetches = 1000; // 1 second minimum between fetches
+    const minTimeBetweenFetches = 2000; // Increase to 2 seconds minimum between fetches
     
     console.log('Fetching subscription:', {
       forceRefresh,
       lastFetchTime,
       timeSinceLastFetch: lastFetchTime ? now - lastFetchTime : 'never',
       hasSubscription: !!subscription,
-      loading,
       userId: user?._id
     });
     
@@ -61,6 +66,12 @@ export const SubscriptionProvider = ({ children }) => {
       setSubscription(null);
       setLoading(false);
       return null;
+    }
+
+    // Prevent multiple simultaneous requests
+    if (loading) {
+      console.log('Already loading subscription, skipping request');
+      return subscription;
     }
 
     // Set loading state before the try block
@@ -83,7 +94,7 @@ export const SubscriptionProvider = ({ children }) => {
         console.log('Processing subscription data:', data);
         const subscriptionData = {
           ...data,
-          hasSubscription: data.tier !== 'basic' || data.id !== undefined
+          hasSubscription: data.hasSubscription !== undefined ? data.hasSubscription : (data.tier !== 'basic' || data.id !== undefined)
         };
         setSubscription(subscriptionData);
         setLastFetchTime(new Date());
@@ -108,7 +119,7 @@ export const SubscriptionProvider = ({ children }) => {
       console.log('Clearing loading state');
       setLoading(false);
     }
-  };
+  }, [user?._id, lastFetchTime]);
 
   // Add this improved forceRefreshSubscription function with debouncing
   const forceRefreshSubscription = async (bypassThrottle = false) => {
@@ -128,16 +139,56 @@ export const SubscriptionProvider = ({ children }) => {
     }
   };
 
+  // Debug subscription state changes
+  useEffect(() => {
+    console.log('Subscription state changed:', {
+      tier: subscription?.tier,
+      hasSubscription: subscription?.hasSubscription,
+      status: subscription?.status,
+      loading,
+      error
+    });
+  }, [subscription, loading, error]);
+
   // Fetch subscription when user changes
   useEffect(() => {
+    let isMounted = true;
+    
     if (user?._id) {
-      console.log('User changed, fetching subscription');
-      fetchSubscription(true);
+      console.log('User changed, fetching subscription for user:', {
+        userId: user._id,
+        userEmail: user.email,
+        userSubscription: user.subscription
+      });
+      // Clear cache to ensure fresh data is fetched
+      setLastFetchTime(null);
+      setSubscription(null); // Clear existing subscription data
+      setLoading(true); // Set loading state
+      // Force refresh when user changes to ensure fresh data
+      fetchSubscription(true).then((result) => {
+        if (!isMounted) {
+          console.log('Component unmounted, skipping subscription update');
+        } else {
+          console.log('Subscription updated after user change:', {
+            result,
+            userSubscription: user.subscription,
+            fetchedSubscription: result
+          });
+        }
+      });
     } else {
-      setSubscription(null);
-      setLoading(false);
+      if (isMounted) {
+        console.log('No user, clearing subscription data');
+        setSubscription(null);
+        setLoading(false);
+        setLastFetchTime(null);
+      }
     }
-  }, [user?._id]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [user?._id]); // Remove fetchSubscription from dependencies
 
   // Check if user has access to a specific tier
   const hasAccess = (requiredTier) => {
@@ -178,14 +229,28 @@ export const SubscriptionProvider = ({ children }) => {
 
     // For premium and elite, check subscription status
     if (requiredTier === 'premium' || requiredTier === 'elite') {
-      // Check if user has an active subscription
-      if (!subscription.hasSubscription) {
-        console.log('Subscription check: No active subscription for premium/elite access');
-        return false;
-      }
-      
       // Check if user's tier level meets or exceeds required level
       const hasRequiredTier = userTierLevel >= requiredTierLevel;
+      
+      // For elite tier users, they should have access to their tier regardless of hasSubscription status
+      // (they might be on a free elite tier or have special access)
+      if (subscription.tier === 'elite' && requiredTier === 'elite') {
+        console.log('Subscription check: Elite user accessing elite tier, allowing access');
+        return true;
+      }
+      
+      // For premium tier, check if user has an active subscription or is elite
+      if (requiredTier === 'premium') {
+        if (subscription.tier === 'elite') {
+          console.log('Subscription check: Elite user accessing premium tier, allowing access');
+          return true;
+        }
+        if (!subscription.hasSubscription) {
+          console.log('Subscription check: No active subscription for premium access');
+          return false;
+        }
+      }
+      
       console.log('Subscription check:', {
         requiredTier,
         currentTier: subscription.tier,

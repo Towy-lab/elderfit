@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Clock, Target, AlertCircle } from 'lucide-react';
-import { getExercises } from '../services/api';
+import { getExercises } from '../services/api.js';
 
 const ExerciseSelection = () => {
   const { category } = useParams();

@@ -1,9 +1,9 @@
 // src/components/safety/TieredFormGuidance.js
 import React, { useState } from 'react';
 import { Lock } from 'lucide-react';
-import { useSafety } from '../../contexts/SafetyContext';
-import { useSubscription } from '../../contexts/SubscriptionContext';
-import FormGuidance from './FormGuidance';
+import { useSafety } from '../../contexts/SafetyContext.js';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
+import FormGuidance from './FormGuidance.js';
 
 export const TieredFormGuidance = ({ exercise }) => {
   const [currentStep, setCurrentStep] = useState(0);

@@ -1,6 +1,10 @@
 // src/components/subscription/TierContentManager.js
 import React from 'react';
-import { useSubscription } from '../../contexts/SubscriptionContext';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card.js';
+import { Button } from '../ui/button.js';
+import { Badge } from '../ui/badge.js';
+import { Lock, Star, Crown, Zap, CheckCircle } from 'lucide-react';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
 import { Link } from 'react-router-dom';
 import { LockIcon } from 'lucide-react';
 

@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card.js';
+import { Button } from '../../components/ui/button.js';
+import { Input } from '../../components/ui/input.js';
+import { Label } from '../../components/ui/label.js';
+import { Badge } from '../../components/ui/badge.js';
+import { Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth.js';
 
 export const Login = () => {
   const [credentials, setCredentials] = useState({ email: '', password: '' });

@@ -1,9 +1,14 @@
 // src/components/safety/TieredEmergencyContact.js
-import React, { useState } from 'react';
-import { Phone, Mail, User, Plus, Trash2, Edit2, Lock } from 'lucide-react';
-import { useSafety } from '../../contexts/SafetyContext';
-import { useSubscription } from '../../contexts/SubscriptionContext';
-import TierContentManager from '../subscription/TierContentManager';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card.js';
+import { Button } from '../../components/ui/button.js';
+import { Input } from '../../components/ui/input.js';
+import { Label } from '../../components/ui/label.js';
+import { Badge } from '../../components/ui/badge.js';
+import { Phone, User, Mail, Plus, Trash2, Shield, Lock, Edit2 } from 'lucide-react';
+import { useSafety } from '../../contexts/SafetyContext.js';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
+import TierContentManager from '../subscription/TierContentManager.js';
 
 export const TieredEmergencyContact = () => {
   const { contacts, addContact, removeContact, updateContact } = useSafety();

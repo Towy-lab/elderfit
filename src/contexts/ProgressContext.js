@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from './AuthContext';
-import { useSubscription } from './SubscriptionContext';
-import { getProgressData, saveWorkoutProgress, getWorkoutHistory } from '../services/api';
+import { useAuth } from './AuthContext.js';
+import { useSubscription } from './SubscriptionContext.js';
+import { getProgressData, saveWorkoutProgress, getWorkoutHistory } from '../services/api.js';
 
 // Create the context
 const ProgressContext = createContext();

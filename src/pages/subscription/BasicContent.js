@@ -1,9 +1,9 @@
 // src/pages/subscription/BasicContent.js
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useSubscription } from '../../contexts/SubscriptionContext';
-import { useProgress } from '../../contexts/ProgressContext';
-import TierContentManager from '../../components/subscription/TierContentManager';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
+import { useProgress } from '../../contexts/ProgressContext.js';
+import TierContentManager from '../../components/subscription/TierContentManager.js';
 import { Activity, Award, BookOpen, Calendar } from 'lucide-react';
 
 // Basic Tier Content Page

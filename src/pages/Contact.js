@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useSubscription } from '../contexts/SubscriptionContext';
+import { Mail, Phone, MapPin, Send, CheckCircle, AlertCircle } from 'lucide-react';
+import { useSubscription } from '../contexts/SubscriptionContext.js';
 
 const Contact = () => {
   const { subscription } = useSubscription();

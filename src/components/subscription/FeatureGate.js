@@ -1,7 +1,11 @@
 // src/components/subscription/FeatureGate.js
 import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card.js';
+import { Button } from '../ui/button.js';
+import { Badge } from '../ui/badge.js';
+import { Lock, Star, Crown, Zap } from 'lucide-react';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
 import { Link } from 'react-router-dom';
-import { useSubscription } from '../../contexts/SubscriptionContext';
 
 /**
  * Feature gating component that only renders children if the user has access to the specified tier.

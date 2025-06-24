@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
-import { useSafety } from '../../contexts/SafetyContext';
-import { useSubscription } from '../../contexts/SubscriptionContext';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card.js';
+import { Button } from '../../components/ui/button.js';
+import { Badge } from '../../components/ui/badge.js';
+import { useSafety } from '../../contexts/SafetyContext.js';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
 import { Shield, Bluetooth, Wifi, Smartphone, Lock } from 'lucide-react';
 
 export const DeviceConnection = () => {

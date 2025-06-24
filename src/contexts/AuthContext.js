@@ -1,7 +1,9 @@
 // src/contexts/AuthContext.js - Modified to log redirects
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loginUser, registerUser, getCurrentUser, updateUserProfile } from '../services/api';
+import { jwtDecode } from 'jwt-decode';
+import { api } from '../services/api.js';
+import { loginUser, registerUser, getCurrentUser, updateUserProfile } from '../services/api.js';
 
 // Create the auth context
 const AuthContext = createContext({
@@ -63,8 +65,13 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       const { token, user: userData } = await loginUser(email, password);
       localStorage.setItem('token', token);
-      setUser(userData);
-      return userData;
+      
+      // Refresh user data to get the most up-to-date subscription information
+      // This ensures we have the latest data after the server processes the subscription
+      const refreshedUserData = await getCurrentUser();
+      setUser(refreshedUserData);
+      
+      return refreshedUserData;
     } catch (err) {
       setError(err.message || 'Login failed');
       throw err;

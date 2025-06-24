@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { useSubscription } from '../../contexts/SubscriptionContext';
-import { Bluetooth, Smartphone, Watch, HelpCircle, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext.js';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
+import { useSafety } from '../../contexts/SafetyContext.js';
+import { Bluetooth, Wifi, Smartphone, XCircle, CheckCircle, AlertTriangle, Settings, RefreshCw, Signal, Battery, Wifi as WifiIcon, Bluetooth as BluetoothIcon, Smartphone as SmartphoneIcon, XCircle as XCircleIcon, CheckCircle as CheckCircleIcon, AlertTriangle as AlertTriangleIcon, Settings as SettingsIcon, RefreshCw as RefreshCwIcon, Signal as SignalIcon, Battery as BatteryIcon, Shield, Watch, HelpCircle, Trash2 } from 'lucide-react';
 
 const DeviceConnection = () => {
   const [devices, setDevices] = useState([]);

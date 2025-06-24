@@ -1,7 +1,7 @@
-import { calculateBMI, getAgeGroup } from '../utils/healthCalculations';
-import basicWorkouts from '../data/workouts/basic';
-import premiumWorkouts from '../data/workouts/premium';
-import eliteWorkouts from '../data/workouts/elite';
+import { calculateBMI, calculateBMR, calculateTDEE, calculateHeartRateZones, calculateBodyFatPercentage, calculateMuscleMass, calculateBoneDensity, calculateFlexibilityScore, calculateBalanceScore, calculateStrengthScore, calculateEnduranceScore, calculateOverallFitnessScore } from '../utils/healthCalculations.js';
+import { basicWorkouts } from '../data/workouts/basic.js';
+import { premiumWorkouts } from '../data/workouts/premium.js';
+import { eliteWorkouts } from '../data/workouts/elite.js';
 
 // Constants
 const DIFFICULTY_LEVELS = {
@@ -101,6 +101,13 @@ const EXERCISES = {
       modifications: ['Seated position', 'Smaller range']
     }
   ]
+};
+
+const getAgeGroup = (age) => {
+  if (age < 50) return 'younger';
+  if (age < 65) return 'middle';
+  if (age < 75) return 'senior';
+  return 'elderly';
 };
 
 const analyzeUserProfile = (profile) => {

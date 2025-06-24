@@ -1,6 +1,6 @@
 // src/hooks/useTierContent.js
-import { useSubscription } from '../contexts/SubscriptionContext';
-import tierConfig, { getTierFeatures, checkTierAccess } from '../config/tierConfig';
+import { useSubscription } from '../contexts/SubscriptionContext.js';
+import tierConfig, { getTierFeatures, checkTierAccess } from '../config/tierConfig.js';
 
 /**
  * Custom hook for accessing tier-specific content
@@ -150,4 +150,4 @@ const useTierContent = () => {
   };
 };
 
-export default useTierContent;
+export { useTierContent };

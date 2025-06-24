@@ -1,8 +1,8 @@
 // src/providers/AuthProvider.js
-import React, { useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import AuthContext from '../contexts/AuthContext';
-import { loginUser, registerUser, getCurrentUser, updateUserProfile } from '../services/api';
+import AuthContext from '../contexts/AuthContext.js';
+import { loginUser, registerUser, getCurrentUser, updateUserProfile } from '../services/api.js';
 
 // Auth Provider component
 export const AuthProvider = ({ children }) => {

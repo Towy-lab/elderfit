@@ -1,7 +1,8 @@
 import React, { useState, useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { useSubscription } from '../../contexts/SubscriptionContext';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Menu, X, User, LogOut, Settings, Home, Activity, Shield, Heart, BookOpen, HelpCircle, Crown } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext.js';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
 import logo from '../../assets/Elderfit Secrets Logo Emphasizing Wellness.png';
 
 const Navbar = () => {

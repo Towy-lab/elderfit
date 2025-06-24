@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useSubscription } from '../contexts/SubscriptionContext';
+import { useAuth } from '../contexts/AuthContext.js';
+import { useSubscription } from '../contexts/SubscriptionContext.js';
 
 /**
  * Protected Route component that restricts access based on user authentication
@@ -33,7 +33,7 @@ const ProtectedRoute = ({ children, requiredTier = 'basic' }) => {
       setIsInitialLoad(false);
       setHasCheckedSubscription(true);
     }
-  }, [authLoading, subscriptionLoading, user, subscription, requiredTier, location.pathname, hasCheckedSubscription]);
+  }, [authLoading, subscriptionLoading, user, subscription, requiredTier, location.pathname]);
 
   // Show loading state while checking auth or subscription
   if (authLoading || subscriptionLoading) {

@@ -27,4 +27,4 @@ const basicWorkouts = [
   }
 ];
 
-export default basicWorkouts;
+export { basicWorkouts };

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useSubscription } from '../../contexts/SubscriptionContext';
-import LoadingSpinner from '../../components/LoadingSpinner';
+import LoadingSpinner from '../../components/LoadingSpinner.js';
 import ConfettiExplosion from 'react-confetti-explosion';
 
 const PaymentSuccessPage = () => {

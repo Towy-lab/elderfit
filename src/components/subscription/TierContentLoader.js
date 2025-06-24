@@ -1,7 +1,7 @@
 // src/components/subscription/TierContentLoader.js
 import React from 'react';
-import { useSubscription } from '../../contexts/SubscriptionContext';
-import TierContentManager from './TierContentManager';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
+import TierContentManager from './TierContentManager.js';
 
 const TierContentLoader = ({ 
   requiredTier, 

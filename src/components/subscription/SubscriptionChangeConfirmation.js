@@ -1,6 +1,10 @@
 // src/components/subscription/SubscriptionChangeConfirmation.js
 import React, { useState, useEffect } from 'react';
-import { useSubscription } from '../../contexts/SubscriptionContext';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card.js';
+import { Button } from '../ui/button.js';
+import { Badge } from '../ui/badge.js';
+import { CheckCircle, AlertTriangle, Info } from 'lucide-react';
 
 const SubscriptionChangeConfirmation = ({ 
   newTier, 

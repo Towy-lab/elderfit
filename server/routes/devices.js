@@ -1,7 +1,9 @@
-const express = require('express');
+import express from 'express';
+import authMiddleware from '../middleware/auth.js';
+import User from '../models/User.js';
+import Device from '../models/Device.js';
+
 const router = express.Router();
-const authMiddleware = require('../middleware/auth');
-const User = require('../models/User');
 
 // Get all devices for the user
 router.get('/', authMiddleware, async (req, res) => {
@@ -109,4 +111,4 @@ router.post('/:deviceId/disconnect', authMiddleware, async (req, res) => {
   }
 });
 
-module.exports = router; 
+export default router; 

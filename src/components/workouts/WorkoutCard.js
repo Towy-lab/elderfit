@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useSubscription } from '../../contexts/SubscriptionContext';
-import { Clock, BarChart2, Target } from 'lucide-react';
+import { Clock, Target, TrendingUp, Heart, Play, Lock, Crown, Shield, Heart as HeartIcon, BarChart2 } from 'lucide-react';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
 
 const WorkoutCard = ({ workout }) => {
   const { hasAccess, formatTierName } = useSubscription();

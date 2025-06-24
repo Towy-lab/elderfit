@@ -1,12 +1,17 @@
 // src/pages/SafetyFeaturesPage.js
-import React, { useState } from 'react';
-import { useSubscription } from '../contexts/SubscriptionContext';
-import { useSafety } from '../contexts/SafetyContext';
-import SafetyHub from '../components/safety/SafetyHub';
-import { DeviceConnection } from '../components/safety/DeviceConnection';
-import { Shield, Clipboard, Lock, AlertTriangle, Phone, Heart, Activity } from 'lucide-react';
-import TierContentManager from '../components/subscription/TierContentManager';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card.js';
+import { Button } from '../components/ui/button.js';
+import { Badge } from '../components/ui/badge.js';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs.js';
+import { Shield, AlertTriangle, Phone, Heart, Activity, Settings, Bell, Users, Calendar, TrendingUp, Clipboard, Lock } from 'lucide-react';
+import { useSubscription } from '../contexts/SubscriptionContext.js';
+import { useSafety } from '../contexts/SafetyContext.js';
+import { useAuth } from '../contexts/AuthContext.js';
 import { Link } from 'react-router-dom';
+import { DeviceConnection } from '../components/safety/DeviceConnection.js';
+import SafetyHub from '../components/safety/SafetyHub.js';
+import TierContentManager from '../components/subscription/TierContentManager.js';
 
 const SafetyFeaturesPage = () => {
   const { formatTierName, hasAccess } = useSubscription();

@@ -1,6 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useSubscription } from './SubscriptionContext';
-import { getAllWorkouts, getWorkoutsByTier } from '../data/workouts';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card.js';
+import { Button } from '../components/ui/button.js';
+import { Badge } from '../components/ui/badge.js';
+import { Progress } from '../components/ui/progress.js';
+import { Clock, Target, Users, TrendingUp, Heart, Play, Lock, Crown, Shield } from 'lucide-react';
+import { useSubscription } from './SubscriptionContext.js';
+import { getAllWorkouts, getWorkoutsByTier } from '../data/workouts/index.js';
 
 const ContentContext = createContext();
 

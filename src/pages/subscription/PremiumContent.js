@@ -1,12 +1,19 @@
 // src/pages/subscription/PremiumContent.js
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useSubscription } from '../../contexts/SubscriptionContext';
-import TierContentManager from '../../components/subscription/TierContentManager';
-import { TieredEmergencyContact } from '../../components/safety/TieredEmergencyContact';
-import { TieredPainTracker } from '../../components/safety/TieredPainTracker';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
+import TierContentManager from '../../components/subscription/TierContentManager.js';
+import { TieredEmergencyContact } from '../../components/safety/TieredEmergencyContact.js';
+import { TieredPainTracker } from '../../components/safety/TieredPainTracker.js';
 import { Activity, Video, Calendar, Users, BookOpen, Award } from 'lucide-react';
-import { useProgress } from '../../contexts/ProgressContext';
+import { useProgress } from '../../contexts/ProgressContext.js';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card.js';
+import { Button } from '../../components/ui/button.js';
+import { Badge } from '../../components/ui/badge.js';
+import { Progress } from '../../components/ui/progress.js';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs.js';
+import { Shield, Smartphone, Heart, Brain, TrendingUp, Clock, Target, Star, Crown, Zap, CheckCircle, AlertTriangle, Info } from 'lucide-react';
+import { Users as UsersIcon, Award as AwardIcon, Calendar as CalendarIcon, ArrowRight, Home, Menu, User, LogOut, Settings as SettingsIcon, Home as HomeIcon, Activity as ActivityIcon, Shield as ShieldIcon, Heart as HeartIcon, BookOpen as BookOpenIcon, HelpCircle } from 'lucide-react';
 
 const PremiumContent = () => {
   const { subscription, formatTierName, hasAccess } = useSubscription();

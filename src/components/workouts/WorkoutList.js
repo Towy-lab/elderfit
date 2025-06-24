@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
-import { useContent } from '../../contexts/ContentContext';
-import WorkoutCard from './WorkoutCard';
-import { Search, Filter, X, Circle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card.js';
+import { Button } from '../ui/button.js';
+import { Badge } from '../ui/badge.js';
+import { Input } from '../ui/input.js';
+import { Circle, Search, Filter, Clock, Target, Users, X } from 'lucide-react';
+import { useContent } from '../../contexts/ContentContext.js';
+import WorkoutCard from './WorkoutCard.js';
 
 const WorkoutList = () => {
   const { 

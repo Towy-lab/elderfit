@@ -1,6 +1,10 @@
-import React from "react";
-import { ShieldCheck, AlertTriangle, HelpCircle } from "lucide-react";
-import { useAuth } from "../../contexts/AuthContext"; // Adjust path if needed
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card.js';
+import { Button } from '../../components/ui/button.js';
+import { Badge } from '../../components/ui/badge.js';
+import { Progress } from '../../components/ui/progress.js';
+import { Shield, AlertTriangle, Phone, Heart, Activity, Settings, Bell, Users, Calendar, TrendingUp, CheckCircle, XCircle, Info } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext.js'; // Adjust path if needed
 import { Link } from "react-router-dom";
 
 const SafetyGuidelines = () => {
@@ -16,7 +20,7 @@ const SafetyGuidelines = () => {
   return (
     <div className="max-w-2xl mx-auto px-4 py-10">
       <div className="flex items-center mb-6">
-        <ShieldCheck className="text-green-600 mr-2" size={32} />
+        <Shield className="text-green-600 mr-2" size={32} />
         <h1 className="text-3xl font-bold text-green-800">Safety Guidelines for Seniors</h1>
       </div>
       <p className="text-green-700 mb-2">
@@ -94,7 +98,7 @@ const SafetyGuidelines = () => {
           className="block p-6 bg-blue-50 rounded-lg border border-blue-200 hover:border-blue-400 transition-colors"
         >
           <div className="flex items-center gap-3 mb-3">
-            <HelpCircle className="text-blue-600" size={24} />
+            <Info className="text-blue-600" size={24} />
             <h2 className="text-xl font-semibold text-blue-800">Safety FAQ</h2>
           </div>
           <p className="text-blue-700">

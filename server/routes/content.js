@@ -1,7 +1,9 @@
-const express = require('express');
+import express from 'express';
+import authMiddleware from '../middleware/auth.js';
+import { isContentAvailable, getAvailableContent } from '../utils/contentRelease.js';
+import Content from '../models/Content.js';
+
 const router = express.Router();
-const authMiddleware = require('../middleware/auth');
-const { isContentAvailable, getAvailableContent } = require('../utils/contentRelease');
 
 // Check if specific content is available
 router.get('/check/:contentId', authMiddleware, async (req, res) => {
@@ -38,4 +40,4 @@ router.get('/available', authMiddleware, async (req, res) => {
   }
 });
 
-module.exports = router; 
+export default router; 

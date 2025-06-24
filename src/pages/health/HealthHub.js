@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSubscription } from '../../contexts/SubscriptionContext';
-import { useAuth } from '../../contexts/AuthContext';
-import { useHealth } from '../../contexts/HealthContext';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
+import { useAuth } from '../../contexts/AuthContext.js';
+import { useHealth } from '../../contexts/HealthContext.js';
 import {
   getDevices,
   scanForDevices,
   connectDevice,
   disconnectDevice
-} from '../../services/api';
-import { Activity, Heart, Brain, Shield } from 'lucide-react';
+} from '../../services/api.js';
+import { Activity, Heart, Brain, Shield, Target, TrendingUp, Calendar, Clock, Award, Play, Settings, Info, AlertTriangle, CheckCircle, XCircle, Check, X, RotateCcw, Pause, BookOpen, Video, Users, ArrowRight, Home, Menu, User, LogOut, Settings as SettingsIcon, Home as HomeIcon, Activity as ActivityIcon, Shield as ShieldIcon, Heart as HeartIcon, BookOpen as BookOpenIcon, HelpCircle, Crown } from 'lucide-react';
+import { api } from '../../services/api.js';
 
 const HealthHub = () => {
   const [devices, setDevices] = useState([]);

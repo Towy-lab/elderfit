@@ -1,4 +1,6 @@
-import { getWorkoutRecommendation } from '../workoutRecommendation';
+import { aiService } from './aiService.js';
+import { motionAnalysisService } from '../utils/motionAnalysis.js';
+import { getWorkoutRecommendation } from '../workoutRecommendation.js';
 
 export const generateWorkout = async (userId) => {
   try {

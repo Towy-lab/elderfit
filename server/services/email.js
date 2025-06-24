@@ -1,5 +1,5 @@
 // server/services/email.js - Enhanced for subscription emails
-const nodemailer = require('nodemailer');
+import nodemailer from 'nodemailer';
 
 // Create reusable transporter
 let transporter;
@@ -473,8 +473,7 @@ function getTierBenefits(tier) {
   return tierBenefits[tier.toLowerCase()] || '';
 }
 
-module.exports = {
-  sendEmail,
+export {
   sendSubscriptionWelcomeEmail,
   sendSubscriptionUpgradeEmail,
   sendSubscriptionCancellationEmail,
@@ -482,5 +481,5 @@ module.exports = {
   sendSubscriptionEndedEmail,
   sendPaymentFailedEmail,
   sendSubscriptionDowngradeEmail,
-    sendSubscriptionDowngradeCompleteEmail,
-  }
+  sendSubscriptionDowngradeCompleteEmail
+};

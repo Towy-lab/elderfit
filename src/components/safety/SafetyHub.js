@@ -1,15 +1,19 @@
 // src/components/safety/SafetyHub.js
-import React from 'react';
-import { Shield, Info } from 'lucide-react';
-import { useSubscription } from '../../contexts/SubscriptionContext';
-import useTierContent from '../../hooks/useTierContent';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card.js';
+import { Button } from '../../components/ui/button.js';
+import { Badge } from '../../components/ui/badge.js';
+import { Tabs, Tab, TabList, TabPanel } from '../../components/ui/tabs.js';
+import { Shield, AlertTriangle, Heart, Activity, Settings, Users, Phone, MapPin } from 'lucide-react';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
+import { useTierContent } from '../../hooks/useTierContent.js';
+import { useSafety } from '../../contexts/SafetyContext.js';
+import { Progress } from '../../components/ui/progress.js';
+import { TieredEmergencyContact } from './TieredEmergencyContact.js';
+import { TieredFormGuidance } from './TieredFormGuidance.js';
+import { TieredPainTracker } from './TieredPainTracker.js';
+import { TieredRestRecommendations } from './TieredRestRecommendations.js';
 import { Link } from 'react-router-dom';
-
-// Import tiered safety components
-import { TieredEmergencyContact } from './TieredEmergencyContact';
-import { TieredFormGuidance } from './TieredFormGuidance';
-import { TieredPainTracker } from './TieredPainTracker';
-import { TieredRestRecommendations } from './TieredRestRecommendations';
 
 /**
  * SafetyHub - Central component for displaying safety features based on subscription tier
@@ -75,7 +79,7 @@ const SafetyHub = ({ exercise = {} }) => {
       {(Object.keys(premiumFeatures).length > 0 || Object.keys(eliteFeatures).length > 0) && (
         <div className="bg-gray-50 rounded-lg p-6 mb-8 border border-gray-200">
           <div className="flex items-center gap-3 mb-4">
-            <Info className="text-gray-600" size={24} />
+            <MapPin className="text-gray-600" size={24} />
             <h2 className="text-xl font-semibold text-gray-800">
               Unlock More Safety Features
             </h2>

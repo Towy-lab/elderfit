@@ -1,7 +1,7 @@
 // Enhanced auth middleware - update this in your server/middleware/auth.js file
-const jwt = require('jsonwebtoken');
+import jwt from 'jsonwebtoken';
 
-const auth = (req, res, next) => {
+const authMiddleware = (req, res, next) => {
   try {
     // Get token from header
     const authHeader = req.header('Authorization');
@@ -58,4 +58,4 @@ const auth = (req, res, next) => {
   }
 };
 
-module.exports = auth;
+export default authMiddleware;

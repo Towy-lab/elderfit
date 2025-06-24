@@ -1,9 +1,15 @@
 // src/components/safety/TieredPainTracker.js
-import React, { useState } from 'react';
-import { AlertTriangle, Activity, ThumbsUp, ThumbsDown, Lock } from 'lucide-react';
-import { useSafety } from '../../contexts/SafetyContext';
-import { useSubscription } from '../../contexts/SubscriptionContext';
-import TierContentManager from '../subscription/TierContentManager';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card.js';
+import { Button } from '../../components/ui/button.js';
+import { Badge } from '../../components/ui/badge.js';
+import { Progress } from '../../components/ui/progress.js';
+import { Slider } from '../../components/ui/slider.js';
+import { Textarea } from '../../components/ui/textarea.js';
+import { Pain, Activity, TrendingUp, Calendar, AlertTriangle, CheckCircle, ThumbsUp, ThumbsDown, Lock } from 'lucide-react';
+import { useSafety } from '../../contexts/SafetyContext.js';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
+import TierContentManager from '../subscription/TierContentManager.js';
 
 const painLevels = [
   { value: 0, label: 'No Pain', color: 'bg-green-100 text-green-700' },

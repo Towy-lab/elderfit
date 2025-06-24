@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import SubscriptionPricingPlans from '../components/subscription/PricingPlans';
-import Navbar from '../components/layout/Navbar';
-import Footer from '../components/layout/Footer';
+import SubscriptionPricingPlans from '../components/subscription/PricingPlans.js';
+import Navbar from '../components/layout/Navbar.js';
+import Footer from '../components/layout/Footer.js';
 
 const MarketingHome = () => {
   return (

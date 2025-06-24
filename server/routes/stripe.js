@@ -1,15 +1,30 @@
-const express = require('express');
+import express from 'express';
+import Stripe from 'stripe';
+import authMiddleware from '../middleware/auth.js';
+import User from '../models/User.js';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Load environment variables in this file
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
 const router = express.Router();
 
 // Initialize Stripe with explicit API key
-const apiKey = process.env.STRIPE_SECRET_KEY || 'sk_test_51R40QxGCjT8uHlI9Cm4115aFjcHwPhs9TmoChHaAtPOlEuOyDLUFyNJCdrVwVzYts8r3GaypZRXa3PQntOv3GfPw00aEYuFF2r';
+const apiKey = process.env.STRIPE_SECRET_KEY;
+console.log('DEBUG: STRIPE_SECRET_KEY in stripe.js:', process.env.STRIPE_SECRET_KEY);
+if (!apiKey) {
+  console.error('❌ STRIPE_SECRET_KEY environment variable is not set!');
+  console.error('Please check your .env file and ensure STRIPE_SECRET_KEY is properly configured.');
+  process.exit(1);
+}
 console.log('Using Stripe API key (first 8 chars):', apiKey.substring(0, 8) + '...');
 
 // Initialize Stripe with the key
-const stripe = require('stripe')(apiKey);
-
-const auth = require('../middleware/auth');
-const User = require('../models/User');
+const stripe = new Stripe(apiKey);
 
 // Test Stripe connection on startup
 const testStripeConnection = async () => {
@@ -32,7 +47,7 @@ console.log('API Key exists:', !!apiKey);
 console.log('Webhook Secret exists:', !!process.env.STRIPE_WEBHOOK_SECRET);
 
 // Add this to server/routes/stripe.js
-router.get('/verify-session/:sessionId', auth, async (req, res) => {
+router.get('/verify-session/:sessionId', authMiddleware, async (req, res) => {
   try {
     const { sessionId } = req.params;
     console.log('🔍 Verifying session:', sessionId);
@@ -146,7 +161,7 @@ function getPriceIdForTier(tier, interval = 'month') {
 }
 
 // Simple checkout test with detailed debugging
-router.post('/simple-checkout', auth, async (req, res) => {
+router.post('/simple-checkout', authMiddleware, async (req, res) => {
   try {
     console.log('Simple checkout - received request');
     console.log('Simple checkout - req.user:', req.user);
@@ -231,7 +246,7 @@ router.post('/simple-checkout', auth, async (req, res) => {
 });
 
 // Handle Basic (free) tier signup - no Stripe needed
-router.post('/signup-basic', auth, async (req, res) => {
+router.post('/signup-basic', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     
@@ -263,7 +278,7 @@ router.post('/signup-basic', auth, async (req, res) => {
 });
 
 // Create a checkout session for paid subscriptions
-router.post('/create-checkout-session', auth, async (req, res) => {
+router.post('/create-checkout-session', authMiddleware, async (req, res) => {
   try {
     console.log('Create checkout session request body:', req.body);
     const { tier, interval = 'month' } = req.body;
@@ -389,7 +404,7 @@ router.get('/test-stripe-connection', async (req, res) => {
 });
 
 // Retrieve subscription details
-router.get('/subscription', auth, async (req, res) => {
+router.get('/subscription', authMiddleware, async (req, res) => {
   try {
     console.log('Getting subscription for user ID:', req.user.id);
     const user = await User.findById(req.user.id);
@@ -514,7 +529,7 @@ router.get('/subscription', auth, async (req, res) => {
 
 // Upgrade subscription
 // Replace the existing upgradeSubscription function
-router.post('/upgrade-subscription', auth, async (req, res) => {
+router.post('/upgrade-subscription', authMiddleware, async (req, res) => {
   try {
     const { tier, interval = 'month', prorationBehavior = 'create_prorations' } = req.body;
     console.log('Processing upgrade request:', { tier, interval, prorationBehavior });
@@ -634,7 +649,7 @@ router.post('/upgrade-subscription', auth, async (req, res) => {
 });
 
 // Upgrade from basic tier
-router.post('/upgrade-from-basic', auth, async (req, res) => {
+router.post('/upgrade-from-basic', authMiddleware, async (req, res) => {
   try {
     const { tier, interval = 'month' } = req.body;
     
@@ -715,7 +730,7 @@ router.post('/upgrade-from-basic', auth, async (req, res) => {
   }
 });
 // Debug route for proration
-router.post('/debug-proration', auth, async (req, res) => {
+router.post('/debug-proration', authMiddleware, async (req, res) => {
   try {
     const { tier, interval = 'month' } = req.body;
     console.log('Debugging proration calculation for:', { tier, interval });
@@ -804,7 +819,7 @@ router.post('/debug-proration', auth, async (req, res) => {
 });
 
 // Downgrade to basic (free) tier - takes effect at period end
-router.post('/downgrade-to-basic', auth, async (req, res) => {
+router.post('/downgrade-to-basic', authMiddleware, async (req, res) => {
   try {
     // Get user
     const user = await User.findById(req.user.id);
@@ -848,7 +863,7 @@ router.post('/downgrade-to-basic', auth, async (req, res) => {
 });
 
 // Immediately downgrade to basic (free) tier
-router.post('/immediate-downgrade-to-basic', auth, async (req, res) => {
+router.post('/immediate-downgrade-to-basic', authMiddleware, async (req, res) => {
   try {
     // Get user
     const user = await User.findById(req.user.id);
@@ -887,7 +902,7 @@ router.post('/immediate-downgrade-to-basic', auth, async (req, res) => {
 });
 
 // Cancel subscription - takes effect at period end
-router.post('/cancel-subscription', auth, async (req, res) => {
+router.post('/cancel-subscription', authMiddleware, async (req, res) => {
   try {
     // Get user
     const user = await User.findById(req.user.id);
@@ -927,7 +942,7 @@ router.post('/cancel-subscription', auth, async (req, res) => {
 });
 
 // Cancel subscription immediately
-router.post('/cancel-subscription-immediately', auth, async (req, res) => {
+router.post('/cancel-subscription-immediately', authMiddleware, async (req, res) => {
   try {
     // Get user
     const user = await User.findById(req.user.id);
@@ -968,7 +983,7 @@ router.post('/cancel-subscription-immediately', auth, async (req, res) => {
 
 // Specialized endpoint for downgrading from Elite to Premium
 // Update the downgrade-to-premium endpoint in server/routes/stripe.js
-router.post('/downgrade-to-premium', auth, async (req, res) => {
+router.post('/downgrade-to-premium', authMiddleware, async (req, res) => {
   try {
     const { interval = 'month' } = req.body;
     console.log('Processing downgrade from Elite to Premium');
@@ -1020,7 +1035,7 @@ router.post('/downgrade-to-premium', auth, async (req, res) => {
 });
 
 // Calculate proration for changing subscription
-router.post('/calculate-proration', auth, async (req, res) => {
+router.post('/calculate-proration', authMiddleware, async (req, res) => {
   try {
     const { tier, interval = 'month' } = req.body;
     
@@ -1085,7 +1100,7 @@ router.post('/calculate-proration', auth, async (req, res) => {
 });
 
 // Add this endpoint to server/routes/stripe.js
-router.post('/reactivate-subscription', auth, async (req, res) => {
+router.post('/reactivate-subscription', authMiddleware, async (req, res) => {
   try {
     console.log('Processing subscription reactivation');
     
@@ -1131,7 +1146,7 @@ router.post('/reactivate-subscription', auth, async (req, res) => {
 });
 
 // Change billing cycle (monthly/yearly)
-router.post('/change-billing-cycle', auth, async (req, res) => {
+router.post('/change-billing-cycle', authMiddleware, async (req, res) => {
   try {
     const { interval } = req.body;
     
@@ -1463,30 +1478,6 @@ async function handleInvoicePaymentSucceeded(invoice) {
 }
 
 async function handleInvoicePaymentFailed(invoice) {
-  console.log('Processing invoice.payment_failed:', invoice.id);
-  
-  if (!invoice.subscription) return;
-  
-  try {
-    // Find user with this subscription ID
-    const user = await User.findOne({ 'subscription.id': invoice.subscription });
-    if (!user) {
-      console.error('No user found with subscription ID:', invoice.subscription);
-      return;
-    }
-    
-    // Update subscription status to past_due
-    user.subscription.status = 'past_due';
-    await user.save();
-    console.log(`Subscription ${invoice.subscription} marked as past_due for user ${user._id}`);
-  } catch (error) {
-    console.error('Error processing invoice payment failure:', error);
-    throw error;
-  }
-}
-
-// Handler for invoice.payment_failed event
-async function handleInvoicePaymentFailed(invoice) {
   console.log('⚠️ Processing invoice.payment_failed:', invoice.id);
   
   if (!invoice.subscription) {
@@ -1519,7 +1510,7 @@ async function handleInvoicePaymentFailed(invoice) {
 }
 
 // Route to get payment methods for a user
-router.get('/payment-methods', auth, async (req, res) => {
+router.get('/payment-methods', authMiddleware, async (req, res) => {
  try {
    const user = await User.findById(req.user.id);
    if (!user) {
@@ -1561,5 +1552,4 @@ router.get('/test-webhook', async (req, res) => {
  }
 });
 
-// Export the router
-module.exports = router;
+export default router;

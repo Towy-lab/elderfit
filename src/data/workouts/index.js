@@ -1,6 +1,6 @@
-import basicWorkouts from './basic';
-import premiumWorkouts from './premium';
-import eliteWorkouts from './elite';
+import { basicWorkouts } from './basic.js';
+import { premiumWorkouts } from './premium.js';
+import { eliteWorkouts } from './elite.js';
 
 // Export all workouts
 export {

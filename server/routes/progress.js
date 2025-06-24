@@ -1,7 +1,9 @@
-const express = require('express');
+import express from 'express';
+import authMiddleware from '../middleware/auth.js';
+import User from '../models/User.js';
+import Workout from '../models/Workout.js';
+
 const router = express.Router();
-const authMiddleware = require('../middleware/auth');
-const User = require('../models/User');
 
 // Helper function to check if user has real workout data
 const hasRealWorkoutData = (user) => {
@@ -196,4 +198,4 @@ router.get('/history', authMiddleware, async (req, res) => {
   }
 });
 
-module.exports = router; 
+export default router; 

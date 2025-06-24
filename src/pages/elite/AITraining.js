@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useExercises } from '../../contexts/ExerciseContext';
-import { generateWorkoutRecommendation } from '../../services/aiTraining';
-import { adaptWorkoutDifficulty } from '../../services/adaptiveTraining';
-import WorkoutCard from '../../components/workouts/WorkoutCard';
+import { useAuth } from '../../contexts/AuthContext.js';
+import { useExercises } from '../../contexts/ExerciseContext.js';
+import { generateWorkoutRecommendation } from '../../services/aiTraining.js';
+import { adaptWorkoutDifficulty } from '../../services/adaptiveTraining.js';
+import WorkoutCard from '../../components/workouts/WorkoutCard.js';
 import { Brain, RefreshCw, ThumbsUp, ThumbsDown, Target, Calendar } from 'lucide-react';
 
 const AITraining = () => {

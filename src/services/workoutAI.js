@@ -1,4 +1,4 @@
-import { calculateBMI, getAgeGroup } from '../utils/healthCalculations';
+import { calculateBMI, getAgeGroup } from '../utils/healthCalculations.js';
 
 // Constants
 const DIFFICULTY_LEVELS = {

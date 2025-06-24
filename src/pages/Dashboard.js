@@ -1,20 +1,20 @@
 // src/pages/Dashboard.js
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useSubscription } from '../contexts/SubscriptionContext';
-import WorkoutCard from '../components/workouts/WorkoutCard';
-import WorkoutProgress from '../components/WorkoutProgress';
-import FavouriteExercises from '../components/FavouriteExercises';
-import LoadingSpinner from '../components/common/LoadingSpinner';
-import EmptyState from '../components/EmptyState';
-import UpgradeCard from '../components/subscription/UpgradeCard';
-import DashboardGuide from './DashboardGuide';
-import { Shield, Activity, Award, BookOpen, Calendar } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext.js';
+import { useSubscription } from '../contexts/SubscriptionContext.js';
+import WorkoutCard from '../components/workouts/WorkoutCard.js';
+import WorkoutProgress from '../components/WorkoutProgress.js';
+import FavouriteExercises from '../components/FavouriteExercises.js';
+import LoadingSpinner from '../components/common/LoadingSpinner.js';
+import EmptyState from '../components/EmptyState.js';
+import UpgradeCard from '../components/subscription/UpgradeCard.js';
+import DashboardGuide from './DashboardGuide.js';
+import { Shield, Activity, Award, BookOpen, Calendar, Star } from 'lucide-react';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const { subscription, hasAccess, formatTierName, getValidUpgradeTiers } = useSubscription();
+  const { subscription, hasAccess, formatTierName, getValidUpgradeTiers, loading: subscriptionLoading } = useSubscription();
   const [recommendedWorkouts, setRecommendedWorkouts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
@@ -25,11 +25,13 @@ const Dashboard = () => {
                    (user?.name ? user.name.split(' ')[0] : null) || // If we need to split full name
                    user?.first_name || // If it's stored as first_name
                    (user?.profile?.firstName) || // Check profile object
-                   'Friend'; // Default fallback
+                   'User'; // Fallback
+  
+  // Only determine currentTier when subscription data is loaded
+  const currentTier = subscriptionLoading ? null : (subscription?.tier || 'basic');
   
   // Get valid upgrade options
   const upgradeOptions = getValidUpgradeTiers ? getValidUpgradeTiers() : ['premium', 'elite'];
-  const currentTier = subscription?.tier || 'basic';
   
   // Fetch recommended workouts
   useEffect(() => {
@@ -81,13 +83,22 @@ const Dashboard = () => {
     };
     
     getRecommendedWorkouts();
-  }, [currentTier]);
+  }, []); // Remove currentTier dependency since it's just mock data
   
   // Track dashboard visit for analytics
   useEffect(() => {
     // This would normally call an analytics service
     console.log('Dashboard viewed by user:', user?.id);
   }, [user]);
+
+  // Debug subscription changes
+  useEffect(() => {
+    console.log('Dashboard: Subscription changed:', {
+      tier: subscription?.tier,
+      hasSubscription: subscription?.hasSubscription,
+      currentTier
+    });
+  }, [subscription, currentTier]);
   
   return (
     <div className="container mx-auto px-4 py-6">
@@ -100,47 +111,30 @@ const Dashboard = () => {
       <section className="mb-8 bg-gray-50 rounded-lg p-6 border border-gray-200">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div>
-            <h2 className="text-xl font-semibold">Current Plan: <span className="text-indigo-600">{formatTierName(currentTier)}</span></h2>
-            <p className="text-gray-600 mt-1">
-              {currentTier === 'basic' 
-                ? 'You are on our free Basic plan. Upgrade for more features!'
-                : currentTier === 'premium'
-                  ? 'You have access to our Premium features. Elite offers even more!'
-                  : 'You have our top Elite plan with all features unlocked!'}
-            </p>
-          </div>
-          
-          <div className="mt-4 md:mt-0 flex flex-wrap gap-3">
-            {/* Show upgrade options if available */}
-            {upgradeOptions.length > 0 && upgradeOptions.map(tier => (
-              <Link 
-                key={`upgrade-${tier}`}
-                to="/subscription/plans"
-                className={`px-4 py-2 rounded-md text-white font-medium ${
-                  tier === 'premium' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-purple-600 hover:bg-purple-700'
-                }`}
-              >
-                Upgrade to {formatTierName(tier)}
-              </Link>
-            ))}
-            
-            {/* Always show Manage Subscription button for paid tiers */}
-            {currentTier !== 'basic' && (
-              <Link
-                to="/subscription/manage"
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium"
-              >
-                Manage Subscription
-              </Link>
+            {subscriptionLoading || currentTier === null ? (
+              <>
+                <h2 className="text-xl font-semibold">Loading subscription...</h2>
+                <p className="text-gray-600 mt-1">Please wait while we load your subscription details.</p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-xl font-semibold">Current Plan: <span className="text-indigo-600">{formatTierName(currentTier)}</span></h2>
+                <p className="text-gray-600 mt-1">
+                  {currentTier === 'basic' && 'Free access to basic features'}
+                  {currentTier === 'premium' && 'Access to premium workouts and features'}
+                  {currentTier === 'elite' && 'Full access to all features including AI training'}
+                </p>
+              </>
             )}
-            
-            {/* Show Upgrade button for Basic tier if no specific upgrade options */}
-            {currentTier === 'basic' && upgradeOptions.length === 0 && (
-              <Link
-                to="/subscription/plans"
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-medium"
+          </div>
+          <div className="mt-4 md:mt-0">
+            {!subscriptionLoading && currentTier && currentTier !== 'elite' && (
+              <Link 
+                to="/subscription/upgrade"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 inline-flex items-center"
               >
-                View Premium Plans
+                <Star className="w-4 h-4 mr-2" />
+                Upgrade Plan
               </Link>
             )}
           </div>
@@ -162,18 +156,20 @@ const Dashboard = () => {
       </section>
       
       {/* Tier-Specific Content Link */}
-      <section className="mb-8 bg-gray-50 rounded-lg p-4 border border-gray-200">
-        <h2 className="text-xl font-semibold mb-2">Your Subscription Content</h2>
-        <p className="text-gray-600 mb-3">
-          Access exclusive content available for your {formatTierName(currentTier)} subscription.
-        </p>
-        <Link 
-          to={`/content/${currentTier}`}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 inline-block"
-        >
-          View {formatTierName(currentTier)} Content
-        </Link>
-      </section>
+      {!subscriptionLoading && currentTier && (
+        <section className="mb-8 bg-gray-50 rounded-lg p-4 border border-gray-200">
+          <h2 className="text-xl font-semibold mb-2">Your Subscription Content</h2>
+          <p className="text-gray-600 mb-3">
+            Access exclusive content available for your {formatTierName(currentTier)} subscription.
+          </p>
+          <Link 
+            to={`/content/${currentTier}`}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 inline-block"
+          >
+            View {formatTierName(currentTier)} Content
+          </Link>
+        </section>
+      )}
       
       {/* Progress Section */}
       <section className="mb-10">
@@ -210,7 +206,7 @@ const Dashboard = () => {
       </section>
       
       {/* Favorite Exercises Section - only for Premium and Elite */}
-      {currentTier !== 'basic' && (
+      {!subscriptionLoading && currentTier && currentTier !== 'basic' && (
         <section className="mb-10">
           <h2 className="text-2xl font-semibold mb-4">Your Favorite Exercises</h2>
           <FavouriteExercises />
@@ -218,7 +214,7 @@ const Dashboard = () => {
       )}
       
       {/* Upgrade Prompt - only for Basic tier */}
-      {currentTier === 'basic' && (
+      {!subscriptionLoading && currentTier && currentTier === 'basic' && (
         <section className="mb-10">
           <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-6">
             <div className="flex flex-col md:flex-row items-center">
@@ -268,7 +264,7 @@ const Dashboard = () => {
       )}
       
       {/* Show upgrade prompts based on current tier */}
-      {!hasAccess('premium') && (
+      {!subscriptionLoading && currentTier && !hasAccess('premium') && (
         <div className="mt-8 bg-indigo-50 border border-indigo-200 rounded-lg p-6">
           <h3 className="text-xl font-semibold text-indigo-800 mb-3">Upgrade to Premium</h3>
           <p className="text-indigo-700 mb-4">

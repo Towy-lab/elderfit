@@ -1,8 +1,13 @@
 import React from 'react';
-import { AuthProvider } from '../contexts/AuthContext';
-import { SubscriptionProvider } from '../contexts/SubscriptionContext';
-import { ContentProvider } from '../contexts/ContentContext';
-import { SafetyProvider } from '../contexts/SafetyContext';
+import { BrowserRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'react-hot-toast';
+import { AuthProvider } from '../contexts/AuthContext.js';
+import { SubscriptionProvider } from '../contexts/SubscriptionContext.js';
+import { ContentProvider } from '../contexts/ContentContext.js';
+import { SafetyProvider } from '../contexts/SafetyContext.js';
+import { ProgressProvider } from '../contexts/ProgressContext.js';
+import { HealthProvider } from '../contexts/HealthContext.js';
 
 // Comment out or conditionally include providers that might not exist
 // import { SafetyProvider } from './SafetyProvider';

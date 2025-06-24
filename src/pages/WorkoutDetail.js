@@ -1,8 +1,8 @@
 // src/pages/WorkoutDetail.js
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import LoadingSpinner from '../components/LoadingSpinner';
+import LoadingSpinner from '../components/LoadingSpinner.js';
 
 const fetchWorkout = async (id) => {
   // Simulate API delay

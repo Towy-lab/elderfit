@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useExercises } from '../contexts/ExerciseContext';
+import { useAuth } from '../contexts/AuthContext.js';
+import { useExercises } from '../contexts/ExerciseContext.js';
 
 export const useWorkoutHistory = () => {
   const { user } = useAuth();

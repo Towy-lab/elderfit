@@ -1,8 +1,13 @@
 // src/pages/subscription/SubscriptionUpgradePage.js
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useSubscription } from '../../contexts/SubscriptionContext';
-import UpgradeSubscriptionForm from '../../components/subscription/UpgradeSubscriptionForm';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
+import UpgradeSubscriptionForm from '../../components/subscription/UpgradeSubscriptionForm.js';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card.js';
+import { Button } from '../../components/ui/button.js';
+import { Badge } from '../../components/ui/badge.js';
+import { Progress } from '../../components/ui/progress.js';
+import { Crown, Shield, Smartphone, Activity, Heart, Brain, Target, TrendingUp, Zap, Star, Users, Calendar, Clock, Award, Play, Settings, Info, AlertTriangle, Check, X, RotateCcw, Pause, BookOpen, Video, Users as UsersIcon, Award as AwardIcon, Calendar as CalendarIcon, ArrowRight, Home, Menu, User, LogOut, Settings as SettingsIcon, Home as HomeIcon, Activity as ActivityIcon, Shield as ShieldIcon, Heart as HeartIcon, BookOpen as BookOpenIcon, HelpCircle } from 'lucide-react';
 
 const SubscriptionUpgradePage = () => {
   const navigate = useNavigate();

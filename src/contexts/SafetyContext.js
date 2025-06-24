@@ -1,7 +1,13 @@
 // src/contexts/SafetyContext.js - Enhanced with tier awareness
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useSubscription } from './SubscriptionContext';
-import { useAuth } from './AuthContext';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card.js';
+import { Button } from '../components/ui/button.js';
+import { Badge } from '../components/ui/badge.js';
+import { Progress } from '../components/ui/progress.js';
+import { Shield, AlertTriangle, Phone, Heart, Activity, Settings, Bell, Users, Calendar, TrendingUp, CheckCircle, XCircle, Info } from 'lucide-react';
+import { useSubscription } from './SubscriptionContext.js';
+import { useAuth } from './AuthContext.js';
+import { api } from '../services/api.js';
 import { 
   getEmergencyContacts,
   addEmergencyContact,
@@ -9,7 +15,7 @@ import {
   deleteEmergencyContact,
   getSafetyScore,
   getSafetyHistory
-} from '../services/api';
+} from '../services/api.js';
 
 const SafetyContext = createContext();
 

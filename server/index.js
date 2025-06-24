@@ -1,22 +1,32 @@
-const express = require('express');
-const cors = require('cors');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const fs = require('fs');
-const path = require('path');
-const mongoose = require('mongoose');
-const https = require('https');
-const WebSocket = require('ws');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+import dotenv from 'dotenv';
+
+// Load environment variables FIRST, before ANY other code
+dotenv.config({ path: './.env' });
+
+import express from 'express';
+import cors from 'cors';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import fs from 'fs';
+import path from 'path';
+import mongoose from 'mongoose';
+import https from 'https';
+import { WebSocketServer } from 'ws';
+import Stripe from 'stripe';
+
+import { fileURLToPath } from 'url';
+
+// Load environment variables FIRST, before any other imports that might need them
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const dotenvPath = path.resolve(__dirname, '../.env');
 
 // Enhanced debugging for environment variables
-const dotenvPath = path.resolve(__dirname, '../.env');
 console.log('Absolute path to .env file:', dotenvPath);
 console.log('.env file exists at this path:', fs.existsSync(dotenvPath));
 console.log('Current working directory:', process.cwd());
 
 // Load environment variables with better debugging
-const dotenv = require('dotenv');
 const result = dotenv.config({ path: dotenvPath });
 console.log('dotenv config result:', result.error ? 'ERROR: ' + result.error : 'Success - .env loaded');
 
@@ -25,6 +35,24 @@ console.log('Environment variables check:');
 console.log('STRIPE_SECRET_KEY:', process.env.STRIPE_SECRET_KEY ? 'exists' : 'MISSING');
 console.log('MONGO_URI:', process.env.MONGO_URI ? 'exists' : 'MISSING');
 console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'exists' : 'MISSING');
+
+// Import routes AFTER environment variables are loaded
+import authRoutes from './routes/auth.js';
+import subscriptionRoutes from './routes/subscription.js';
+import stripeRoutes from './routes/stripe.js';
+import contentRoutes from './routes/content.js';
+import devicesRoutes from './routes/devices.js';
+import progressRoutes from './routes/progress.js';
+
+// Import models
+import User from './models/User.js';
+
+// Mongoose Debugging
+mongoose.set('debug', (collectionName, method, query, doc) => {
+  console.log(`[Mongoose] ${collectionName}.${method}`, JSON.stringify(query), doc);
+});
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // Initialize Express app
 const app = express();
@@ -108,79 +136,6 @@ app.use((req, res, next) => {
 // Regular middleware (after the webhook middleware)
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
-// Use routes
-const authRoutes = require('./routes/auth');
-const subscriptionRoutes = require('./routes/subscription');
-const stripeRoutes = require('./routes/stripe');
-const contentRoutes = require('./routes/content');
-const devicesRoutes = require('./routes/devices');
-const progressRoutes = require('./routes/progress');
-
-// Connect to MongoDB with retry logic
-const connectWithRetry = async (retries = 5, delay = 5000) => {
-  const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/elderfit';
-  console.log('Attempting to connect to MongoDB...');
-  console.log('MongoDB URI:', mongoUri);
-
-  try {
-    // Set strictQuery to false to prepare for Mongoose 7
-    mongoose.set('strictQuery', false);
-    
-    // Add connection options
-    const options = {
-      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
-      socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
-    };
-
-    await mongoose.connect(mongoUri, options);
-    console.log('MongoDB Connected Successfully');
-    
-    // Log connection details
-    const db = mongoose.connection.db;
-    console.log('Connected to database:', db.databaseName);
-    console.log('MongoDB version:', await db.admin().serverInfo().then(info => info.version));
-    
-  } catch (err) {
-    console.error('MongoDB Connection Error Details:', {
-      name: err.name,
-      message: err.message,
-      code: err.code,
-      stack: err.stack
-    });
-
-    if (retries > 0) {
-      console.log(`MongoDB connection failed. Retrying in ${delay/1000} seconds... (${retries} attempts remaining)`);
-      setTimeout(() => connectWithRetry(retries - 1, delay), delay);
-    } else {
-      console.error('Failed to connect to MongoDB after multiple retries. Please ensure MongoDB is running.');
-      console.error('You can start MongoDB using:');
-      console.error('1. Windows: Start MongoDB service from Services');
-      console.error('2. Or run: mongod --dbpath="C:/data/db"');
-      process.exit(1);
-    }
-  }
-};
-
-// Add MongoDB connection event handlers
-mongoose.connection.on('error', (err) => {
-  console.error('MongoDB connection error:', err);
-});
-
-mongoose.connection.on('disconnected', () => {
-  console.log('MongoDB disconnected. Attempting to reconnect...');
-  connectWithRetry();
-});
-
-// Start MongoDB connection
-connectWithRetry();
-
-// Import User model
-const User = require('./models/User');
-
-// Special middleware for Stripe webhooks - must come before express.json()
-// This must be defined before any other middleware that could consume the request body
-app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -319,6 +274,17 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
     
+    // Debug: Log the user's subscription data
+    console.log('User subscription data from database:', {
+      userId: user._id,
+      email: user.email,
+      subscription: user.subscription,
+      hasStripeId: !!(user.subscription && user.subscription.id),
+      tier: user.subscription?.tier,
+      planLevel: user.subscription?.planLevel,
+      status: user.subscription?.status
+    });
+    
     // Check password using the method defined in the User model
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
@@ -355,6 +321,25 @@ app.post('/api/auth/login', async (req, res) => {
           };
           await user.save();
         }
+      }
+    } else {
+      // User has no Stripe subscription ID - preserve existing subscription data
+      console.log('User has no Stripe subscription ID, preserving existing subscription data:', user.subscription);
+      
+      // Only set basic subscription if user has no subscription data at all
+      if (!user.subscription || !user.subscription.tier) {
+        console.log('User has no subscription data, setting basic tier');
+        user.subscription = {
+          tier: 'basic',
+          status: 'active',
+          isFree: true,
+          startDate: new Date(),
+          currentPeriodEnd: new Date('2099-12-31')
+        };
+        await user.save();
+      } else {
+        console.log('Preserving existing subscription tier:', user.subscription.tier);
+        // Don't save - just preserve the existing data
       }
     }
     
@@ -560,8 +545,40 @@ app.get('/test-images', (req, res) => {
   });
 });
 
+// Database Connection
+const dbConnect = async () => {
+  if (mongoose.connection.readyState >= 1) {
+    return;
+  }
+
+  const mongoUri = process.env.MONGO_URI;
+  console.log(`Attempting to connect to MongoDB...`);
+
+  mongoose.connection.on('connected', () => {
+    console.log('MongoDB connection established.');
+  });
+
+  mongoose.connection.on('error', err => {
+    console.error('MongoDB connection error:', err);
+  });
+
+  mongoose.connection.on('disconnected', () => {
+    console.log('MongoDB connection disconnected.');
+  });
+
+  try {
+    await mongoose.connect(mongoUri);
+  } catch (err) {
+    console.error('Failed to connect to MongoDB on initial setup:', err);
+    process.exit(1);
+  }
+};
+
 // Function to start server with retry logic
-const startServer = (retries = 3) => {
+const startServer = async (retries = 3) => {
+  // Ensure DB is connected before starting server
+  await dbConnect();
+
   // If there's an existing server, close it first
   if (server) {
     server.close(() => {
@@ -582,10 +599,7 @@ const createAndStartServer = () => {
   server = https.createServer(credentials, app);
 
   // Create WebSocket server
-  const wss = new WebSocket.Server({ 
-    server,
-    path: '/ws'
-  });
+  const wss = new WebSocketServer({ server });
 
   // WebSocket connection handler
   wss.on('connection', (ws, req) => {

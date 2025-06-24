@@ -1,4 +1,4 @@
-const User = require('../models/User');
+import User from '../models/User.js';
 
 // Content release schedule configuration
 const CONTENT_RELEASE_SCHEDULE = {
@@ -84,7 +84,7 @@ const calculateReleaseDate = (subscriptionDate, daysAfterRenewal) => {
 };
 
 // Check if content is available for a user
-const isContentAvailable = async (userId, contentId) => {
+export const isContentAvailable = async (userId, contentId) => {
   try {
     const user = await User.findById(userId);
     if (!user) return false;
@@ -149,7 +149,7 @@ const isContentAvailable = async (userId, contentId) => {
 };
 
 // Get all available content for a user
-const getAvailableContent = async (userId) => {
+export const getAvailableContent = async (userId) => {
   try {
     const user = await User.findById(userId);
     if (!user) return [];
@@ -208,8 +208,43 @@ const getAvailableContent = async (userId) => {
   }
 };
 
-module.exports = {
-  isContentAvailable,
-  getAvailableContent,
-  CONTENT_RELEASE_SCHEDULE
+// Get content release schedule for a specific tier
+export const getContentReleaseSchedule = (tier) => {
+  return CONTENT_RELEASE_SCHEDULE[tier] || [];
+};
+
+// Get next content release for a user
+export const getNextContentRelease = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    if (!user) return null;
+
+    const tier = user.subscription.tier;
+    const subscriptionDate = user.subscription.startDate;
+    const now = new Date();
+
+    const schedule = CONTENT_RELEASE_SCHEDULE[tier] || [];
+    const unreleasedContent = schedule.filter(content => {
+      const monthsSinceStart = Math.floor((now - subscriptionDate) / (30 * 24 * 60 * 60 * 1000));
+      const monthsRequired = Math.floor(content.daysAfterSignup / 30);
+      return monthsSinceStart < monthsRequired;
+    });
+
+    if (unreleasedContent.length === 0) return null;
+
+    // Return the next content to be released
+    const nextContent = unreleasedContent.sort((a, b) => a.daysAfterSignup - b.daysAfterSignup)[0];
+    const releaseDate = calculateReleaseDate(subscriptionDate, nextContent.daysAfterSignup);
+
+    return {
+      contentId: nextContent.contentId,
+      name: nextContent.name,
+      type: nextContent.type,
+      releaseDate,
+      daysUntilRelease: Math.ceil((releaseDate - now) / (24 * 60 * 60 * 1000))
+    };
+  } catch (error) {
+    console.error('Error getting next content release:', error);
+    return null;
+  }
 }; 

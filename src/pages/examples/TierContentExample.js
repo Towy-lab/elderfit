@@ -1,8 +1,8 @@
 // src/pages/examples/TierContentExample.js
 import React from 'react';
-import { useSubscription } from '../../contexts/SubscriptionContext';
-import TierContentManager from '../../components/subscription/TierContentManager';
-import AchievementTracker from '../../components/AchievementTracker';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
+import TierContentManager from '../../components/subscription/TierContentManager.js';
+import AchievementTracker from '../../components/AchievementTracker.js';
 import { Activity, FileText, Video, Calendar, Users, Award } from 'lucide-react';
 
 const TierContentExample = () => {

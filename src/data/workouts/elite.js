@@ -1,30 +1,30 @@
 const eliteWorkouts = [
   {
     id: 'elite-1',
-    name: 'Elite Strength & Conditioning',
+    name: 'Elite Performance & Recovery',
     exercises: [
       {
-        id: 'kettlebell-swings',
-        name: 'Kettlebell Swings',
-        description: 'Full body exercise for strength and power',
-        sets: 3,
-        reps: 15,
-        restSeconds: 60,
-        focusAreas: ['Full Body', 'Power']
+        id: 'weighted-squats',
+        name: 'Weighted Squats',
+        description: 'Squats with added resistance for maximum strength',
+        sets: 5,
+        reps: 12,
+        restSeconds: 90,
+        focusAreas: ['Legs', 'Core']
       },
       {
-        id: 'box-jumps',
-        name: 'Box Jumps',
-        description: 'Explosive lower body exercise',
-        sets: 3,
-        reps: 8,
-        restSeconds: 90,
-        focusAreas: ['Legs', 'Power']
+        id: 'diamond-pushups',
+        name: 'Diamond Push-ups',
+        description: 'Advanced push-ups for upper body power',
+        sets: 4,
+        reps: 15,
+        restSeconds: 75,
+        focusAreas: ['Chest', 'Arms']
       }
     ],
-    focusAreas: ['Strength', 'Power'],
+    focusAreas: ['Performance', 'Recovery'],
     estimatedDuration: 45
   }
 ];
 
-export default eliteWorkouts;
+export { eliteWorkouts };

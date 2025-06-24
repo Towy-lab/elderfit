@@ -1,13 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AlertCircle, Play, Info } from 'lucide-react';
-import { useSafety } from '../../contexts/SafetyContext';
-import { useSubscription } from '../../contexts/SubscriptionContext';
-import { formAnalysisService } from '../../services/ai/formAnalysis';
-import { safetyMonitoringService } from '../../services/ai/safetyMonitoring';
-import { detectPosture, analyzeMovementPattern, calculateJointAngles, loadPoseNet } from '../../utils/motionAnalysis';
-import { CameraSetupGuide } from './CameraSetupGuide';
-import { FormFeedback } from './FormFeedback';
-import { SafetyAlerts } from './SafetyAlerts';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card.js';
+import { Button } from '../../components/ui/button.js';
+import { Badge } from '../../components/ui/badge.js';
+import { Progress } from '../../components/ui/progress.js';
+import { Camera, Video, Settings, AlertTriangle, CheckCircle, XCircle, Info, HelpCircle, RotateCcw, Play, Pause, Volume2, VolumeX, Maximize2, Minimize2, Fullscreen, FullscreenExit, AlertCircle } from 'lucide-react';
+import { useSafety } from '../../contexts/SafetyContext.js';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
+import { formAnalysisService } from '../../services/ai/formAnalysis.js';
+import { safetyMonitoringService } from '../../services/ai/safetyMonitoring.js';
+import { detectPosture, analyzeMovementPattern, calculateJointAngles, loadPoseNet } from '../../utils/motionAnalysis.js';
+import { CameraSetupGuide } from './CameraSetupGuide.js';
+import { FormFeedback } from './FormFeedback.js';
+import { SafetyAlerts } from './SafetyAlerts.js';
 
 const FormGuidance = ({ exercise }) => {
   const { logFormCheck } = useSafety();

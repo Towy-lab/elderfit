@@ -1,9 +1,9 @@
 // src/pages/subscription/EliteContent.js (updated with proper images)
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useSubscription } from '../../contexts/SubscriptionContext';
-import FeatureGate from '../../components/subscription/FeatureGate';
-import { Users, Video, Shield, Activity, Smartphone, BookOpen, Calendar, Heart, Zap } from 'lucide-react';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
+import { Shield, Smartphone, Crown, Brain, Target, TrendingUp, Zap, Star, Users, Calendar, Clock, Award, Play, Settings, Info, AlertTriangle, CheckCircle, XCircle, Check, X, RotateCcw, Pause, BookOpen, Video, Heart, Activity, ArrowRight, Home, Menu, X as XIcon, User, LogOut, Settings as SettingsIcon, Home as HomeIcon, Activity as ActivityIcon, Shield as ShieldIcon, Heart as HeartIcon, BookOpen as BookOpenIcon, HelpCircle, Crown as CrownIcon } from 'lucide-react';
+import FeatureGate from '../../components/subscription/FeatureGate.js';
 
 const EliteContent = () => {
   const { formatTierName } = useSubscription();

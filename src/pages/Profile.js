@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useSubscription } from '../contexts/SubscriptionContext';
-import WorkoutHistory from '../components/WorkoutHistory';
-import ExerciseHistory from '../components/ExerciseHistory';
-import FavouriteExercises from '../components/FavouriteExercises'; // Corrected spelling
+import { useAuth } from '../contexts/AuthContext.js';
+import { useSubscription } from '../contexts/SubscriptionContext.js';
+import WorkoutHistory from '../components/WorkoutHistory.js';
+import ExerciseHistory from '../components/ExerciseHistory.js';
+import FavouriteExercises from '../components/FavouriteExercises.js'; // Corrected spelling
 
 const Profile = () => {
   const { currentUser, updateProfile } = useAuth();

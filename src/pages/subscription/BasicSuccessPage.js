@@ -1,7 +1,8 @@
 // src/pages/subscription/BasicSuccessPage.js
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useSubscription } from '../../contexts/SubscriptionContext';
+import { CheckCircle, ArrowRight, Home, Activity } from 'lucide-react';
+import { useSubscription } from '../../contexts/SubscriptionContext.js';
 
 const BasicSuccessPage = () => {
   const { refreshSubscription } = useSubscription();
