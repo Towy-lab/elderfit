@@ -64,7 +64,7 @@ const downloadImage = (url, filepath) => {
   });
 };
 
-// Image URLs and their destinations
+// Image URLs and their destinations - Updated for over 50's demographic
 const images = [
   {
     name: 'Joint Health',

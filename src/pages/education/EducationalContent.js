@@ -15,7 +15,7 @@ const EducationalContent = () => {
       title: 'Understanding Joint Health & Mobility',
       category: 'HEALTH',
       description: 'Learn about how to maintain healthy joints and improve mobility as you age.',
-      image: '/images/joint-health.jpg',
+      image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
       path: '/education/joint-health'
     },
     {

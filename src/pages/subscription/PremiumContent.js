@@ -1,23 +1,17 @@
 // src/pages/subscription/PremiumContent.js
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useSubscription } from '../../contexts/SubscriptionContext.js';
 import TierContentManager from '../../components/subscription/TierContentManager.js';
 import { TieredEmergencyContact } from '../../components/safety/TieredEmergencyContact.js';
 import { TieredPainTracker } from '../../components/safety/TieredPainTracker.js';
 import { Activity, Video, Calendar, Users, BookOpen, Award } from 'lucide-react';
 import { useProgress } from '../../contexts/ProgressContext.js';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card.js';
-import { Button } from '../../components/ui/button.js';
-import { Badge } from '../../components/ui/badge.js';
-import { Progress } from '../../components/ui/progress.js';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs.js';
-import { Shield, Smartphone, Heart, Brain, TrendingUp, Clock, Target, Star, Crown, Zap, CheckCircle, AlertTriangle, Info } from 'lucide-react';
-import { Users as UsersIcon, Award as AwardIcon, Calendar as CalendarIcon, ArrowRight, Home, Menu, User, LogOut, Settings as SettingsIcon, Home as HomeIcon, Activity as ActivityIcon, Shield as ShieldIcon, Heart as HeartIcon, BookOpen as BookOpenIcon, HelpCircle } from 'lucide-react';
+import { useWorkoutHistory } from '../../hooks/useWorkoutHistory.js';
+import TieredRestRecommendations from '../../components/safety/TieredRestRecommendations.js';
 
 const PremiumContent = () => {
   const { subscription, formatTierName, hasAccess } = useSubscription();
-  const currentTier = subscription?.tier || 'basic';
   
   // Sample workout data
   const [selectedWorkout, setSelectedWorkout] = useState({
@@ -109,7 +103,6 @@ const PremiumContent = () => {
   const { 
     workoutHistory = [], 
     streak = 0, 
-    lastWorkout = null,
     isLoading = false,
     error = null
   } = useProgress() || {};
@@ -117,12 +110,6 @@ const PremiumContent = () => {
   // Calculate total minutes exercised
   const totalMinutes = workoutHistory.reduce((total, workout) => total + (workout.duration || 0), 0);
   
-  // Format date for display
-  const formatDate = (date) => {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString();
-  };
-
   // Check if we have real progress data
   const hasRealProgress = workoutHistory.length > 0 && 
     workoutHistory.some(w => 
@@ -352,9 +339,13 @@ const PremiumContent = () => {
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <div className="h-40 bg-gray-200 relative">
                 <img 
-                  src="https://images.unsplash.com/photo-1585167156134-d7c7ee4c9267?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" 
+                  src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" 
                   alt="Article on Joint Health" 
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = '/images/placeholder.jpg';
+                  }}
                 />
               </div>
               <div className="p-4">
@@ -392,9 +383,13 @@ const PremiumContent = () => {
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <div className="h-40 bg-gray-200 relative">
                 <img 
-                  src="https://images.unsplash.com/photo-1521804106135-dfb8c96814b7?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" 
+                  src="https://images.unsplash.com/photo-1511689660979-10d2b1aada49?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" 
                   alt="Article on Sleep" 
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = '/images/placeholder.jpg';
+                  }}
                 />
               </div>
               <div className="p-4">
